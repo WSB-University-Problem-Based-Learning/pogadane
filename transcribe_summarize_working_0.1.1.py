@@ -11,6 +11,8 @@ FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"
 # Option 2: Specify the full path if needed (use raw string r"..." for Windows paths)
 # FASTER_WHISPER_EXE = r"C:\path\to\your\faster-whisper-xxl.exe"
 
+WHISPER_LANGUAGE = "Polish"
+WHISPER_MODEL = "turbo"
 OLLAMA_MODEL = "gemma3:4b"
 TRANSCRIPTION_FORMAT = "txt" # Use 'txt' for easy reading by the script
 # --- End Configuration ---
@@ -73,9 +75,9 @@ def transcribe_audio(audio_path_str):
     command = [
         FASTER_WHISPER_EXE,
         str(audio_path), # Ensure path is a string
-        "--language", "Polish",
-        "--model", "turbo", # Using 'turbo' as specified
-        "--output_format", TRANSCRIPTION_FORMAT,
+        "--language", WHISPER_LANGUAGE, # Użycie stałej
+        "--model", WHISPER_MODEL, # Using 'turbo' as specified
+        "--output_format", TRANSCRIPTION_FORMAT, # Użycie stałej
         # Add '--output_dir', '.' if you want output in the current dir instead of audio dir
     ]
 

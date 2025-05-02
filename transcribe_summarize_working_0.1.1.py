@@ -4,7 +4,7 @@ import os
 import argparse
 from pathlib import Path
 import shlex # Used for safer command construction if needed, though list format is preferred
-# Wersja Alpha v0.1.0
+# Wersja Alpha v0.1.1
 # --- Configuration ---
 # Option 1: Assume faster-whisper-xxl.exe is in the current directory or PATH
 FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"

@@ -1,7 +1,7 @@
 # pogadane
 Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów.
 
-**Instrukcja Uruchomienia Skryptu (Wersja Alpha v0.1.2+)**
+**Instrukcja Uruchomienia Skryptu (Wersja Alpha v0.1.3+)** 
 
 Poniższe kroki opisują proces instalacji niezbędnych komponentów oraz uruchomienia głównego skryptu `transcribe_summarize_working.py` w środowisku Windows.
 
@@ -11,6 +11,18 @@ Poniższe kroki opisują proces instalacji niezbędnych komponentów oraz urucho
 * Połączenie z Internetem (do pobrania oprogramowania i opcjonalnie materiałów z YouTube).
 * Uprawnienia administratora mogą być wymagane do instalacji niektórych programów.
 * Narzędzie do dekompresji archiwów `.7z` (np. [7-Zip](https://www.7-zip.org/)).
+
+**Konfiguracja (Opcjonalnie)**
+
+Na początku skryptu `transcribe_summarize_working.py` znajdują się stałe konfiguracyjne, które można modyfikować:
+
+* `FASTER_WHISPER_EXE`: Ścieżka do `faster-whisper-xxl.exe` (jeśli nie jest w tym samym katalogu co skrypt).
+* `YT_DLP_EXE`: Ścieżka do `yt-dlp.exe` (jeśli nie jest w tym samym katalogu co skrypt).
+* `WHISPER_LANGUAGE`: Język transkrypcji (domyślnie "Polish").
+* `WHISPER_MODEL`: Model Faster Whisper (domyślnie "turbo"). Można zmienić na inne dostępne modele, np. "large-v3".
+* `OLLAMA_MODEL`: Model językowy Ollama do podsumowań (domyślnie "gemma3:4b").
+* `LLM_PROMPT`: Szablon promptu używany do generowania podsumowania przez Ollama. **Musi zawierać placeholder `{text}`**, który zostanie zastąpiony przez transkrypcję. Domyślnie: `"Streść poniższy tekst po polsku, skupiając się na kluczowych wnioskach i decyzjach:\n\n{text}"`.
+* `DOWNLOADED_AUDIO_FILENAME`: Nazwa tymczasowego pliku audio pobieranego z YouTube.
 
 **Krok 1: Instalacja środowiska Python**
 

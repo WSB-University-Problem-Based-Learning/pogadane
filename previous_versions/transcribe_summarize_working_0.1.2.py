@@ -6,7 +6,7 @@ from pathlib import Path
 import shlex # Used for safer command construction if needed, though list format is preferred
 import re # Import regular expressions for URL validation (basic)
 
-# Wersja Alpha v0.1.3 # <<< ZAKTUALIZOWANA WERSJA
+# Wersja Alpha v0.1.2
 # --- Configuration ---
 # Option 1: Assume executables are in the current directory or PATH
 FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"
@@ -18,10 +18,6 @@ YT_DLP_EXE = "yt-dlp.exe" # Added for YouTube downloads
 WHISPER_LANGUAGE = "Polish"
 WHISPER_MODEL = "turbo"
 OLLAMA_MODEL = "gemma3:4b"
-# --- NEW CONSTANT START ---
-# Prompt dla modelu językowego (Ollama). Musi zawierać placeholder {text}.
-LLM_PROMPT = "Streść poniższy tekst po polsku, skupiając się na kluczowych wnioskach i decyzjach:\n\n{text}"
-# --- NEW CONSTANT END ---
 TRANSCRIPTION_FORMAT = "txt" # Use 'txt' for easy reading by the script
 DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3" # Temporary filename for downloads
 # --- End Configuration ---
@@ -186,22 +182,7 @@ def summarize_text(text_to_summarize):
 
     print(f"\n🔄 Starting Summarization using Ollama ({OLLAMA_MODEL})")
 
-    # --- MODIFICATION START ---
-    # Use the configured LLM_PROMPT constant.
-    # Use .format() to insert the transcription into the prompt template.
-    try:
-        prompt = LLM_PROMPT.format(text=text_to_summarize)
-    except KeyError:
-        # Fallback or error if the placeholder is missing in the constant
-        print(f"❌ Error: LLM_PROMPT constant in the script configuration is missing the required '{{text}}' placeholder.", file=sys.stderr)
-        print(f"   Current LLM_PROMPT value: \"{LLM_PROMPT}\"", file=sys.stderr)
-        print("   Please edit the script and add '{text}' where the transcribed text should be inserted.", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"❌ Error formatting LLM prompt: {e}", file=sys.stderr)
-        return None
-    # --- MODIFICATION END ---
-
+    prompt = f"Streść poniższy tekst po polsku:\n\n{text_to_summarize}"
     command = ["ollama", "run", OLLAMA_MODEL]
 
     process = run_command(command, input_data=prompt, capture_output=True)

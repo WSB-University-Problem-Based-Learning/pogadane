@@ -94,17 +94,6 @@ Na początku skryptu `transcribe_summarize_working.py` znajdują się stałe kon
 
 4.  **Monitoruj Proces:** Skrypt rozpocznie działanie. W terminalu pojawią się komunikaty informujące o postępie (pobieranie z YouTube, jeśli dotyczy, transkrypcja, podsumowanie). Poczekaj na zakończenie procesu. Podsumowanie zostanie zapisane w pliku podanym po fladze `-o`. Jeśli flaga `-o` nie zostanie użyta, podsumowanie zostanie tylko wyświetlone w terminalu wraz ze wskazówką, jak je zapisać.
 
-**Konfiguracja (Opcjonalnie)**
-
-Na początku skryptu `transcribe_summarize_working.py` znajdują się stałe konfiguracyjne, które można modyfikować:
-
-* `FASTER_WHISPER_EXE`: Ścieżka do `faster-whisper-xxl.exe` (jeśli nie jest w tym samym katalogu co skrypt).
-* `YT_DLP_EXE`: Ścieżka do `yt-dlp.exe` (jeśli nie jest w tym samym katalogu co skrypt).
-* `WHISPER_LANGUAGE`: Język transkrypcji (domyślnie "Polish").
-* `WHISPER_MODEL`: Model Faster Whisper (domyślnie "turbo"). Można zmienić na inne dostępne modele, np. "large-v3".
-* `OLLAMA_MODEL`: Model językowy Ollama do podsumowań (domyślnie "gemma3:4b").
-* `DOWNLOADED_AUDIO_FILENAME`: Nazwa tymczasowego pliku audio pobieranego z YouTube.
-
 **Poprzednie Wersje**
 
 Historyczne wersje skryptu (np. `transcribe_summarize_working_0.1.py`, `transcribe_summarize_working_0.1.1.py`) są archiwizowane w katalogu `previous_versions` w repozytorium projektu.

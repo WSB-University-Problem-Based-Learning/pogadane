@@ -1,13 +1,14 @@
 # pogadane
 Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów.
 
-**Instrukcja Uruchomienia Skryptu (Wersja Alpha v0.1.4+)**
+**Instrukcja Uruchomienia Skryptu (Wersja Alpha v0.1.5+)**
 
 Poniższe kroki opisują proces instalacji niezbędnych komponentów oraz uruchomienia głównego skryptu `transcribe_summarize_working.py` w środowisku Windows.
 
 **Wymagania Wstępne:**
 
 * System operacyjny Windows.
+* Python (zalecany 3.7+).
 * Połączenie z Internetem (do pobrania oprogramowania i opcjonalnie materiałów z YouTube).
 * Uprawnienia administratora mogą być wymagane do instalacji niektórych programów.
 * Narzędzie do dekompresji archiwów `.7z` (np. [7-Zip](https://www.7-zip.org/)).
@@ -16,7 +17,7 @@ Poniższe kroki opisują proces instalacji niezbędnych komponentów oraz urucho
 
 Skrypt `transcribe_summarize_working.py` zarządza konfiguracją w następujący sposób:
 
-1.  **Plik `config.py` (Zalecane):** Skrypt w pierwszej kolejności próbuje załadować konfigurację z pliku `config.py` znajdującego się w tym samym katalogu. **Plik `config.py` z domyślnymi ustawieniami jest dołączony do repozytorium.** Możesz bezpośrednio edytować ten plik, aby dostosować ścieżki do plików wykonywalnych, modele językowe, prompty itp.
+1.  **Plik `config.py` (Zalecane):** Skrypt w pierwszej kolejności próbuje załadować konfigurację z pliku `config.py` znajdującego się w tym samym katalogu. **Plik `config.py` z domyślnymi ustawieniami jest dołączony do repozytorium.** Możesz bezpośrednio edytować ten plik, aby dostosować ścieżki do plików wykonywalnych, modele językowe, prompty, ustawienia diaryzacji itp.
 2.  **Konfiguracja Domyślna (Fallback):** Jeśli plik `config.py` nie zostanie znaleziony (np. zostanie przypadkowo usunięty), skrypt wyświetli ostrzeżenie i automatycznie użyje predefiniowanych wartości domyślnych, które są zaszyte w kodzie. Pozwala to na podstawowe uruchomienie skryptu nawet bez pliku `config.py`.
 
 **Aby dostosować konfigurację, edytuj plik `config.py` znajdujący się w repozytorium.**
@@ -40,6 +41,27 @@ YT_DLP_EXE = "yt-dlp.exe"
 WHISPER_LANGUAGE = "Polish"  # Język transkrypcji
 WHISPER_MODEL = "turbo"     # Model Faster Whisper (np. "large-v3", "medium", "small", "base", "tiny", "turbo")
 
+# --- NEW: Ustawienia Diaryzacji Mówców ---
+ENABLE_SPEAKER_DIARIZATION = False  # Ustaw na True, aby włączyć diaryzację mówców
+                                   # Można również nadpisać z linii komend: --diarize lub --no-diarize
+
+# Metoda diaryzacji używana przez Faster Whisper.
+# Dostępne opcje to np. "pyannote_v3.0", "pyannote_v3.1", "reverb_v1", "reverb_v2".
+# "pyannote_v3.1" jest często dobrym wyborem. Szczegóły w dokumentacji Faster Whisper.
+# ([https://github.com/Purfview/whisper-standalone-win](https://github.com/Purfview/whisper-standalone-win) -> --diarize)
+DIARIZE_METHOD = "pyannote_v3.1"
+
+# Prefiks używany do oznaczania mówców w transkrypcji, np. "MÓWCA_01", "SPEAKER_A".
+# Faster Whisper automatycznie doda numer (np. _01, _02).
+DIARIZE_SPEAKER_PREFIX = "MÓWCA"
+
+# Opcjonalne dodatkowe parametry diaryzacji (jeśli potrzebne, odkomentuj i dostosuj):
+# NUM_SPEAKERS = 0  # Dokładna liczba mówców (jeśli znana, 0 = auto-detect)
+# MIN_SPEAKERS = 0  # Minimalna liczba mówców (0 = brak)
+# MAX_SPEAKERS = 0  # Maksymalna liczba mówców (0 = brak)
+# --- END: Ustawienia Diaryzacji Mówców ---
+
+
 # Ustawienia Ollama
 OLLAMA_MODEL = "gemma3:4b"  # Model językowy Ollama do podsumowań
 
@@ -51,7 +73,7 @@ TRANSCRIPTION_FORMAT = "txt"  # Format pliku transkrypcji (używany wewnętrznie
 DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Tymczasowa nazwa pliku dla pobranego audio
 
 # --- End Configuration ---
-````
+```
 
 **Opis opcji konfiguracyjnych w `config.py` (lub wartości domyślnych w skrypcie):**
 
@@ -59,10 +81,13 @@ DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Tymczasowa nazwa pliku dla
   * `YT_DLP_EXE`: Ścieżka do `yt-dlp.exe`.
   * `WHISPER_LANGUAGE`: Język transkrypcji (domyślnie "Polish").
   * `WHISPER_MODEL`: Model Faster Whisper (domyślnie "turbo"). Można zmienić na inne dostępne modele, np. "large-v3".
+  * `ENABLE_SPEAKER_DIARIZATION`: Wartość logiczna (`True`/`False`) włączająca/wyłączająca diaryzację mówców. Domyślnie `False`. Może być nadpisana argumentem `--diarize` lub `--no-diarize` z linii komend.
+  * `DIARIZE_METHOD`: Metoda diaryzacji używana przez Faster Whisper (np. `"pyannote_v3.1"`). Zapoznaj się z dokumentacją Faster Whisper dla dostępnych opcji (parametr `--diarize`).
+  * `DIARIZE_SPEAKER_PREFIX`: Prefiks używany do oznaczania mówców w wynikowej transkrypcji (np. `"MÓWCA"`). Skrypt Faster Whisper doda do niego numer identyfikacyjny (np. `MÓWCA_01`).
   * `OLLAMA_MODEL`: Model językowy Ollama do podsumowań (domyślnie "gemma3:4b").
   * `LLM_PROMPT`: Szablon promptu używany do generowania podsumowania przez Ollama. **Musi zawierać placeholder `{text}`**, który zostanie zastąpiony przez transkrypcję.
   * `DOWNLOADED_AUDIO_FILENAME`: Nazwa tymczasowego pliku audio pobieranego z YouTube.
-  * `TRANSCRIPTION_FORMAT`: Format pliku wyjściowego transkrypcji (domyślnie 'txt').
+  * `TRANSCRIPTION_FORMAT`: Format pliku wyjściowego transkrypcji (domyślnie 'txt'). Zwróć uwagę, że Faster Whisper z diaryzacją może tworzyć pliki `.txt` w formacie, gdzie każdy segment ma przypisanego mówcę.
 
 **Krok 1: Instalacja środowiska Python**
 
@@ -77,8 +102,8 @@ DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Tymczasowa nazwa pliku dla
 
 **Krok 2: Instalacja Faster-Whisper Standalone**
 
-1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z` (rozmiar ok. 1.33 GB).
-2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum `Faster-Whisper-XXL_r245.4_windows.7z` do wybranej przez siebie lokalizacji (np. `C:\%userprofile%\Downloads\pogadane`). W wyniku powstanie folder, np. `C:\%userprofile%\Downloads\pogadane\Faster-Whisper-XXL_r245.4_windows`.
+1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` (lub nowszą, która wspiera diaryzację) i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z` (rozmiar ok. 1.33 GB). *Upewnij się, że pobierana wersja wspiera opcję `--diarize` (sprawdź dokumentację/help dla pobranego pliku).*
+2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum do wybranej przez siebie lokalizacji (np. `C:\%userprofile%\Downloads\pogadane`). W wyniku powstanie folder, np. `C:\%userprofile%\Downloads\pogadane\Faster-Whisper-XXL_r245.4_windows`.
 3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe` (np. `C:\%userprofile%\Downloads\pogadane\Faster-Whisper-XXL_r245.4_windows\Faster-Whisper-XXL`). **Zapamiętaj lub skopiuj pełną ścieżkę do tego katalogu.** Jeśli nie chcesz umieszczać skryptu i `config.py` w tym katalogu, upewnij się, że ścieżka do `faster-whisper-xxl.exe` jest poprawnie ustawiona w `config.py` (lub polegaj na PATH systemowym, jeśli tak skonfigurowałeś).
 
 **Krok 3: Pobranie yt-dlp (do obsługi YouTube)**
@@ -118,29 +143,35 @@ DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Tymczasowa nazwa pliku dla
       * **Plik Lokalny:** Upewnij się, że plik audio, który chcesz przetworzyć (np. `spotkanie.mp3`), znajduje się w znanej lokalizacji.
       * **URL YouTube:** Skopiuj adres URL filmu z YouTube, który chcesz przetworzyć.
 
-3.  **Wykonaj Polecenie Uruchomienia Skryptu:** W terminalu PowerShell wpisz polecenie `python`, nazwę skryptu (`transcribe_summarize_working.py`), ścieżkę do pliku audio LUB URL YouTube (najlepiej w cudzysłowach) oraz opcjonalnie flagę `-o` ze ścieżką do pliku wyjściowego dla podsumowania.
+3.  **Wykonaj Polecenie Uruchomienia Skryptu:** W terminalu PowerShell wpisz polecenie `python`, nazwę skryptu (`transcribe_summarize_working.py`), ścieżkę do pliku audio LUB URL YouTube (najlepiej w cudzysłowach), opcjonalnie flagę `--diarize` LUB `--no-diarize` oraz opcjonalnie flagę `-o` ze ścieżką do pliku wyjściowego dla podsumowania.
 
     **Ogólny wzór:**
 
     ```powershell
-    python transcribe_summarize_working.py "<ścieżka_do_pliku_LUB_URL_YouTube>" -o "<pełna_ścieżka_do_pliku_z_podsumowaniem.txt>"
+    python transcribe_summarize_working.py "<ścieżka_do_pliku_LUB_URL_YouTube>" [--diarize | --no-diarize] -o "<pełna_ścieżka_do_pliku_z_podsumowaniem.txt>"
     ```
 
-    **Przykład 1: Użycie pliku lokalnego**
+    **Przykład 1: Użycie pliku lokalnego z włączoną diaryzacją (nadpisuje ustawienie z config.py)**
 
     ```powershell
-    python transcribe_summarize_working.py "C:\Users\Moje\Desktop\nagranie_spotkania.mp3" -o "C:\Users\alexk\Desktop\nagranie_spotkania_summary.txt"
+    python transcribe_summarize_working.py "C:\Users\Moje\Desktop\nagranie_spotkania.mp3" --diarize -o "C:\Users\alexk\Desktop\nagranie_spotkania_summary.txt"
     ```
 
-    **Przykład 2: Użycie adresu URL YouTube**
+    **Przykład 2: Użycie adresu URL YouTube z wyłączoną diaryzacją (nadpisuje ustawienie z config.py)**
 
     ```powershell
-    python transcribe_summarize_working.py "[https://www.youtube.com/watch?v=przykladowyURL](https://www.youtube.com/watch?v=przykladowyURL)" -o "C:\Users\Moje\Dokumenty\podsumowanie_wykladu.txt"
+    python transcribe_summarize_working.py "[https://www.youtube.com/watch?v=przykladowyURL](https://www.youtube.com/watch?v=przykladowyURL)" --no-diarize -o "C:\Users\Moje\Dokumenty\podsumowanie_wykladu.txt"
+    ```
+    
+    **Przykład 3: Użycie pliku lokalnego z ustawieniem diaryzacji pobranym z `config.py` (bez flag --diarize/--no-diarize)**
+
+    ```powershell
+    python transcribe_summarize_working.py "C:\Path\To\Your\Audio\file.mp3" -o "C:\Path\To\Your\Output\summary.txt"
     ```
 
     *Zastąp przykładowe ścieżki i URL odpowiednimi wartościami dla Twojego systemu i potrzeb.*
 
-4.  **Monitoruj Proces:** Skrypt rozpocznie działanie. W terminalu pojawią się komunikaty informujące o postępie. Poczekaj na zakończenie procesu. Podsumowanie zostanie zapisane w pliku podanym po fladze `-o`. Jeśli flaga `-o` nie zostanie użyta, podsumowanie zostanie tylko wyświetlone w terminalu.
+4.  **Monitoruj Proces:** Skrypt rozpocznie działanie. W terminalu pojawią się komunikaty informujące o postępie. Poczekaj na zakończenie procesu. Podsumowanie zostanie zapisane w pliku podanym po fladze `-o`. Jeśli flaga `-o` nie zostanie użyta, podsumowanie zostanie tylko wyświetlone w terminalu. Plik transkrypcji (z potencjalną diaryzacją) zostanie utworzony w tym samym katalogu co plik audio (lub plik pobrany z YouTube), z dodanym `_transcription` do nazwy.
 
 **Poprzednie Wersje**
 

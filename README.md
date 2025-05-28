@@ -4,18 +4,83 @@ Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcas
 Projekt zawiera zarówno interfejs linii komend (CLI) `transcribe_summarize_working.py`, jak i interfejs graficzny użytkownika (GUI) `gui.py`.
 
 **Spis Treści**
-1.  [Wymagania Wstępne](#wymagania-wstępne)
-2.  [Konfiguracja](#konfiguracja)
-3.  [Instalacja Komponentów](#instalacja-komponentów)
+1.  [Architektura Systemu](#architektura-systemu)
+2.  [Wymagania Wstępne](#wymagania-wstępne)
+3.  [Konfiguracja](#konfiguracja)
+4.  [Instalacja Komponentów](#instalacja-komponentów)
     * [Krok 1: Instalacja środowiska Python](#krok-1-instalacja-środowiska-python)
     * [Krok 2: Instalacja Faster-Whisper Standalone](#krok-2-instalacja-faster-whisper-standalone)
     * [Krok 3: Pobranie yt-dlp](#krok-3-pobranie-yt-dlp-do-obsługi-youtube)
     * [Krok 4: Instalacja Ollama i Pobranie Modelu Językowego](#krok-4-instalacja-ollama-i-pobranie-modelu-językowego)
     * [Krok 5: Instalacja biblioteki GUI](#krok-5-instalacja-biblioteki-gui-ttkbootstrap)
-4.  [Uruchomienie Aplikacji](#uruchomienie-aplikacji)
+5.  [Uruchomienie Aplikacji](#uruchomienie-aplikacji)
     * [Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)](#uruchomienie-interfejsu-graficznego-gui-zalecane)
     * [Uruchomienie Skryptu z Linii Komend (CLI)](#uruchomienie-skryptu-z-linii-komend-cli)
-5.  [Poprzednie Wersje](#poprzednie-wersje)
+6.  [Poprzednie Wersje](#poprzednie-wersje)
+
+---
+## Architektura Systemu
+
+Poniższy diagram przedstawia ogólną architekturę aplikacji "pogadane":
+
+```mermaid
+flowchart LR
+ subgraph pogadane_app["Aplikacja Pogadane"]
+    direction LR
+        gui_app["Przekazuje"]
+        cli_script["Skrypt Główny (CLI / Logika)"]
+  end
+ subgraph processing_pipeline["Potok Przetwarzania"]
+    direction LR
+        yt_dlp{{"yt-dlp"}}
+        downloaded_audio[("Pobrane Audio")]
+        faster_whisper{{"Faster-Whisper"}}
+        transcription_text["Tekst Transkrypcji"]
+        ollama{{"Ollama (LLM)"}}
+  end
+    user["Użytkownik"] --> input_source["Dostarcza"] & gui_app
+    input_source --> gui_app
+    config_file["config.py"] <-. Konfiguruje .-> gui_app
+    config_file -. Odczytuje konfigurację .-> cli_script
+    gui_app -- Wywołuje logikę --> cli_script
+    user -. Uruchamia CLI (opcjonalnie) .-> cli_script
+    input_source -. Dane dla CLI (opcjonalnie) .-> cli_script
+    cli_script -. "1. Pobierz (jeśli URL)" .-> yt_dlp
+    yt_dlp --> downloaded_audio
+    cli_script -- "2. Transkrybuj<br>Audio (lokalne lub pobrane)" --> faster_whisper
+    downloaded_audio -.-> faster_whisper
+    faster_whisper --> transcription_text
+    cli_script -- "3. Streszczaj" --> ollama
+    transcription_text -- Tekst transkrypcji --> ollama
+    ollama -- Tekst streszczenia --> cli_script
+    cli_script -- Generuje wynik --> final_output["Wynik Końcowy<br>(Streszczenie, Transkrypcja)"]
+    gui_app -. Prezentuje / Umożliwia Zapis .-> final_output
+    style gui_app fill:#C8E6C9,stroke:#333,stroke-width:2px
+    style cli_script fill:#B3E5FC,stroke:#333,stroke-width:2px
+    style yt_dlp fill:#FFCCBC,stroke:#333,stroke-width:2px
+    style downloaded_audio fill:#FFCCBC,stroke:#333,stroke-width:2px
+    style faster_whisper fill:#D1C4E9,stroke:#333,stroke-width:2px
+    style transcription_text fill:#E1BEE7,stroke:#333,stroke-width:2px
+    style ollama fill:#FFCDD2,stroke:#333,stroke-width:2px
+    style input_source fill:#E3F2FD,stroke:#333,stroke-width:2px
+    style final_output fill:#A5D6A7,stroke:#333,stroke-width:2px
+    style processing_pipeline fill:#F5F5F5,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5
+```
+
+**Opis komponentów:**
+* **Użytkownik**: Osoba inicjująca proces transkrypcji i streszczenia.
+* **Wejście (Plik Audio / URL YouTube)** (`input_source`): Plik audio dostarczony przez użytkownika lub adres URL do materiału na YouTube.
+* **config.py** (`config_file`): Plik konfiguracyjny aplikacji, zawierający ustawienia takie jak ścieżki do narzędzi, wybór modeli językowych, parametry transkrypcji i prompt dla LLM.
+* **Aplikacja Pogadane** (`pogadane_app`): Główny kontener aplikacji, składający się z:
+    * **Interfejs Graficzny (GUI)** (`gui_app`): Zalecany sposób interakcji z aplikacją. Umożliwia użytkownikowi wprowadzenie danych wejściowych, zarządzanie konfiguracją poprzez `config.py` oraz wyświetlanie wyników. Wywołuje Skrypt Główny do przeprowadzenia procesu przetwarzania.
+    * **Skrypt Główny (CLI / Logika)** (`cli_script`): Plik `transcribe_summarize_working.py`, który stanowi rdzeń logiki przetwarzania. Odpowiada za orkiestrację poszczególnych kroków: pobieranie audio, transkrypcję i generowanie streszczenia. Może być uruchamiany bezpośrednio z linii komend lub przez GUI.
+* **Potok Przetwarzania** (`processing_pipeline`): Sekwencja operacji wykonywanych przez Skrypt Główny:
+    * **yt-dlp** (`yt_dlp`): Narzędzie zewnętrzne używane do pobierania materiałów audio z adresów URL (np. YouTube), jeśli takowe zostało podane jako wejście.
+    * **Pobrane Audio** (`downloaded_audio`): Tymczasowy plik audio (np. `.mp3`) utworzony przez `yt-dlp` w przypadku pobierania z URL.
+    * **Faster-Whisper** (`faster_whisper`): Narzędzie zewnętrzne dokonujące transkrypcji dostarczonego pliku audio (lokalnego lub pobranego) na tekst. Obsługuje również opcjonalną diaryzację mówców.
+    * **Tekst Transkrypcji** (`transcription_text`): Plik tekstowy będący wynikiem działania `Faster-Whisper`, zawierający przetranskrybowaną treść audio.
+    * **Ollama (LLM)** (`ollama`): Platforma uruchamiająca lokalnie duże modele językowe (np. Gemma). Używana do wygenerowania streszczenia na podstawie Tekstu Transkrypcji i promptu zdefiniowanego w `config.py`.
+* **Wynik Końcowy** (`final_output`): Ostateczny rezultat działania aplikacji, zawierający wygenerowane streszczenie oraz pełną transkrypcję. Wyniki są prezentowane w GUI i mogą być zapisane do plików. W przypadku użycia CLI, streszczenie może być wyświetlone na konsoli lub zapisane do pliku.
 
 ---
 ## Wymagania Wstępne

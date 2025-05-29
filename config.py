@@ -13,7 +13,7 @@ YT_DLP_EXE = "yt-dlp.exe"
 # YT_DLP_EXE = r"C:\sciezka\do\twojego\yt-dlp.exe"
 
 # Ustawienia Whisper
-WHISPER_LANGUAGE = "Polish"  # Język transkrypcji oraz streszczenia
+WHISPER_LANGUAGE = "Polish"  # Język transkrypcji (np. "Polish", "English")
 WHISPER_MODEL = "turbo"     # Model Faster Whisper (np. "large-v3", "medium", "small", "base", "tiny", "turbo")
 
 # --- Ustawienia Diaryzacji Mówców ---
@@ -31,12 +31,20 @@ DIARIZE_METHOD = "pyannote_v3.1"
 # Faster Whisper automatycznie doda numer (np. _01, _02).
 DIARIZE_SPEAKER_PREFIX = "MÓWCA"
 
-# Ustawienia Ollama
+# --- Ustawienia Podsumowania ---
+SUMMARY_PROVIDER = "ollama" # Dostawca podsumowania: "ollama" (lokalnie) lub "google" (Google Gemini API)
+SUMMARY_LANGUAGE = "Polish" # Język, w którym ma być wygenerowane podsumowanie (np. "Polish", "English")
+
+# Ustawienia Ollama (jeśli SUMMARY_PROVIDER="ollama")
 OLLAMA_MODEL = "gemma3:4b"  # Model językowy Ollama do podsumowań
 
-# Prompt dla modelu językowego (Ollama).
-# GUI automatycznie dodaje instrukcję językową (np. "From now write only in Polish!") oraz placeholder {text} na końcu.
-# Wpisz tutaj główną część polecenia, np. "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
+# Ustawienia Google Gemini API (jeśli SUMMARY_PROVIDER="google")
+GOOGLE_API_KEY = ""  # Wymagany, jeśli SUMMARY_PROVIDER="google". Wklej tutaj swój klucz API.
+GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumowań
+
+# Prompt dla modelu językowego (Ollama/Google).
+# To jest główna część instrukcji, np. "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
+# Skrypt automatycznie doda instrukcję językową i tekst transkrypcji.
 LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
 
 # Ustawienia Ogólne Skryptu

@@ -7,451 +7,318 @@ import sys
 import os
 import argparse
 from pathlib import Path
-import shlex 
+import shlex
 import re
 
-# Wersja Alpha v0.1.7
+# Wersja Alpha v0.1.8
 
-# --- Definition of DefaultConfig moved to global scope ---
 class DefaultConfig:
-    # --- Default Configuration ---
-    # Ścieżki do plików wykonywalnych
     FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"
     YT_DLP_EXE = "yt-dlp.exe"
-
-    # Ustawienia Whisper
-    WHISPER_LANGUAGE = "Polish" # Język transkrypcji
+    WHISPER_LANGUAGE = "Polish"
     WHISPER_MODEL = "turbo"
-    ENABLE_SPEAKER_DIARIZATION = False 
+    ENABLE_SPEAKER_DIARIZATION = False
     DIARIZE_METHOD = "pyannote_v3.1"
     DIARIZE_SPEAKER_PREFIX = "MÓWCA"
-
-    # Ustawienia Podsumowania
-    SUMMARY_PROVIDER = "ollama"  # "ollama" lub "google"
-    SUMMARY_LANGUAGE = "Polish"  # Język podsumowania
-
-    # Ustawienia Ollama (jeśli SUMMARY_PROVIDER="ollama")
-    OLLAMA_MODEL = "gemma3:4b"
-
-    # Ustawienia Google Gemini API (jeśli SUMMARY_PROVIDER="google")
-    GOOGLE_API_KEY = "" # Wymagany jeśli SUMMARY_PROVIDER="google"
-    GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest"
-
-    # Prompt dla modelu językowego (część główna, bez instrukcji językowych i {text})
+    SUMMARY_PROVIDER = "ollama"
+    SUMMARY_LANGUAGE = "Polish"
+    LLM_PROMPT_TEMPLATES = {
+        "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
+        "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",
+        "Główne Tematy": "Wylistuj główne tematy poruszone w poniższej dyskusji.",
+        "Kluczowe Pytania": "Na podstawie poniższej dyskusji, sformułuj listę kluczowych pytań, które pozostały bez odpowiedzi lub wymagają dalszej analizy.",
+        "ELI5": "Wyjaśnij główne tezy i wnioski z poniższego tekstu w maksymalnie prosty sposób, unikając skomplikowanego słownictwa."
+    }
+    LLM_PROMPT_TEMPLATE_NAME = "Standardowy"
     LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
-
-    # Ustawienia Ogólne Skryptu
+    OLLAMA_MODEL = "gemma3:4b"
+    GOOGLE_API_KEY = ""
+    GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest"
     TRANSCRIPTION_FORMAT = "txt"
     DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"
-    # --- End Default Configuration ---
+    DEBUG_MODE = False
 
-# Próba załadowania konfiguracji z pliku config.py
+class DummyConfigCli:
+    pass
+
 try:
     import config
-    print("✅ Konfiguracja załadowana z pliku config.py.")
+    print("✅ Konfiguracja CLI załadowana z pliku config.py.")
 except ImportError:
-    print("⚠️ Ostrzeżenie: Plik konfiguracyjny config.py nie został znaleziony.", file=sys.stderr)
-    print("   Używam domyślnych wartości konfiguracyjnych.", file=sys.stderr)
-    print("   Aby dostosować ustawienia, utwórz plik config.py (szablon w README.md).", file=sys.stderr)
-    config = DefaultConfig() 
+    print("⚠️ Ostrzeżenie CLI: Plik config.py nie znaleziony. Używam wartości domyślnych.", file=sys.stderr)
+    config = DummyConfigCli()
+    for key, value in vars(DefaultConfig).items():
+        if not key.startswith("__"): setattr(config, key, value)
+except Exception as e:
+    print(f"❌ Krytyczny błąd ładowania config.py w CLI: {e}. Używam wartości domyślnych.", file=sys.stderr)
+    config = DummyConfigCli()
+    for key, value in vars(DefaultConfig).items():
+        if not key.startswith("__"): setattr(config, key, value)
 
-# Próba importu google.generativeai - tylko jeśli będzie potrzebne
 genai = None
 
 def ensure_google_ai_available():
     global genai
     if genai is None:
-        try:
-            import google.generativeai as google_genai
-            genai = google_genai
-            print("✅ Biblioteka google-generativeai załadowana.")
-        except ImportError:
-            print("❌ Błąd: Biblioteka google-generativeai nie jest zainstalowana.", file=sys.stderr)
-            print("   Aby korzystać z Google Gemini API do podsumowań, zainstaluj ją: pip install google-generativeai", file=sys.stderr)
-            print("   Zmieniam dostawcę podsumowania na 'ollama' (jeśli dostępny).", file=sys.stderr)
-            # Fallback to ollama if google is selected but library is missing
-            if hasattr(config, 'SUMMARY_PROVIDER') and config.SUMMARY_PROVIDER == "google":
-                config.SUMMARY_PROVIDER = "ollama" # Attempt to fallback
-            return False
+        try: import google.generativeai as google_genai; genai = google_genai; print("✅ Biblioteka google-generativeai załadowana.")
+        except ImportError: print("❌ Błąd: Biblioteka google.generativeai nie jest zainstalowana.", file=sys.stderr); return False
     return True
 
 def run_command(command_list, input_data=None, capture_output=True, text_encoding='utf-8'):
-    """Runs an external command safely."""
-    print(f"\n▶️ Running command: {' '.join(command_list)}")
+    debug_mode = getattr(config, 'DEBUG_MODE', DefaultConfig.DEBUG_MODE)
+    cmd_str = ' '.join(shlex.quote(str(s)) for s in command_list)
+    if debug_mode: print(f"🐞 DEBUG: Running command: {cmd_str}\n🐞 DEBUG: Input (100char): {input_data[:100]}..." if input_data else "🐞 DEBUG: No input data")
+    else: print(f"\n▶️ Running command: {cmd_str}")
+    startupinfo = None
+    if os.name == 'nt': startupinfo = subprocess.STARTUPINFO(); startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW; startupinfo.wShowWindow = subprocess.SW_HIDE
     try:
-        process = subprocess.run(
-            command_list,
-            input=input_data if input_data else None,
-            capture_output=capture_output,
-            text=True,
-            encoding=text_encoding,
-            check=False,
-            shell=False
-        )
-        print(f"☑️ Command finished with exit code: {process.returncode}")
-        if process.stdout:
-            print("--- stdout ---")
-            print(process.stdout.strip())
-            print("--------------")
-        if process.stderr:
-            print("--- stderr ---", file=sys.stderr)
-            print(process.stderr.strip(), file=sys.stderr)
-            print("--------------", file=sys.stderr)
-
-        if process.returncode != 0:
-            print(f"⚠️ Warning: Command exited with non-zero status {process.returncode}.", file=sys.stderr)
-
+        process = subprocess.run(command_list, input=input_data, capture_output=capture_output, text=True, encoding=text_encoding, check=False, shell=False, startupinfo=startupinfo)
+        if debug_mode:
+            print(f"☑️ CMD exit code: {process.returncode}")
+            if process.stdout: print(f"--- stdout ---\n{process.stdout.strip()}\n--------------")
+            if process.stderr: print(f"--- stderr ---\n{process.stderr.strip()}\n--------------", file=sys.stderr)
+        else:
+            if process.returncode == 0: print(f"☑️ CMD finished successfully (code: {process.returncode})")
+            else: print(f"⚠️ CMD Warning: Exited with {process.returncode}.", file=sys.stderr); print(f"--- stderr for error ---\n{process.stderr.strip()}\n------------------------", file=sys.stderr) if process.stderr else None
         return process
+    except FileNotFoundError: print(f"❌ Error: CMD not found: {command_list[0]}", file=sys.stderr); return None
+    except Exception as e: print(f"❌ Unexpected CMD error '{command_list[0]}': {e}", file=sys.stderr); return None
 
-    except FileNotFoundError:
-        print(f"❌ Error: Command not found: {command_list[0]}", file=sys.stderr)
-        print("Ensure the executable is in your PATH or the correct directory, as specified in config.py or default settings.", file=sys.stderr)
-        return None
-    except TypeError as e:
-        print(f"❌ TypeError during subprocess interaction: {e}", file=sys.stderr)
-        print("   This might indicate an issue with text=True vs input data type.", file=sys.stderr)
-        return None
-    except Exception as e:
-        print(f"❌ An unexpected error occurred while running the command: {e}", file=sys.stderr)
-        return None
+def get_unique_download_filename(url):
+    base_name = getattr(config, 'DOWNLOADED_AUDIO_FILENAME', DefaultConfig.DOWNLOADED_AUDIO_FILENAME)
+    base_stem, base_suffix = Path(base_name).stem, Path(base_name).suffix or ".mp3"
+    try:
+        url_part_match = re.search(r"v=([^&]+)", url)
+        unique_id = url_part_match.group(1) if url_part_match else (Path(url.split("?")[0]).name or os.urandom(4).hex())
+        return f"{base_stem}_{re.sub(r'[\\/*?:\"<>|]', '', unique_id)}{base_suffix}"
+    except: return f"{base_stem}_{os.urandom(4).hex()}{base_suffix}"
 
-def download_youtube_audio(url):
-    """Downloads audio from a YouTube URL using yt-dlp."""
-    print(f"\n🔄 Starting YouTube Audio Download for: {url}")
-    print(f"   Using yt-dlp: {getattr(config, 'YT_DLP_EXE', DefaultConfig.YT_DLP_EXE)}")
-    downloaded_audio_filename = getattr(config, 'DOWNLOADED_AUDIO_FILENAME', DefaultConfig.DOWNLOADED_AUDIO_FILENAME)
-    print(f"   Outputting to temporary file: {downloaded_audio_filename}")
-
-    command = [
-        getattr(config, 'YT_DLP_EXE', DefaultConfig.YT_DLP_EXE),
-        "-x",
-        "--audio-format", "mp3",
-        "--force-overwrite",
-        "-o", downloaded_audio_filename,
-        url
-    ]
-
+def download_youtube_audio(url, target_dir_path):
+    print(f"\n🔄 Downloading YouTube Audio: {url}")
+    yt_dlp_exe = getattr(config, 'YT_DLP_EXE', DefaultConfig.YT_DLP_EXE)
+    temp_audio_filename = get_unique_download_filename(url)
+    download_path = target_dir_path / temp_audio_filename
+    print(f"   Using yt-dlp: {yt_dlp_exe}, Output: {download_path}")
+    command = [yt_dlp_exe, "-x", "--audio-format", "mp3", "--force-overwrite", "-o", str(download_path), url]
     process = run_command(command, capture_output=True)
-
-    download_path = Path(downloaded_audio_filename)
-    download_successful = download_path.is_file() and download_path.stat().st_size > 0
-
-    if process and process.returncode == 0 and download_successful:
-        print(f"✅ YouTube audio downloaded successfully: {download_path}")
-        return download_path
-    elif process and process.returncode != 0 and download_successful:
-         print(f"⚠️ Warning: yt-dlp exited with code {process.returncode}, but the audio file was created.", file=sys.stderr)
-         print(f"   Proceeding with downloaded file: {download_path}", file=sys.stderr)
-         return download_path
+    dl_ok = download_path.is_file() and download_path.stat().st_size > 0
+    if process and process.returncode == 0 and dl_ok: print(f"✅ Download successful: {download_path}"); return download_path
+    elif process and process.returncode != 0 and dl_ok: print(f"⚠️ yt-dlp warning (code {process.returncode}), but file created: {download_path}. Proceeding.", file=sys.stderr); return download_path
     else:
-        print(f"❌ YouTube audio download failed. Exit code: {process.returncode if process else 'N/A'}", file=sys.stderr)
-        if not download_successful and download_path.exists():
-             print(f"   The output file '{download_path}' exists but might be empty or invalid.", file=sys.stderr)
-        elif not download_path.exists():
-             print(f"   The output file '{download_path}' was not created.", file=sys.stderr)
+        print(f"❌ Download failed for {url}. Code: {process.returncode if process else 'N/A'}", file=sys.stderr)
+        if download_path.exists() and not dl_ok: print(f"   Output '{download_path}' empty/invalid.", file=sys.stderr)
+        elif not download_path.exists(): print(f"   Output '{download_path}' not created.", file=sys.stderr)
         if download_path.exists():
-            try:
-                os.remove(download_path)
-                print(f"   Removed potentially incomplete file: {download_path}")
-            except OSError as e:
-                print(f"   Warning: Could not remove incomplete file {download_path}: {e}", file=sys.stderr)
+            try: os.remove(download_path); print(f"   Removed temp file: {download_path}")
+            except OSError as e: print(f"   Warning: Could not remove temp file {download_path}: {e}", file=sys.stderr)
         return None
 
-def transcribe_audio(audio_path_str):
-    """Transcribes the audio file using Faster Whisper."""
+def transcribe_audio(audio_path_str, original_input_name_stem):
     audio_path = Path(audio_path_str)
-    if not audio_path.is_file():
-        print(f"❌ Error: Audio file not found at '{audio_path}'", file=sys.stderr)
-        return None
+    if not audio_path.is_file(): print(f"❌ Error: Audio file not found: '{audio_path}' for '{original_input_name_stem}'", file=sys.stderr); return None
+    fmt = getattr(config, 'TRANSCRIPTION_FORMAT', DefaultConfig.TRANSCRIPTION_FORMAT)
+    trans_out_path = audio_path.parent / f"{original_input_name_stem}_transcription.{fmt}"
+    print(f"\n🔄 Transcribing: {audio_path} (Original: {original_input_name_stem})")
+    fw_exe = getattr(config, 'FASTER_WHISPER_EXE', DefaultConfig.FASTER_WHISPER_EXE)
+    print(f"   Using FW: {fw_exe}, Expected output: {trans_out_path.name} in {audio_path.parent}")
+    cmd = [fw_exe, str(audio_path), "--language", getattr(config, 'WHISPER_LANGUAGE', DefaultConfig.WHISPER_LANGUAGE), "--model", getattr(config, 'WHISPER_MODEL', DefaultConfig.WHISPER_MODEL), "--output_format", fmt, "--output_dir", str(audio_path.parent)]
+    use_diarize = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
+    if use_diarize:
+        print("   Diarization: ENABLED"); cmd.extend(["--diarize", getattr(config, 'DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD)])
+        prefix = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)
+        if prefix: cmd.extend(["--speaker", prefix])
+    else: print("   Diarization: DISABLED")
+    process = run_command(cmd, capture_output=True)
+    fw_stem = audio_path.stem; found_files = list(audio_path.parent.glob(f"{fw_stem}*.{fmt}"))
+    if not found_files: print(f"❌ Transcription failed for '{original_input_name_stem}'. No file like '{fw_stem}*.{fmt}' in '{audio_path.parent}'.", file=sys.stderr); return None
+    chosen_file = None
+    if use_diarize:
+        spk_pref_low = getattr(config, 'DIARIZE_SPEAKER_PREFIX', "").lower()
+        for f in found_files:
+            if any(k in f.name.lower() for k in ["speaker", "diarize", spk_pref_low] if spk_pref_low): chosen_file = f; break
+    if not chosen_file: chosen_file = audio_path.parent / f"{fw_stem}.{fmt}" if (audio_path.parent / f"{fw_stem}.{fmt}") in found_files else found_files[0]
+    print(f"ℹ️ FW output: {chosen_file}")
+    try:
+        if chosen_file.resolve() != trans_out_path.resolve():
+            if trans_out_path.exists(): trans_out_path.unlink()
+            final_path = chosen_file.rename(trans_out_path)
+        else: final_path = trans_out_path
+        print(f"✅ Transcription finalized: {final_path}"); return final_path
+    except OSError as e: print(f"⚠️ Warn: Rename failed '{chosen_file}' to '{trans_out_path}': {e}. Using original.", file=sys.stderr); return chosen_file
 
-    base_name = audio_path.stem
-    transcription_format = getattr(config, 'TRANSCRIPTION_FORMAT', DefaultConfig.TRANSCRIPTION_FORMAT)
-    transcription_output_path = audio_path.with_name(f"{base_name}_transcription").with_suffix(f'.{transcription_format}')
-
-    print(f"\n🔄 Starting Transcription for: {audio_path}")
-    print(f"   Using Faster Whisper: {getattr(config, 'FASTER_WHISPER_EXE', DefaultConfig.FASTER_WHISPER_EXE)}")
-    print(f"   Expected output: {transcription_output_path}")
-
-    command = [
-        getattr(config, 'FASTER_WHISPER_EXE', DefaultConfig.FASTER_WHISPER_EXE),
-        str(audio_path),
-        "--language", getattr(config, 'WHISPER_LANGUAGE', DefaultConfig.WHISPER_LANGUAGE),
-        "--model", getattr(config, 'WHISPER_MODEL', DefaultConfig.WHISPER_MODEL),
-        "--output_format", transcription_format,
-        "--output_dir", str(transcription_output_path.parent),
-    ]
-
-    enable_diarization_cfg = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
-    if enable_diarization_cfg:
-        print("   Speaker diarization: ENABLED")
-        command.extend(["--diarize", getattr(config, 'DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD)])
-        diarize_speaker_prefix_cfg = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)
-        if diarize_speaker_prefix_cfg:
-            command.extend(["--speaker", diarize_speaker_prefix_cfg])
-    else:
-        print("   Speaker diarization: DISABLED")
-
-    process = run_command(command, capture_output=True)
-
-    transcription_file_exists = transcription_output_path.is_file()
-
-    if process and process.returncode != 0:
-        print(f"⚠️ Warning: faster-whisper-xxl.exe exited with code {process.returncode}.", file=sys.stderr)
-        if transcription_file_exists:
-            print(f"   However, output file '{transcription_output_path}' was found. Attempting to proceed.", file=sys.stderr)
-        else:
-             print(f"   Output file '{transcription_output_path}' was *not* found. Transcription likely failed.", file=sys.stderr)
-
-    if transcription_file_exists:
-        print(f"✅ Transcription file found: {transcription_output_path}")
-        return transcription_output_path
-    else:
-        parent_dir = transcription_output_path.parent
-        possible_files = list(parent_dir.glob(f"{base_name}*.{transcription_format}"))
-        
-        diarized_file_to_return = None
-        if enable_diarization_cfg:
-            speaker_prefix_lower = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX).lower()
-            for f in possible_files:
-                if "speaker" in f.name.lower() or "diarize" in f.name.lower() or speaker_prefix_lower in f.name.lower():
-                    diarized_file_to_return = f
-                    break 
-            if diarized_file_to_return:
-                print(f"ℹ️ Info: Diarized transcription file found with a modified name: {diarized_file_to_return}")
-                return diarized_file_to_return
-
-        if not diarized_file_to_return and possible_files:
-            expected_plain_file = parent_dir / f"{base_name}_transcription.{transcription_format}"
-            if expected_plain_file in possible_files:
-                 print(f"ℹ️ Info: Transcription file found (matching expected pattern after glob): {expected_plain_file}")
-                 return expected_plain_file
-            print(f"ℹ️ Info: Transcription file found with a slightly modified name (glob): {possible_files[0]}")
-            return possible_files[0]
-
-        fallback_transcription_path_source_dir = audio_path.with_suffix(f'.{transcription_format}')
-        if fallback_transcription_path_source_dir.is_file():
-             print(f"ℹ️ Info: Transcription file found in source directory instead: {fallback_transcription_path_source_dir}")
-             return fallback_transcription_path_source_dir
-        else:
-            print(f"❌ Transcription failed. Output file not found at expected location, with modified name, or in source directory.", file=sys.stderr)
-            return None
-
-def summarize_text(text_to_summarize):
-    """Summarizes the given text using the configured provider (Ollama or Google)."""
-    if not text_to_summarize:
-        print("⚠️ Warning: No text provided for summarization.", file=sys.stderr)
-        return None
-
-    summary_provider = getattr(config, 'SUMMARY_PROVIDER', DefaultConfig.SUMMARY_PROVIDER).lower()
-    user_prompt_core = getattr(config, 'LLM_PROMPT', DefaultConfig.LLM_PROMPT)
-    summary_language = getattr(config, 'SUMMARY_LANGUAGE', DefaultConfig.SUMMARY_LANGUAGE)
-
-    if summary_provider == "ollama":
-        ollama_model = getattr(config, 'OLLAMA_MODEL', DefaultConfig.OLLAMA_MODEL)
-        print(f"\n🔄 Starting Summarization using Ollama ({ollama_model})")
-        
-        # Construct prompt for Ollama, explicitly asking for summary language
-        # The user_prompt_core is the main instruction part.
-        prompt_for_ollama = f"From now on, write ONLY in {summary_language}!\n{user_prompt_core}\n\nTekst do streszczenia:\n{text_to_summarize}"
-        
-        command = ["ollama", "run", ollama_model]
-        process = run_command(command, input_data=prompt_for_ollama, capture_output=True)
-
-        if process and process.returncode == 0 and process.stdout:
-            summary = process.stdout.strip()
-            print("✅ Summarization successful (Ollama).")
-            return summary
-        else:
-            print(f"❌ Summarization failed (Ollama). Exit code: {process.returncode if process else 'N/A'}", file=sys.stderr)
-            if process and not process.stdout:
-                 print("   Reason: Ollama produced no output (stdout was empty).", file=sys.stderr)
-            return None
-
-    elif summary_provider == "google":
-        if not ensure_google_ai_available(): # Checks and loads genai
-            return None # Library not available, error already printed
-
-        google_api_key = getattr(config, 'GOOGLE_API_KEY', DefaultConfig.GOOGLE_API_KEY)
-        google_model_name = getattr(config, 'GOOGLE_GEMINI_MODEL', DefaultConfig.GOOGLE_GEMINI_MODEL)
-
-        if not google_api_key:
-            print("❌ Error: Google API Key (GOOGLE_API_KEY) is not configured in config.py.", file=sys.stderr)
-            print("   Cannot use Google Gemini for summarization.", file=sys.stderr)
-            return None
-            
-        print(f"\n🔄 Starting Summarization using Google Gemini API ({google_model_name})")
-        
-        try:
-            genai.configure(api_key=google_api_key)
-            model = genai.GenerativeModel(google_model_name)
-            
-            # Construct prompt for Google Gemini API
-            prompt_for_google = f"Please summarize the following text in {summary_language}. {user_prompt_core}\n\nText to summarize:\n{text_to_summarize}"
-            
-            print(f"   Sending prompt to Google Gemini API...")
-            response = model.generate_content(prompt_for_google)
-            
-            if response.parts:
-                summary = "".join(part.text for part in response.parts if hasattr(part, 'text'))
-                print("✅ Summarization successful (Google Gemini API).")
-                return summary.strip()
-            elif response.prompt_feedback and response.prompt_feedback.block_reason:
-                print(f"❌ Summarization blocked by Google Gemini API. Reason: {response.prompt_feedback.block_reason}", file=sys.stderr)
-                if response.prompt_feedback.block_reason_message:
-                     print(f"   Message: {response.prompt_feedback.block_reason_message}", file=sys.stderr)
-                return None
+def summarize_text(text_to_summarize, original_input_name_stem=""):
+    if not text_to_summarize: print(f"⚠️ Warn: No text for summarization (Input: {original_input_name_stem}).", file=sys.stderr); return None
+    provider = getattr(config, 'SUMMARY_PROVIDER', DefaultConfig.SUMMARY_PROVIDER).lower()
+    templates = getattr(config, 'LLM_PROMPT_TEMPLATES', DefaultConfig.LLM_PROMPT_TEMPLATES)
+    tpl_name = getattr(config, 'LLM_PROMPT_TEMPLATE_NAME', DefaultConfig.LLM_PROMPT_TEMPLATE_NAME)
+    prompt_core = templates.get(tpl_name) or getattr(config, 'LLM_PROMPT', DefaultConfig.LLM_PROMPT)
+    print(f"ℹ️ Using template '{tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'}' for '{original_input_name_stem}'.")
+    prompt_core = prompt_core.replace("{text}", "").replace("{Text}", "").strip()
+    lang = getattr(config, 'SUMMARY_LANGUAGE', DefaultConfig.SUMMARY_LANGUAGE)
+    summary_result = None; print("--- POCZĄTEK STRESZCZENIA ---") # Znacznik dla GUI
+    if provider == "ollama":
+        model = getattr(config, 'OLLAMA_MODEL', DefaultConfig.OLLAMA_MODEL)
+        print(f"\n🔄 Summarizing '{original_input_name_stem}' with Ollama ({model})")
+        prompt_data = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
+        cmd = ["ollama", "run", model]; proc = run_command(cmd, input_data=prompt_data, capture_output=True)
+        if proc and proc.returncode == 0 and proc.stdout: summary_result = proc.stdout.strip(); print(f"✅ Summary OK for '{original_input_name_stem}' (Ollama).")
+        else: print(f"❌ Summary failed for '{original_input_name_stem}' (Ollama). Code: {proc.returncode if proc else 'N/A'}", file=sys.stderr); print(f"   Reason: Ollama gave no output.{' Code 0.' if proc and proc.returncode==0 else ''}", file=sys.stderr) if proc and not proc.stdout else None
+    elif provider == "google":
+        if ensure_google_ai_available():
+            api_key = getattr(config, 'GOOGLE_API_KEY', DefaultConfig.GOOGLE_API_KEY)
+            model_name = getattr(config, 'GOOGLE_GEMINI_MODEL', DefaultConfig.GOOGLE_GEMINI_MODEL)
+            if not api_key: print(f"❌ Error: GOOGLE_API_KEY not set for '{original_input_name_stem}'.", file=sys.stderr)
             else:
-                print("❌ Summarization failed (Google Gemini API). No content in response or unknown error.", file=sys.stderr)
-                # print(f"   Full response: {response}", file=sys.stderr) # For debugging, can be very verbose
-                return None
+                print(f"\n🔄 Summarizing '{original_input_name_stem}' with Google Gemini ({model_name})")
+                try:
+                    genai.configure(api_key=api_key); model_obj = genai.GenerativeModel(model_name)
+                    prompt_data = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
+                    print(f"   Sending prompt to Google for '{original_input_name_stem}'...")
+                    resp = model_obj.generate_content(prompt_data)
+                    if resp.parts: summary_result = "".join(p.text for p in resp.parts if hasattr(p, 'text')).strip(); print(f"✅ Summary OK for '{original_input_name_stem}' (Google).")
+                    elif resp.prompt_feedback and resp.prompt_feedback.block_reason: print(f"❌ Summary blocked by Google for '{original_input_name_stem}'. Reason: {resp.prompt_feedback.block_reason}", file=sys.stderr)
+                    else: print(f"❌ Summary failed for '{original_input_name_stem}' (Google). No content/unknown error.", file=sys.stderr)
+                except Exception as e: print(f"❌ Google API error for '{original_input_name_stem}': {e}", file=sys.stderr)
+    else: print(f"❌ Error: Unknown provider '{provider}' for '{original_input_name_stem}'.", file=sys.stderr)
+    if summary_result: print(summary_result) # Drukuj streszczenie do konsoli (dla GUI)
+    print("--- KONIEC STRESZCZENIA ---") # Znacznik dla GUI
+    return summary_result
 
-        except Exception as e:
-            print(f"❌ An error occurred while using Google Gemini API: {e}", file=sys.stderr)
-            return None
-            
-    else:
-        print(f"❌ Error: Unknown summary provider '{summary_provider}' in configuration.", file=sys.stderr)
-        print(f"   Valid options are 'ollama' or 'google'.", file=sys.stderr)
-        return None
+def is_valid_url(text): return re.match(r'^https?://', text) is not None
+def get_input_name_stem(src_str):
+    if is_valid_url(src_str):
+        try:
+            yt_match = re.search(r"(?:v=|\/embed\/|\/watch\?v=|\.be\/)([a-zA-Z0-9_-]{11})", src_str)
+            if yt_match: return f"youtube_{yt_match.group(1)}"
+            safe_name = re.sub(r'[\\/*?:"<>|]', "", Path(src_str.split("?")[0]).name)
+            return safe_name if safe_name else f"url_{os.urandom(4).hex()}"
+        except: return f"url_{os.urandom(4).hex()}"
+    else: return Path(src_str).stem
 
-
-def is_valid_url(text):
-    """Basic check if a string looks like a URL."""
-    return re.match(r'^https?://', text) is not None
+def _try_cleanup_temp_files(audio_file, trans_file):
+    if audio_file and audio_file.exists():
+        print(f"\n🧹 Cleaning up temp audio: {audio_file.name}")
+        try: os.remove(audio_file); print(f"✅ Deleted {audio_file.name}")
+        except OSError as e: print(f"⚠️ Warn: Could not delete {audio_file.name}: {e}", file=sys.stderr)
+    if trans_file and trans_file.exists():
+        print(f"🧹 Cleaning up temp transcript: {trans_file.name}")
+        try: os.remove(trans_file); print(f"✅ Deleted {trans_file.name}")
+        except OSError as e: print(f"⚠️ Warn: Could not delete {trans_file.name}: {e}", file=sys.stderr)
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Transcribe audio (from file or YouTube URL) and summarize the text.",
-        formatter_class=argparse.RawTextHelpFormatter
-        )
-    parser.add_argument(
-        "input_source",
-        help="Path to the local input audio file (e.g., MP3, WAV)\n"
-             "OR a YouTube video URL (e.g., 'https://www.youtube.com/watch?v=...')")
-    parser.add_argument(
-        "-o", "--output",
-        help="Optional path to save the final summary text file.\n"
-             "If not provided, a default name based on the input will be suggested.",
-        default=None)
-
-    diarization_group = parser.add_mutually_exclusive_group()
-    diarization_group.add_argument(
-        "--diarize",
-        action='store_true',
-        help="Enable speaker diarization. Overrides ENABLE_SPEAKER_DIARIZATION in config."
-    )
-    diarization_group.add_argument(
-        "--no-diarize",
-        action='store_true',
-        help="Disable speaker diarization. Overrides ENABLE_SPEAKER_DIARIZATION in config."
-    )
-
+    parser = argparse.ArgumentParser(description="Transcribe & Summarize audio/YouTube.", formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("input_sources", nargs='*', default=[], help="File(s) or URL(s). Omit if using --batch-file.")
+    parser.add_argument("-o", "--output", help="Summary output. File if 1 input & not dir. Else, DIR for summaries.", default=None)
+    parser.add_argument("-a", "--batch-file", help="File with input sources (one per line).", default=None)
+    diar_grp = parser.add_mutually_exclusive_group()
+    diar_grp.add_argument("--diarize", action='store_true', help="Enable diarization.")
+    diar_grp.add_argument("--no-diarize", action='store_true', help="Disable diarization.")
     args = parser.parse_args()
-    input_value = args.input_source
-    audio_path_to_transcribe = None
-    downloaded_file_to_delete = None
-
-    # --- Diarization setting precedence: CLI > config.py > DefaultConfig ---
-    enable_diarization_base = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
-    source_msg_base = "config.py" if hasattr(config, 'ENABLE_SPEAKER_DIARIZATION') else "script default"
-
-    if args.diarize:
-        config.ENABLE_SPEAKER_DIARIZATION = True # Directly modify the loaded config object for this session
-        print(f"ℹ️ Speaker diarization explicitly ENABLED via command line (--diarize).")
-    elif args.no_diarize:
-        config.ENABLE_SPEAKER_DIARIZATION = False # Directly modify for this session
-        print(f"ℹ️ Speaker diarization explicitly DISABLED via command line (--no-diarize).")
-    else:
-        config.ENABLE_SPEAKER_DIARIZATION = enable_diarization_base
-        print(f"ℹ️ Speaker diarization setting from {source_msg_base}: {'ENABLED' if config.ENABLE_SPEAKER_DIARIZATION else 'DISABLED'}")
     
-    if config.ENABLE_SPEAKER_DIARIZATION:
-        if not hasattr(config, 'DIARIZE_METHOD'):
-            config.DIARIZE_METHOD = DefaultConfig.DIARIZE_METHOD
-        if not hasattr(config, 'DIARIZE_SPEAKER_PREFIX'):
-            config.DIARIZE_SPEAKER_PREFIX = DefaultConfig.DIARIZE_SPEAKER_PREFIX
-
-
-    if is_valid_url(input_value):
-        print(f"✅ Detected URL: {input_value}")
-        downloaded_path = download_youtube_audio(input_value)
-        if downloaded_path:
-            audio_path_to_transcribe = downloaded_path
-            downloaded_file_to_delete = downloaded_path
-        else:
-            print("❌ Error: Failed to download audio from the provided URL.", file=sys.stderr)
-            sys.exit(1)
-    else:
-        print(f"✅ Treating input as local file path: {input_value}")
-        local_path = Path(input_value)
-        if not local_path.is_file():
-            print(f"❌ Error: Input file not found at '{local_path}'", file=sys.stderr)
-            sys.exit(1)
-        audio_path_to_transcribe = local_path
-
-    if not audio_path_to_transcribe:
-         print("❌ Error: Could not determine a valid audio source.", file=sys.stderr)
-         sys.exit(1)
-
-    transcription_file_path = transcribe_audio(str(audio_path_to_transcribe))
-
-    if downloaded_file_to_delete:
-        print(f"\n🧹 Cleaning up temporary downloaded audio: {downloaded_file_to_delete}")
+    sources = []
+    if args.batch_file:
+        print(f"ℹ️ Reading from batch: {args.batch_file}")
         try:
-            os.remove(downloaded_file_to_delete)
-            print(f"✅ Successfully deleted {downloaded_file_to_delete}")
-        except OSError as e:
-            print(f"⚠️ Warning: Could not delete temporary file {downloaded_file_to_delete}: {e}", file=sys.stderr)
+            with open(args.batch_file, 'r', encoding='utf-8') as f: sources.extend(l.strip() for l in f if l.strip() and not l.startswith('#'))
+            if not sources: print(f"⚠️ Batch file '{args.batch_file}' empty/all comments.", file=sys.stderr)
+        except FileNotFoundError: print(f"❌ Error: Batch file not found: {args.batch_file}", file=sys.stderr); sys.exit(1)
+        except Exception as e: print(f"❌ Error reading batch '{args.batch_file}': {e}", file=sys.stderr); sys.exit(1)
+    sources.extend(args.input_sources)
+    if not sources: print("❌ Error: No input sources.", file=sys.stderr); parser.print_help(); sys.exit(1)
 
-    if not transcription_file_path:
-        print("❌ Error: Transcription step failed. Exiting.", file=sys.stderr)
-        sys.exit(1)
+    diar_base = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
+    diar_src = "config" if hasattr(config, 'ENABLE_SPEAKER_DIARIZATION') else "default"
+    if args.diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', True); print("ℹ️ Diarization: ENABLED (CLI).")
+    elif args.no_diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', False); print("ℹ️ Diarization: DISABLED (CLI).")
+    else: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', diar_base); print(f"ℹ️ Diarization from {diar_src}: {'ENABLED' if config.ENABLE_SPEAKER_DIARIZATION else 'DISABLED'}.")
+    if config.ENABLE_SPEAKER_DIARIZATION:
+        for k, v_def in [('DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD), ('DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)]:
+            if not hasattr(config, k): setattr(config, k, v_def)
+    
+    out_dir_sum, single_out_file_sum = None, None
+    # Poprawka UnboundLocalError: zdefiniuj scr_dir przed użyciem
+    scr_dir = Path(__file__).parent.resolve()
+    temp_dir = scr_dir / "pogadane_temp_audio"
+    try: temp_dir.mkdir(parents=True, exist_ok=True); print(f"ℹ️ Temp audio in: {temp_dir}")
+    except OSError as e: print(f"❌ Error creating temp dir '{temp_dir}': {e}. Exiting.", file=sys.stderr); sys.exit(1)
 
-    print(f"\n📖 Reading transcription file: {transcription_file_path}")
-    transcribed_text = ""
-    try:
-        with open(transcription_file_path, 'r', encoding='utf-8') as f:
-            transcribed_text = f.read()
-        print("✅ Transcription read successfully.")
-    except FileNotFoundError:
-        print(f"❌ Error: Transcription file '{transcription_file_path}' not found after supposedly being created!", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error reading transcription file: {e}", file=sys.stderr)
-        sys.exit(1)
+    if args.output:
+        out_path = Path(args.output)
+        # Jeśli jest więcej niż jedno źródło LUB jeśli ścieżka -o jest katalogiem LUB jeśli ścieżka -o nie ma rozszerzenia (traktujemy jak katalog)
+        if len(sources) > 1 or out_path.is_dir() or (not out_path.suffix and not out_path.exists()): # Dodano warunek not out_path.exists() dla nowych katalogów
+            out_dir_sum = out_path
+        else: # W przeciwnym razie to pojedynczy plik wyjściowy
+            single_out_file_sum = out_path
+            
+        if out_dir_sum:
+            try: out_dir_sum.mkdir(parents=True, exist_ok=True); print(f"ℹ️ Summaries to dir: {out_dir_sum.resolve()}")
+            except OSError as e: print(f"❌ Error creating output dir '{out_dir_sum}': {e}", file=sys.stderr); sys.exit(1)
+        elif single_out_file_sum:
+            try: single_out_file_sum.parent.mkdir(parents=True, exist_ok=True); print(f"ℹ️ Summary to file: {single_out_file_sum.resolve()}")
+            except OSError as e: print(f"❌ Error creating parent for '{single_out_file_sum}': {e}", file=sys.stderr); sys.exit(1)
 
-    summary = summarize_text(transcribed_text)
-
-    if summary:
-        print("\n--- Generated Summary ---")
-        print(summary)
-        print("-----------------------")
-
-        output_path_provided = args.output
-        summary_output_path = None
-
-        if output_path_provided:
-             summary_output_path = Path(output_path_provided)
+    for idx, src_str in enumerate(sources):
+        print(f"\n--- Processing {idx + 1}/{len(sources)}: {src_str} ---")
+        stem = get_input_name_stem(src_str)
+        audio_to_trans, temp_file_to_del = None, None
+        if is_valid_url(src_str):
+            print(f"✅ URL: {src_str}"); dl_path = download_youtube_audio(src_str, temp_dir)
+            if dl_path: audio_to_trans, temp_file_to_del = dl_path, dl_path
+            else: print(f"❌ Download failed for {src_str}. Skipping.", file=sys.stderr); continue
         else:
-             input_base_name = Path(input_value).stem if not is_valid_url(input_value) else transcription_file_path.stem.replace('_transcription', '')
-             input_base_name = re.sub(r'\.(?:SPEAKER|MÓWCA)_\d+$', '', input_base_name, flags=re.IGNORECASE)
-             default_summary_path = Path(f"{input_base_name}.summary.txt")
-             print(f"\n💡 Tip: Summary not saved automatically.")
-             print(f"   To save, use the -o flag, e.g.: -o \"{default_summary_path}\"")
-
-        if summary_output_path:
-            print(f"\n💾 Saving summary to: {summary_output_path}")
+            print(f"✅ Local file: {src_str}"); loc_path = Path(src_str)
+            if not loc_path.is_file(): print(f"❌ File not found: '{loc_path}'. Skipping.", file=sys.stderr); continue
             try:
-                summary_output_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(summary_output_path, 'w', encoding='utf-8') as f:
-                    f.write(summary)
-                print(f"✅ Summary saved successfully to {summary_output_path}")
-            except Exception as e:
-                print(f"❌ Error saving summary file: {e}", file=sys.stderr)
-    else:
-        print("\n❌ Summary generation failed or produced no output.", file=sys.stderr)
+                temp_cp_path = temp_dir / f"{stem}_{os.urandom(4).hex()}{loc_path.suffix}"
+                import shutil; shutil.copy2(loc_path, temp_cp_path)
+                audio_to_trans, temp_file_to_del = temp_cp_path, temp_cp_path
+                print(f"   Copied to temp: {audio_to_trans}")
+            except Exception as e: print(f"❌ Error copying '{loc_path}' to temp: {e}. Skipping.", file=sys.stderr); continue
+        if not audio_to_trans: print(f"❌ No valid audio for '{src_str}'. Skipping.", file=sys.stderr); continue
+        
+        trans_path = transcribe_audio(str(audio_to_trans), stem)
+        if not trans_path: print(f"❌ Transcription failed for '{src_str}'. Skipping.", file=sys.stderr); _try_cleanup_temp_files(temp_file_to_del, None); continue
+        
+        print("--- POCZĄTEK TRANSKRYPCJI ---") # Znacznik dla GUI
+        txt = ""
+        try:
+            with open(trans_path, 'r', encoding='utf-8') as f: txt = f.read()
+            print(txt) # Drukuj transkrypcję (dla logu i GUI)
+            print(f"✅ Transcript read for '{stem}'.")
+        except FileNotFoundError:
+            print(f"❌ Transcript '{trans_path}' disappeared! Skipping.", file=sys.stderr)
+            _try_cleanup_temp_files(temp_file_to_del, trans_path)
+            print("--- KONIEC TRANSKRYPCJI ---") # Zamknij znacznik mimo błędu
+            continue
+        except Exception as e:
+            print(f"❌ Error reading '{trans_path}': {e}. Skipping.", file=sys.stderr)
+            _try_cleanup_temp_files(temp_file_to_del, trans_path)
+            print("--- KONIEC TRANSKRYPCJI ---") # Zamknij znacznik mimo błędu
+            continue
+        print("--- KONIEC TRANSKRYPCJI ---") # Znacznik dla GUI
+        
+        summary_text = summarize_text(txt, stem) # Ta funkcja drukuje własne znaczniki i zawartość
+        
+        if summary_text: # Jeśli summarize_text zwróciło coś (a nie None)
+            # Zapisywanie do pliku, jeśli użytkownik podał -o
+            sum_out_path = None
+            if out_dir_sum: sum_out_path = out_dir_sum / f"{stem}.summary.txt"
+            elif single_out_file_sum: sum_out_path = single_out_file_sum
+            if sum_out_path:
+                print(f"\n💾 Saving summary for '{stem}' to: {sum_out_path}")
+                try:
+                    sum_out_path.parent.mkdir(parents=True, exist_ok=True)
+                    with open(sum_out_path, 'w', encoding='utf-8') as f: f.write(summary_text) # Zapisz tylko tekst streszczenia
+                    print(f"✅ Summary saved: {sum_out_path}")
+                except Exception as e: print(f"❌ Error saving summary for '{stem}' to '{sum_out_path}': {e}", file=sys.stderr)
+        else: print(f"\n❌ Summary generation failed or produced no output for '{stem}'.", file=sys.stderr)
+        
+        _try_cleanup_temp_files(temp_file_to_del, trans_path)
 
-    print("\n✨ Process complete.")
+    try:
+        if temp_dir.exists() and not any(temp_dir.iterdir()): temp_dir.rmdir(); print(f"ℹ️ Cleaned empty temp dir: {temp_dir}")
+    except OSError as e: print(f"⚠️ Warn: Could not remove temp dir {temp_dir}: {e}", file=sys.stderr)
+    print("\n✨ All processing complete.")
 
 if __name__ == "__main__":
     main()

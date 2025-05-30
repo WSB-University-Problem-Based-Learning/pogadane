@@ -18,22 +18,31 @@ WHISPER_MODEL = "turbo"     # Model Faster Whisper (np. "large-v3", "medium", "s
 
 # --- Ustawienia Diaryzacji Mówców ---
 ENABLE_SPEAKER_DIARIZATION = False  # Ustaw na True, aby włączyć diaryzację mówców
-                                   # W GUI: można to zmienić w zakładce Konfiguracja.
-                                   # W CLI: można również nadpisać z linii komend: --diarize lub --no-diarize
-
-# Metoda diaryzacji używana przez Faster Whisper.
-# Dostępne opcje to np. "pyannote_v3.0", "pyannote_v3.1", "reverb_v1", "reverb_v2".
-# "pyannote_v3.1" jest często dobrym wyborem. Szczegóły w dokumentacji Faster Whisper.
-# ([https://github.com/Purfview/whisper-standalone-win](https://github.com/Purfview/whisper-standalone-win) -> --diarize)
-DIARIZE_METHOD = "pyannote_v3.1"
-
-# Prefiks używany do oznaczania mówców w transkrypcji, np. "MÓWCA_01", "SPEAKER_A".
-# Faster Whisper automatycznie doda numer (np. _01, _02).
-DIARIZE_SPEAKER_PREFIX = "MÓWCA"
+DIARIZE_METHOD = "pyannote_v3.1"    # Metoda diaryzacji (np. "pyannote_v3.0", "pyannote_v3.1")
+DIARIZE_SPEAKER_PREFIX = "MÓWCA"    # Prefiks dla mówców (np. "MÓWCA", "SPEAKER")
 
 # --- Ustawienia Podsumowania ---
 SUMMARY_PROVIDER = "ollama" # Dostawca podsumowania: "ollama" (lokalnie) lub "google" (Google Gemini API)
 SUMMARY_LANGUAGE = "Polish" # Język, w którym ma być wygenerowane podsumowanie (np. "Polish", "English")
+
+# --- Szablony Promptów LLM ---
+# Klucze to nazwy wyświetlane w GUI. Wartości to rdzenie promptów.
+# Skrypt automatycznie doda instrukcję językową i tekst transkrypcji.
+LLM_PROMPT_TEMPLATES = {
+    "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
+    "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",
+    "Główne Tematy": "Wylistuj główne tematy poruszone w poniższej dyskusji.",
+    "Kluczowe Pytania": "Na podstawie poniższej dyskusji, sformułuj listę kluczowych pytań, które pozostały bez odpowiedzi lub wymagają dalszej analizy.",
+    "ELI5": "Wyjaśnij główne tezy i wnioski z poniższego tekstu w maksymalnie prosty sposób, unikając skomplikowanego słownictwa."
+}
+# Nazwa szablonu promptu do użycia. Jeśli pusta lub nie ma w LLM_PROMPT_TEMPLATES, użyty zostanie LLM_PROMPT.
+# W GUI odpowiada to wyborowi w Combobox.
+LLM_PROMPT_TEMPLATE_NAME = "Standardowy"
+
+# Prompt niestandardowy (fallback lub gdy wybrany w GUI jako "(Własny prompt poniżej)")
+# To jest główna część instrukcji, np. "Streść poniższy tekst..."
+# Skrypt automatycznie doda instrukcję językową i tekst transkrypcji.
+LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
 
 # Ustawienia Ollama (jeśli SUMMARY_PROVIDER="ollama")
 OLLAMA_MODEL = "gemma3:4b"  # Model językowy Ollama do podsumowań
@@ -42,13 +51,9 @@ OLLAMA_MODEL = "gemma3:4b"  # Model językowy Ollama do podsumowań
 GOOGLE_API_KEY = ""  # Wymagany, jeśli SUMMARY_PROVIDER="google". Wklej tutaj swój klucz API.
 GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumowań
 
-# Prompt dla modelu językowego (Ollama/Google).
-# To jest główna część instrukcji, np. "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
-# Skrypt automatycznie doda instrukcję językową i tekst transkrypcji.
-LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
-
 # Ustawienia Ogólne Skryptu
 TRANSCRIPTION_FORMAT = "txt"  # Format pliku transkrypcji (używany wewnętrznie przez skrypt CLI)
-DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Tymczasowa nazwa pliku dla pobranego audio
+DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"  # Bazowa nazwa pliku dla pobranego audio (może być modyfikowana przez skrypt dla unikalności)
+DEBUG_MODE = False # Ustaw na True, aby włączyć szczegółowe logowanie komend i ich wyników (stdout/stderr)
 
 # --- End Configuration ---

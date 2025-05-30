@@ -299,7 +299,3 @@ Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
 3.  **Monitoruj Proces:** Skrypt wyświetli postęp przetwarzania dla każdego pliku.
 
 -----
-
-## Poprzednie Wersje
-
-Historyczne wersje skryptu są archiwizowane w katalogu `previous_versions` w repozytorium projektu.

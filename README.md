@@ -2,25 +2,25 @@
 
 <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane"/>
 
-Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline dla transkrypcji i podsumowań Ollama, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów. Od wersji v0.1.7 wspiera również Google Gemini API jako alternatywnego dostawcę podsumowań. Wersja v0.1.8 wprowadza możliwość wyboru szablonów promptów LLM, przetwarzanie wsadowe w CLI i GUI, menedżer wyników w GUI oraz opcję dostosowania rozmiaru czcionki.
+Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline dla transkrypcji i podsumowań Ollama, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów. Od wersji v0.1.7 wspiera również Google Gemini API jako alternatywnego dostawcę podsumowań. Wersja v0.1.8 wprowadza możliwość wyboru szablonów promptów LLM, przetwarzanie wsadowe w CLI i GUI, menedżer wyników w GUI oraz opcję dostosowania rozmiaru czcionki. Dodano również narzędzie `pogadane_doctor.py` ułatwiające konfigurację i aktualizację plików projektu.
 
-Projekt zawiera zarówno interfejs linii komend (CLI) `transcribe_summarize_working.py`, jak i interfejs graficzny użytkownika (GUI) `gui.py`.
+Projekt zawiera zarówno interfejs linii komend (CLI) `transcribe_summarize_working.py`, interfejs graficzny użytkownika (GUI) `gui.py`, jak i skrypt pomocniczy `pogadane_doctor.py`.
 
 **Spis Treści**
 1.  [Architektura Systemu](#architektura-systemu)
 2.  [Wymagania Wstępne](#wymagania-wstępne)
-3.  [Konfiguracja](#konfiguracja)
-4.  [Instalacja Komponentów](#instalacja-komponentów)
-    * [Krok 1: Instalacja środowiska Python](#krok-1-instalacja-środowiska-python)
-    * [Krok 2: Instalacja Faster-Whisper Standalone](#krok-2-instalacja-faster-whisper-standalone)
-    * [Krok 3: Pobranie yt-dlp](#krok-3-pobranie-yt-dlp-do-obsługi-youtube)
-    * [Krok 4: Instalacja Systemu Podsumowań](#krok-4-instalacja-systemu-podsumowań)
-        * [Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie)](#opcja-a-instalacja-ollama-i-pobranie-modelu-językowego-lokalnie)
-        * [Opcja B: Konfiguracja Google Gemini API (Online)](#opcja-b-konfiguracja-google-gemini-api-online)
-    * [Krok 5: Instalacja biblioteki GUI](#krok-5-instalacja-biblioteki-gui-ttkbootstrap)
-5.  [Uruchomienie Aplikacji](#uruchomienie-aplikacji)
-    * [Uruchomienie Interfejsu Graficznego (GUI) (Wersja Alpha v0.1.8+) (Zalecane)](#uruchomienie-interfejsu-graficznego-gui-wersja-alpha-v018-zalecane)
-    * [Uruchomienie Skryptu z Linii Komend (CLI) (Wersja Alpha v0.1.8+)](#uruchomienie-skryptu-z-linii-komend-cli-wersja-alpha-v018)
+3.  [Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy)
+    * [Użycie `pogadane_doctor.py`](#użycie-pogadane_doctorpy)
+    * [Ręczna Instalacja Komponentów](#ręczna-instalacja-komponentów)
+        * [Krok 1: Instalacja środowiska Python](#krok-1-instalacja-środowiska-python)
+        * [Krok 2: Instalacja Faster-Whisper Standalone](#krok-2-instalacja-faster-whisper-standalone)
+        * [Krok 3: Pobranie yt-dlp](#krok-3-pobranie-yt-dlp-do-obsługi-youtube)
+        * [Krok 4: Instalacja Systemu Podsumowań](#krok-4-instalacja-systemu-podsumowań)
+        * [Krok 5: Instalacja bibliotek Python dla GUI i Google API](#krok-5-instalacja-bibliotek-python-dla-gui-i-google-api)
+4.  [Konfiguracja Pliku `config.py`](#konfiguracja-pliku-configpy)
+5.  [Uruchomienie Aplikacji (Wersja Alpha v0.1.8+)](#uruchomienie-aplikacji-wersja-alpha-v018)
+    * [Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)](#uruchomienie-interfejsu-graficznego-gui-zalecane)
+    * [Uruchomienie Skryptu z Linii Komend (CLI)](#uruchomienie-skryptu-z-linii-komend-cli)
 6.  [Poprzednie Wersje](#poprzednie-wersje)
 
 ---
@@ -123,18 +123,120 @@ flowchart TD
 
 -----
 
-## Konfiguracja
+## Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)
+
+Aby ułatwić instalację i konfigurację, projekt "pogadane" dostarcza skrypt `pogadane_doctor.py`.
+
+### Użycie `pogadane_doctor.py`
+
+`pogadane_doctor.py` to narzędzie, które pomoże Ci:
+
+1.  Sprawdzić wersję Pythona i dostępność `pip`.
+2.  Zainstalować wymagane biblioteki Python (`ttkbootstrap`, `google-generativeai`).
+3.  Pobrać (lub zaktualizować) najnowsze wersje kluczowych plików projektu "pogadane" (`transcribe_summarize_working.py`, `gui.py`, `config.py`, `README.md`, `LICENSE`, `NOTICES.md`) bezpośrednio z repozytorium GitHub.
+4.  Automatycznie utworzyć kopię zapasową istniejącego pliku `config.py` przed jego nadpisaniem.
+
+**Jak uruchomić `pogadane_doctor.py`:**
+
+1.  **Pobierz `pogadane_doctor.py`:** Pobierz plik `pogadane_doctor.py` z repozytorium GitHub projektu "pogadane" do pustego katalogu na swoim komputerze, gdzie chcesz przechowywać projekt.
+2.  **Uruchom skrypt:** Otwórz terminal (np. PowerShell, CMD) w katalogu, do którego pobrałeś `pogadane_doctor.py`, i wykonaj polecenie:
+    ```bash
+    python pogadane_doctor.py
+    ```
+3.  **Postępuj zgodnie z instrukcjami:** Skrypt wyświetli informacje o wykonywanych krokach. Po jego zakończeniu powinieneś mieć gotowe środowisko i najnowsze pliki projektu.
+4.  **Przejdź do konfiguracji narzędzi:** Po uruchomieniu `pogadane_doctor.py`, upewnij się, że masz pobrane i skonfigurowane narzędzia `yt-dlp.exe` i `faster-whisper-xxl.exe` oraz system Ollama (z modelem) zgodnie z opisem w sekcjach poniżej ([Ręczna Instalacja Komponentów](https://www.google.com/search?q=%23r%C4%99czna-instalacja-komponent%C3%B3w)). Skrypt `pogadane_doctor.py` na razie nie instaluje tych zewnętrznych programów, a jedynie pliki projektu i zależności Python.
+
+### Ręczna Instalacja Komponentów
+
+Jeśli nie chcesz używać `pogadane_doctor.py` lub napotkasz problemy, możesz przeprowadzić instalację ręcznie:
+
+#### Krok 1: Instalacja środowiska Python
+
+1.  **Pobierz Instalator Python:** Przejdź na oficjalną stronę Python ([https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)) i pobierz najnowszy stabilny instalator dla systemu Windows (np. "Windows installer (64-bit)").
+2.  **Uruchom Instalator:** Otwórz pobrany plik `.exe`.
+3.  **Konfiguracja Instalacji:** **Bardzo ważne:** W pierwszym oknie instalatora zaznacz opcję **"Add Python X.Y to PATH"** (gdzie X.Y to numer wersji). Następnie kliknij "Install Now".
+4.  **Weryfikacja Instalacji:** Po zakończeniu instalacji otwórz terminal PowerShell (możesz go znaleźć, wpisując "PowerShell" w menu Start) i wpisz polecenie:
+    ```powershell
+    python --version
+    ```
+    Jeśli instalacja przebiegła poprawnie, wyświetlona zostanie zainstalowana wersja Pythona.
+
+#### Krok 2: Instalacja Faster-Whisper Standalone
+
+1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` (lub nowszą, która wspiera diaryzację) i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z`.
+2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum do wybranej przez siebie lokalizacji (np. `C:\pogadane_narzedzia`). W wyniku powstanie folder, np. `C:\pogadane_narzedzia\Faster-Whisper-XXL_r245.4_windows`.
+3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe`. Skonfiguruj ścieżkę do tego pliku w `config.py` (lub w GUI) albo umieść go w katalogu projektu.
+
+#### Krok 3: Pobranie yt-dlp
+
+1.  **Pobierz yt-dlp:** Przejdź na stronę najnowszych wydań projektu yt-dlp na GitHub: [https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest](https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest).
+2.  **Pobierz Plik:** Znajdź i pobierz plik `yt-dlp.exe`.
+3.  **Umieść Plik:** Skopiuj pobrany plik `yt-dlp.exe` do katalogu, w którym znajdują się skrypty `gui.py` i `transcribe_summarize_working.py`, lub skonfiguruj ścieżkę w `config.py` (lub w GUI).
+
+#### Krok 4: Instalacja Systemu Podsumowań
+
+Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online przez Google Gemini API.
+
+##### Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie)
+
+1.  **Pobierz Ollama:** Przejdź na oficjalną stronę Ollama ([https://ollama.com/](https://ollama.com/)) i pobierz wersję dla Windows.
+
+2.  **Zainstaluj Ollama:** Uruchom instalator.
+
+3.  **Pobierz Model Językowy:** Otwórz terminal PowerShell i wykonaj polecenie, aby pobrać model zdefiniowany w `config.py` (domyślnie `OLLAMA_MODEL="gemma3:4b"`):
+
+    ```powershell
+    ollama pull gemma3:4b
+    ```
+
+    (Jeśli zmieniłeś `OLLAMA_MODEL` w konfiguracji, użyj tutaj odpowiedniej nazwy modelu).
+    **Uwaga:** Jeśli korzystasz z modeli Gemma, zapoznaj się z warunkami ich licencjonowania w pliku `NOTICES.md`.
+
+4.  **Sprawdź Działanie Ollama:** Upewnij się, że Ollama działa w tle (`ollama list`).
+
+5.  **Konfiguracja w `pogadane`:** W pliku `config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
+
+##### Opcja B: Konfiguracja Google Gemini API (Online)
+
+Jeśli chcesz używać Google Gemini API do generowania podsumowań (wymaga połączenia z internetem i klucza API):
+
+1.  **Uzyskaj Klucz API Google Gemini:**
+      * Przejdź do Google AI Studio ([https://aistudio.google.com/](https://aistudio.google.com/)).
+      * Zaloguj się kontem Google.
+      * Utwórz nowy projekt lub wybierz istniejący.
+      * Wygeneruj klucz API ("Get API key"). Skopiuj go i przechowuj w bezpiecznym miejscu.
+2.  **Konfiguracja w `pogadane`:**
+      * Otwórz plik `config.py` (lub użyj GUI).
+      * Ustaw `SUMMARY_PROVIDER = "google"`.
+      * Wklej swój klucz API do `GOOGLE_API_KEY = "TWOJ_KLUCZ_API_TUTAJ"`.
+      * Możesz również dostosować `GOOGLE_GEMINI_MODEL` (domyślnie "gemini-1.5-flash-latest").
+
+#### Krok 5: Instalacja bibliotek Python dla GUI i Google API
+
+Aby uruchomić interfejs graficzny oraz korzystać z Google Gemini API, potrzebne są dodatkowe biblioteki Python. Jeśli nie użyłeś `pogadane_doctor.py`, zainstaluj je ręcznie:
+
+1.  Otwórz terminal PowerShell.
+2.  Wpisz polecenia:
+    ```powershell
+    pip install ttkbootstrap
+    pip install google-generativeai
+    ```
+    Poczekaj na zakończenie instalacji.
+
+-----
+
+## Konfiguracja Pliku `config.py`
 
 Skrypt `transcribe_summarize_working.py` oraz interfejs `gui.py` zarządzają konfiguracją w następujący sposób:
 
-1.  **Plik `config.py` (Zalecane):** Aplikacja w pierwszej kolejności próbuje załadować konfigurację z pliku `config.py`. **Plik `config.py` z domyślnymi ustawieniami jest dołączony do repozytorium.**
+1.  **Plik `config.py` (Zalecane):** Aplikacja w pierwszej kolejności próbuje załadować konfigurację z pliku `config.py`. Skrypt `pogadane_doctor.py` pobiera najnowszą wersję tego pliku z repozytorium (tworząc backup Twojej lokalnej wersji, jeśli istnieje).
       * **Edycja przez GUI:** Możesz wygodnie edytować większość opcji konfiguracyjnych bezpośrednio w zakładce "⚙️ Konfiguracja" w aplikacji GUI. Zmiany są zapisywane do pliku `config.py`.
       * **Edycja Manualna:** Możesz również bezpośrednio edytować plik `config.py`.
 2.  **Konfiguracja Domyślna (Fallback):** Jeśli plik `config.py` nie zostanie znaleziony, skrypt CLI i GUI użyją predefiniowanych wartości domyślnych.
 
-**Aby dostosować konfigurację, zaleca się użycie zakładki "Konfiguracja" w GUI lub edycję pliku `config.py`.**
+**Aby dostosować konfigurację, zaleca się użycie zakładki "Konfiguracja" w GUI lub edycję pliku `config.py` (po jego pobraniu przez `pogadane_doctor.py` lub ręcznie).**
 
-Przykładowa zawartość pliku `config.py` znajduje się w repozytorium.
+Przykładowa zawartość pliku `config.py` znajduje się w repozytorium (i jest pobierana przez `pogadane_doctor.py`).
 
 **Opis opcji konfiguracyjnych (dostępnych w `config.py` oraz w GUI):**
 
@@ -159,89 +261,12 @@ Przykładowa zawartość pliku `config.py` znajduje się w repozytorium.
 
 -----
 
-## Instalacja Komponentów
+## Uruchomienie Aplikacji (Wersja Alpha v0.1.8+)
 
-### Krok 1: Instalacja środowiska Python
+1.  **Przygotuj Środowisko:** Uruchom `pogadane_doctor.py` lub wykonaj kroki instalacji ręcznej.
+2.  **Skonfiguruj `config.py`:** Upewnij się, że `config.py` jest poprawnie skonfigurowany (ścieżki do narzędzi, modele, klucze API jeśli potrzebne). Możesz to zrobić przez GUI lub edytując plik bezpośrednio.
 
-1.  **Pobierz Instalator Python:** Przejdź na oficjalną stronę Python ([https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)) i pobierz najnowszy stabilny instalator dla systemu Windows (np. "Windows installer (64-bit)").
-2.  **Uruchom Instalator:** Otwórz pobrany plik `.exe`.
-3.  **Konfiguracja Instalacji:** **Bardzo ważne:** W pierwszym oknie instalatora zaznacz opcję **"Add Python X.Y to PATH"** (gdzie X.Y to numer wersji). Następnie kliknij "Install Now".
-4.  **Weryfikacja Instalacji:** Po zakończeniu instalacji otwórz terminal PowerShell (możesz go znaleźć, wpisując "PowerShell" w menu Start) i wpisz polecenie:
-    ```powershell
-    python --version
-    ```
-    Jeśli instalacja przebiegła poprawnie, wyświetlona zostanie zainstalowana wersja Pythona.
-
-### Krok 2: Instalacja Faster-Whisper Standalone
-
-1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` (lub nowszą, która wspiera diaryzację) i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z`.
-2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum do wybranej przez siebie lokalizacji (np. `C:\pogadane_narzedzia`). W wyniku powstanie folder, np. `C:\pogadane_narzedzia\Faster-Whisper-XXL_r245.4_windows`.
-3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe`. Skonfiguruj ścieżkę do tego pliku w `config.py` (lub w GUI) albo umieść go w katalogu projektu.
-
-### Krok 3: Pobranie yt-dlp (do obsługi YouTube)
-
-1.  **Pobierz yt-dlp:** Przejdź na stronę najnowszych wydań projektu yt-dlp na GitHub: [https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest](https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest).
-2.  **Pobierz Plik:** Znajdź i pobierz plik `yt-dlp.exe`.
-3.  **Umieść Plik:** Skopiuj pobrany plik `yt-dlp.exe` do katalogu, w którym znajdują się skrypty `gui.py` i `transcribe_summarize_working.py`, lub skonfiguruj ścieżkę w `config.py` (lub w GUI).
-
-### Krok 4: Instalacja Systemu Podsumowań
-
-Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online przez Google Gemini API.
-
-#### Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie)
-
-Jeśli chcesz generować podsumowania lokalnie (zalecane dla prywatności i działania offline):
-
-1.  **Pobierz Ollama:** Przejdź na oficjalną stronę Ollama ([https://ollama.com/](https://ollama.com/)) i pobierz wersję dla Windows.
-2.  **Zainstaluj Ollama:** Uruchom instalator.
-3.  **Pobierz Model Językowy:** Otwórz terminal PowerShell i wykonaj polecenie, aby pobrać model zdefiniowany w `config.py` (domyślnie `OLLAMA_MODEL="gemma3:4b"`):
-    ```powershell
-    ollama pull gemma3:4b
-    ```
-    (Jeśli zmieniłeś `OLLAMA_MODEL` w konfiguracji, użyj tutaj odpowiedniej nazwy modelu).
-    **Uwaga:** Jeśli korzystasz z modeli Gemma, zapoznaj się z warunkami ich licencjonowania w pliku `NOTICES.md`.
-
-4.  **Sprawdź Działanie Ollama:** Upewnij się, że Ollama działa w tle (`ollama list`).
-5.  **Konfiguracja w `pogadane`:** W pliku `config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
-
-#### Opcja B: Konfiguracja Google Gemini API (Online)
-
-Jeśli chcesz używać Google Gemini API do generowania podsumowań (wymaga połączenia z internetem i klucza API):
-
-1.  **Uzyskaj Klucz API Google Gemini:**
-      * Przejdź do Google AI Studio ([https://aistudio.google.com/](https://aistudio.google.com/)).
-      * Zaloguj się kontem Google.
-      * Utwórz nowy projekt lub wybierz istniejący.
-      * Wygeneruj klucz API ("Get API key"). Skopiuj go i przechowuj w bezpiecznym miejscu.
-2.  **Zainstaluj bibliotekę Python:** Otwórz terminal PowerShell i wpisz:
-    ```powershell
-    pip install google-generativeai
-    ```
-3.  **Konfiguracja w `pogadane`:**
-      * Otwórz plik `config.py` (lub użyj GUI).
-      * Ustaw `SUMMARY_PROVIDER = "google"`.
-      * Wklej swój klucz API do `GOOGLE_API_KEY = "TWOJ_KLUCZ_API_TUTAJ"`.
-      * Możesz również dostosować `GOOGLE_GEMINI_MODEL` (domyślnie "gemini-1.5-flash-latest").
-
-### Krok 5: Instalacja biblioteki GUI (ttkbootstrap)
-
-Aby uruchomić interfejs graficzny, potrzebna jest biblioteka `ttkbootstrap`. Zainstaluj ją używając pip:
-
-1.  Otwórz terminal PowerShell.
-2.  Wpisz polecenie:
-    ```powershell
-    pip install ttkbootstrap
-    ```
-    Poczekaj na zakończenie instalacji.
-
------
-
-## Uruchomienie Aplikacji
-
-1.  **Pobierz/Skopiuj Skrypty:** Upewnij się, że masz najnowsze wersje plików `gui.py`, `transcribe_summarize_working.py` oraz `config.py` z repozytorium. Umieść je wszystkie w jednym katalogu.
-2.  **Dostosuj `config.py`:** Upewnij się, że `config.py` jest poprawnie skonfigurowany.
-
-### Uruchomienie Interfejsu Graficznego (GUI) (Wersja Alpha v0.1.8+) (Zalecane)
+### Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)
 
 Interfejs graficzny `gui.py` jest zalecanym sposobem korzystania z aplikacji i obsługuje przetwarzanie wsadowe.
 
@@ -264,7 +289,7 @@ Interfejs graficzny `gui.py` jest zalecanym sposobem korzystania z aplikacji i o
           * **📊 Wyniki (Transkrypcje i Streszczenia):** Ta zakładka zawiera listę rozwijaną "Wybierz przetworzony plik". Po wybraniu pliku z tej listy, jego indywidualna transkrypcja i streszczenie zostaną wyświetlone w odpowiednich polach poniżej.
       * **Zapisywanie:** Przycisk "💾 Zapisz Log" w zakładce "Konsola" pozwala zapisać cały log. Indywidualne transkrypcje i streszczenia można skopiować z pól w zakładce "Wyniki".
 
-### Uruchomienie Skryptu z Linii Komend (CLI) (Wersja Alpha v0.1.8+)
+### Uruchomienie Skryptu z Linii Komend (CLI)
 
 Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
 
@@ -299,5 +324,3 @@ Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
     ```
 
 3.  **Monitoruj Proces:** Skrypt wyświetli postęp przetwarzania dla każdego pliku.
-
------

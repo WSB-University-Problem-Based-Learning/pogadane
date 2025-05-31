@@ -199,6 +199,8 @@ Jeśli chcesz generować podsumowania lokalnie (zalecane dla prywatności i dzia
     ollama pull gemma3:4b
     ```
     (Jeśli zmieniłeś `OLLAMA_MODEL` w konfiguracji, użyj tutaj odpowiedniej nazwy modelu).
+    **Uwaga:** Jeśli korzystasz z modeli Gemma, zapoznaj się z warunkami ich licencjonowania w pliku `NOTICES.md`.
+
 4.  **Sprawdź Działanie Ollama:** Upewnij się, że Ollama działa w tle (`ollama list`).
 5.  **Konfiguracja w `pogadane`:** W pliku `config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
 

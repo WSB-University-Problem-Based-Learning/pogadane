@@ -3,77 +3,31 @@ sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
 import subprocess
-import sys
 import os
 import argparse
 from pathlib import Path
 import shlex
-import re
-import importlib.util
+import re  # For regex in get_unique_download_filename
+
+# Import utility modules
+from .config_loader import ConfigManager
+from .text_utils import is_valid_url
+from .file_utils import get_unique_filename, get_input_name_stem, safe_delete_file
+from .constants import (
+    DEFAULT_CONFIG,
+    TRANSCRIPTION_START_MARKER,
+    TRANSCRIPTION_END_MARKER,
+    SUMMARY_START_MARKER,
+    SUMMARY_END_MARKER
+)
+from .llm_providers import LLMProviderFactory
 
 # Wersja Alpha v0.1.8
 
-class DefaultConfig:
-    FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"
-    YT_DLP_EXE = "yt-dlp.exe"
-    WHISPER_LANGUAGE = "Polish"
-    WHISPER_MODEL = "turbo"
-    ENABLE_SPEAKER_DIARIZATION = False
-    DIARIZE_METHOD = "pyannote_v3.1"
-    DIARIZE_SPEAKER_PREFIX = "MÓWCA"
-    SUMMARY_PROVIDER = "ollama"
-    SUMMARY_LANGUAGE = "Polish"
-    LLM_PROMPT_TEMPLATES = {
-        "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
-        "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",
-        "Główne Tematy": "Wylistuj główne tematy poruszone w poniższej dyskusji.",
-        "Kluczowe Pytania": "Na podstawie poniższej dyskusji, sformułuj listę kluczowych pytań, które pozostały bez odpowiedzi lub wymagają dalszej analizy.",
-        "ELI5": "Wyjaśnij główne tezy i wnioski z poniższego tekstu w maksymalnie prosty sposób, unikając skomplikowanego słownictwa."
-    }
-    LLM_PROMPT_TEMPLATE_NAME = "Standardowy"
-    LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
-    OLLAMA_MODEL = "gemma3:4b"
-    GOOGLE_API_KEY = ""
-    GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest"
-    TRANSCRIPTION_FORMAT = "txt"
-    DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"
-    DEBUG_MODE = False
-
-class DummyConfigCli:
-    pass
-
-def _resolve_project_root():
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parents[2]
-
-CONFIG_PATH = _resolve_project_root() / ".config" / "config.py"
-
-def _iter_default_config_items():
-    for attr, value in vars(DefaultConfig).items():
-        if not attr.startswith("__"):
-            yield attr, value
-
-def _load_config_module():
-    try:
-        if not CONFIG_PATH.exists():
-            raise FileNotFoundError(CONFIG_PATH)
-        spec = importlib.util.spec_from_file_location("config", CONFIG_PATH)
-        if spec and spec.loader:
-            module = importlib.util.module_from_spec(spec)
-            sys.modules['config'] = module
-            spec.loader.exec_module(module)
-            print("✅ Konfiguracja CLI załadowana z .config/config.py.")
-            return module
-        raise ImportError(f"Nie można utworzyć specyfikacji modułu dla {CONFIG_PATH}")
-    except Exception as exc:
-        print(f"⚠️ Ostrzeżenie CLI: Używam wartości domyślnych konfiguracji ({exc}).", file=sys.stderr)
-        fallback = DummyConfigCli()
-        for key, value in _iter_default_config_items():
-            setattr(fallback, key, value)
-        return fallback
-
-config = _load_config_module()
+# Initialize configuration
+config_manager = ConfigManager()
+config_manager.initialize()
+config = config_manager.config
 
 genai = None
 
@@ -85,7 +39,7 @@ def ensure_google_ai_available():
     return True
 
 def run_command(command_list, input_data=None, capture_output=True, text_encoding='utf-8'):
-    debug_mode = getattr(config, 'DEBUG_MODE', DefaultConfig.DEBUG_MODE)
+    debug_mode = getattr(config, 'DEBUG_MODE', DEFAULT_CONFIG['DEBUG_MODE'])
     cmd_str = ' '.join(shlex.quote(str(s)) for s in command_list)
     if debug_mode: print(f"🐞 DEBUG: Running command: {cmd_str}\n🐞 DEBUG: Input (100char): {input_data[:100]}..." if input_data else "🐞 DEBUG: No input data")
     else: print(f"\n▶️ Running command: {cmd_str}")
@@ -105,7 +59,7 @@ def run_command(command_list, input_data=None, capture_output=True, text_encodin
     except Exception as e: print(f"❌ Unexpected CMD error '{command_list[0]}': {e}", file=sys.stderr); return None
 
 def get_unique_download_filename(url):
-    base_name = getattr(config, 'DOWNLOADED_AUDIO_FILENAME', DefaultConfig.DOWNLOADED_AUDIO_FILENAME)
+    base_name = getattr(config, 'DOWNLOADED_AUDIO_FILENAME', DEFAULT_CONFIG['DOWNLOADED_AUDIO_FILENAME'])
     base_stem, base_suffix = Path(base_name).stem, Path(base_name).suffix or ".mp3"
     try:
         url_part_match = re.search(r"v=([^&]+)", url)
@@ -115,7 +69,7 @@ def get_unique_download_filename(url):
 
 def download_youtube_audio(url, target_dir_path):
     print(f"\n🔄 Downloading YouTube Audio: {url}")
-    yt_dlp_exe = getattr(config, 'YT_DLP_EXE', DefaultConfig.YT_DLP_EXE)
+    yt_dlp_exe = getattr(config, 'YT_DLP_EXE', DEFAULT_CONFIG['YT_DLP_EXE'])
     temp_audio_filename = get_unique_download_filename(url)
     download_path = target_dir_path / temp_audio_filename
     print(f"   Using yt-dlp: {yt_dlp_exe}, Output: {download_path}")
@@ -137,16 +91,16 @@ def download_youtube_audio(url, target_dir_path):
 def transcribe_audio(audio_path_str, original_input_name_stem):
     audio_path = Path(audio_path_str)
     if not audio_path.is_file(): print(f"❌ Error: Audio file not found: '{audio_path}' for '{original_input_name_stem}'", file=sys.stderr); return None
-    fmt = getattr(config, 'TRANSCRIPTION_FORMAT', DefaultConfig.TRANSCRIPTION_FORMAT)
+    fmt = getattr(config, 'TRANSCRIPTION_FORMAT', DEFAULT_CONFIG['TRANSCRIPTION_FORMAT'])
     trans_out_path = audio_path.parent / f"{original_input_name_stem}_transcription.{fmt}"
     print(f"\n🔄 Transcribing: {audio_path} (Original: {original_input_name_stem})")
-    fw_exe = getattr(config, 'FASTER_WHISPER_EXE', DefaultConfig.FASTER_WHISPER_EXE)
+    fw_exe = getattr(config, 'FASTER_WHISPER_EXE', DEFAULT_CONFIG['FASTER_WHISPER_EXE'])
     print(f"   Using FW: {fw_exe}, Expected output: {trans_out_path.name} in {audio_path.parent}")
-    cmd = [fw_exe, str(audio_path), "--language", getattr(config, 'WHISPER_LANGUAGE', DefaultConfig.WHISPER_LANGUAGE), "--model", getattr(config, 'WHISPER_MODEL', DefaultConfig.WHISPER_MODEL), "--output_format", fmt, "--output_dir", str(audio_path.parent)]
-    use_diarize = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
+    cmd = [fw_exe, str(audio_path), "--language", getattr(config, 'WHISPER_LANGUAGE', DEFAULT_CONFIG['WHISPER_LANGUAGE']), "--model", getattr(config, 'WHISPER_MODEL', DEFAULT_CONFIG['WHISPER_MODEL']), "--output_format", fmt, "--output_dir", str(audio_path.parent)]
+    use_diarize = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DEFAULT_CONFIG['ENABLE_SPEAKER_DIARIZATION'])
     if use_diarize:
-        print("   Diarization: ENABLED"); cmd.extend(["--diarize", getattr(config, 'DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD)])
-        prefix = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)
+        print("   Diarization: ENABLED"); cmd.extend(["--diarize", getattr(config, 'DIARIZE_METHOD', DEFAULT_CONFIG['DIARIZE_METHOD'])])
+        prefix = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DEFAULT_CONFIG['DIARIZE_SPEAKER_PREFIX'])
         if prefix: cmd.extend(["--speaker", prefix])
     else: print("   Diarization: DISABLED")
     process = run_command(cmd, capture_output=True)
@@ -169,16 +123,16 @@ def transcribe_audio(audio_path_str, original_input_name_stem):
 
 def summarize_text(text_to_summarize, original_input_name_stem=""):
     if not text_to_summarize: print(f"⚠️ Warn: No text for summarization (Input: {original_input_name_stem}).", file=sys.stderr); return None
-    provider = getattr(config, 'SUMMARY_PROVIDER', DefaultConfig.SUMMARY_PROVIDER).lower()
-    templates = getattr(config, 'LLM_PROMPT_TEMPLATES', DefaultConfig.LLM_PROMPT_TEMPLATES)
-    tpl_name = getattr(config, 'LLM_PROMPT_TEMPLATE_NAME', DefaultConfig.LLM_PROMPT_TEMPLATE_NAME)
-    prompt_core = templates.get(tpl_name) or getattr(config, 'LLM_PROMPT', DefaultConfig.LLM_PROMPT)
+    provider = getattr(config, 'SUMMARY_PROVIDER', DEFAULT_CONFIG['SUMMARY_PROVIDER']).lower()
+    templates = getattr(config, 'LLM_PROMPT_TEMPLATES', DEFAULT_CONFIG['LLM_PROMPT_TEMPLATES'])
+    tpl_name = getattr(config, 'LLM_PROMPT_TEMPLATE_NAME', DEFAULT_CONFIG['LLM_PROMPT_TEMPLATE_NAME'])
+    prompt_core = templates.get(tpl_name) or getattr(config, 'LLM_PROMPT', DEFAULT_CONFIG['LLM_PROMPT'])
     print(f"ℹ️ Using template '{tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'}' for '{original_input_name_stem}'.")
     prompt_core = prompt_core.replace("{text}", "").replace("{Text}", "").strip()
-    lang = getattr(config, 'SUMMARY_LANGUAGE', DefaultConfig.SUMMARY_LANGUAGE)
+    lang = getattr(config, 'SUMMARY_LANGUAGE', DEFAULT_CONFIG['SUMMARY_LANGUAGE'])
     summary_result = None; print("--- POCZĄTEK STRESZCZENIA ---") # Znacznik dla GUI
     if provider == "ollama":
-        model = getattr(config, 'OLLAMA_MODEL', DefaultConfig.OLLAMA_MODEL)
+        model = getattr(config, 'OLLAMA_MODEL', DEFAULT_CONFIG['OLLAMA_MODEL'])
         print(f"\n🔄 Summarizing '{original_input_name_stem}' with Ollama ({model})")
         prompt_data = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
         cmd = ["ollama", "run", model]; proc = run_command(cmd, input_data=prompt_data, capture_output=True)
@@ -186,8 +140,8 @@ def summarize_text(text_to_summarize, original_input_name_stem=""):
         else: print(f"❌ Summary failed for '{original_input_name_stem}' (Ollama). Code: {proc.returncode if proc else 'N/A'}", file=sys.stderr); print(f"   Reason: Ollama gave no output.{' Code 0.' if proc and proc.returncode==0 else ''}", file=sys.stderr) if proc and not proc.stdout else None
     elif provider == "google":
         if ensure_google_ai_available():
-            api_key = getattr(config, 'GOOGLE_API_KEY', DefaultConfig.GOOGLE_API_KEY)
-            model_name = getattr(config, 'GOOGLE_GEMINI_MODEL', DefaultConfig.GOOGLE_GEMINI_MODEL)
+            api_key = getattr(config, 'GOOGLE_API_KEY', DEFAULT_CONFIG['GOOGLE_API_KEY'])
+            model_name = getattr(config, 'GOOGLE_GEMINI_MODEL', DEFAULT_CONFIG['GOOGLE_GEMINI_MODEL'])
             if not api_key: print(f"❌ Error: GOOGLE_API_KEY not set for '{original_input_name_stem}'.", file=sys.stderr)
             else:
                 print(f"\n🔄 Summarizing '{original_input_name_stem}' with Google Gemini ({model_name})")
@@ -205,26 +159,12 @@ def summarize_text(text_to_summarize, original_input_name_stem=""):
     print("--- KONIEC STRESZCZENIA ---") # Znacznik dla GUI
     return summary_result
 
-def is_valid_url(text): return re.match(r'^https?://', text) is not None
-def get_input_name_stem(src_str):
-    if is_valid_url(src_str):
-        try:
-            yt_match = re.search(r"(?:v=|\/embed\/|\/watch\?v=|\.be\/)([a-zA-Z0-9_-]{11})", src_str)
-            if yt_match: return f"youtube_{yt_match.group(1)}"
-            safe_name = re.sub(r'[\\/*?:"<>|]', "", Path(src_str.split("?")[0]).name)
-            return safe_name if safe_name else f"url_{os.urandom(4).hex()}"
-        except: return f"url_{os.urandom(4).hex()}"
-    else: return Path(src_str).stem
-
 def _try_cleanup_temp_files(audio_file, trans_file):
-    if audio_file and audio_file.exists():
-        print(f"\n🧹 Cleaning up temp audio: {audio_file.name}")
-        try: os.remove(audio_file); print(f"✅ Deleted {audio_file.name}")
-        except OSError as e: print(f"⚠️ Warn: Could not delete {audio_file.name}: {e}", file=sys.stderr)
-    if trans_file and trans_file.exists():
-        print(f"🧹 Cleaning up temp transcript: {trans_file.name}")
-        try: os.remove(trans_file); print(f"✅ Deleted {trans_file.name}")
-        except OSError as e: print(f"⚠️ Warn: Could not delete {trans_file.name}: {e}", file=sys.stderr)
+    """Clean up temporary files using safe utilities."""
+    if audio_file:
+        safe_delete_file(audio_file, f"Cleaning up temp audio: {audio_file.name if hasattr(audio_file, 'name') else audio_file}")
+    if trans_file:
+        safe_delete_file(trans_file, f"Cleaning up temp transcript: {trans_file.name if hasattr(trans_file, 'name') else trans_file}")
 
 def main():
     parser = argparse.ArgumentParser(description="Transcribe & Summarize audio/YouTube.", formatter_class=argparse.RawTextHelpFormatter)
@@ -247,13 +187,13 @@ def main():
     sources.extend(args.input_sources)
     if not sources: print("❌ Error: No input sources.", file=sys.stderr); parser.print_help(); sys.exit(1)
 
-    diar_base = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DefaultConfig.ENABLE_SPEAKER_DIARIZATION)
+    diar_base = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DEFAULT_CONFIG['ENABLE_SPEAKER_DIARIZATION'])
     diar_src = "config" if hasattr(config, 'ENABLE_SPEAKER_DIARIZATION') else "default"
     if args.diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', True); print("ℹ️ Diarization: ENABLED (CLI).")
     elif args.no_diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', False); print("ℹ️ Diarization: DISABLED (CLI).")
     else: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', diar_base); print(f"ℹ️ Diarization from {diar_src}: {'ENABLED' if config.ENABLE_SPEAKER_DIARIZATION else 'DISABLED'}.")
     if config.ENABLE_SPEAKER_DIARIZATION:
-        for k, v_def in [('DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD), ('DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)]:
+        for k, v_def in [('DIARIZE_METHOD', DEFAULT_CONFIG['DIARIZE_METHOD']), ('DIARIZE_SPEAKER_PREFIX', DEFAULT_CONFIG['DIARIZE_SPEAKER_PREFIX'])]:
             if not hasattr(config, k): setattr(config, k, v_def)
     
     # Define scr_dir and temp_dir BEFORE using them

@@ -501,6 +501,70 @@ python -m pogadane.transcribe_summarize_working "URL1" "C:\file2.wav" -o "C:\out
 7) Sample test audio included:
 - `samples/` contains `Styrta się pali.mp3` (small test audio taken from YouTube). Use it to verify a complete run.
 
-If you see errors about missing packages, activate the virtual environment and run the `pip install` commands above.
+### Troubleshooting
 
-For more detailed instructions and troubleshooting, see the Polish sections above or `doc/README.md`.
+**Problem: "Python is not recognized as an internal or external command"**
+- **Solution:** Reinstall Python and ensure "Add Python to PATH" is checked during installation
+- **Verify:** Open new PowerShell and run `python --version`
+
+**Problem: "No module named 'ttkbootstrap'" or "No module named 'google.generativeai'"**
+- **Solution:** Activate virtual environment and install dependencies:
+  ```powershell
+  .\.venv\Scripts\Activate.ps1
+  pip install -r requirements.txt
+  ```
+
+**Problem: GUI window doesn't open**
+- **Check:** Are you in the correct directory? (`cd C:\path\to\pogadane`)
+- **Check:** Is venv activated? (you should see `(.venv)` in prompt)
+- **Try:** Run with full module path: `python -m pogadane.gui`
+- **Check logs:** Look for error messages in terminal
+
+**Problem: Transcription fails with "File not found: faster-whisper-xxl.exe"**
+- **Solution:** Configure path in GUI (⚙️ Konfiguracja tab → Plik Faster Whisper → click 📂)
+- **Alternative:** Place `faster-whisper-xxl.exe` in project root directory
+- **Verify:** Check `.config/config.py` has correct `FASTER_WHISPER_EXE` path
+
+**Problem: YouTube download fails**
+- **Solution:** Ensure `yt-dlp.exe` is in project folder or configured in settings
+- **Check:** Internet connection is active
+- **Update:** Download latest version from [yt-dlp releases](https://github.com/yt-dlp/yt-dlp/releases/latest)
+
+**Problem: Summary generation fails with Ollama**
+- **Check:** Ollama service is running (should be in system tray)
+- **Verify model:** Run `ollama list` to confirm model is downloaded
+- **Test:** Try `ollama run gemma3:4b` in terminal
+- **Logs:** Check GUI Console tab for detailed error messages
+
+**Problem: Summary generation fails with Google Gemini**
+- **Check:** Valid API key is set in `.config/config.py` (`GOOGLE_API_KEY`)
+- **Verify:** `SUMMARY_PROVIDER` is set to `"google"` in configuration
+- **Internet:** Ensure you have active internet connection
+- **Quota:** Check if you've exceeded free tier limits at [Google AI Studio](https://aistudio.google.com/)
+
+**Problem: Transcription is in wrong language**
+- **Solution:** Set correct language in GUI (⚙️ Konfiguracja → Język transkrypcji)
+- **Save:** Click 💾 Zapisz i Zastosuj after making changes
+
+**Problem: "Access Denied" or permission errors**
+- **Solution:** Run PowerShell as Administrator
+- **Alternative:** Install project in user directory (e.g., `C:\Users\YourName\Documents\pogadane`)
+
+**Problem: Process is slow or freezes**
+- **First transcription:** Faster-Whisper downloads models on first run (this is normal, ~1-2GB)
+- **Check:** Task Manager → ensure Python isn't using 100% CPU indefinitely
+- **Try:** Smaller model in settings (⚙️ Konfiguracja → Model Whisper → try "small" or "base")
+
+**Problem: Virtual environment activation fails with "execution of scripts is disabled"**
+- **Solution:** Enable script execution (run PowerShell as Administrator):
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+- **Then retry:** `.\.venv\Scripts\Activate.ps1`
+
+**Need more help?**
+- See detailed Polish documentation above
+- Check [QUICK_START.md](QUICK_START.md) for beginner-friendly guide
+- Visit [Issues](https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues) on GitHub
+
+For more detailed instructions, see the Polish sections above or `doc/README.md`.

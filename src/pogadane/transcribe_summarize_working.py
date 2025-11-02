@@ -121,7 +121,8 @@ def download_youtube_audio(url, target_dir_path):
     print(f"   Using yt-dlp: {yt_dlp_exe}, Output: {download_path}")
     command = [yt_dlp_exe, "-x", "--audio-format", "mp3", "--force-overwrite", "-o", str(download_path), url]
     process = run_command(command, capture_output=True)
-    dl_ok = download_path.is_file() and download_path.stat().st_size > 0
+    # Check if file exists AND has content
+    dl_ok = download_path.is_file() and download_path.stat().st_size > 0 if download_path.exists() else False
     if process and process.returncode == 0 and dl_ok: print(f"✅ Download successful: {download_path}"); return download_path
     elif process and process.returncode != 0 and dl_ok: print(f"⚠️ yt-dlp warning (code {process.returncode}), but file created: {download_path}. Proceeding.", file=sys.stderr); return download_path
     else:
@@ -255,13 +256,13 @@ def main():
         for k, v_def in [('DIARIZE_METHOD', DefaultConfig.DIARIZE_METHOD), ('DIARIZE_SPEAKER_PREFIX', DefaultConfig.DIARIZE_SPEAKER_PREFIX)]:
             if not hasattr(config, k): setattr(config, k, v_def)
     
-    out_dir_sum, single_out_file_sum = None, None
-    # Poprawka UnboundLocalError: zdefiniuj scr_dir przed użyciem
+    # Define scr_dir and temp_dir BEFORE using them
     scr_dir = Path(__file__).parent.resolve()
     temp_dir = scr_dir / "pogadane_temp_audio"
     try: temp_dir.mkdir(parents=True, exist_ok=True); print(f"ℹ️ Temp audio in: {temp_dir}")
     except OSError as e: print(f"❌ Error creating temp dir '{temp_dir}': {e}. Exiting.", file=sys.stderr); sys.exit(1)
-
+    
+    out_dir_sum, single_out_file_sum = None, None
     if args.output:
         out_path = Path(args.output)
         # Jeśli jest więcej niż jedno źródło LUB jeśli ścieżka -o jest katalogiem LUB jeśli ścieżka -o nie ma rozszerzenia (traktujemy jak katalog)

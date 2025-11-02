@@ -612,9 +612,11 @@ class TranscriberApp(ttk.Window):
         try:
             while True:
                 message = self.output_queue.get_nowait()
-                msg_type, data1, data2, *opt_data = message + (None,) * (4 - len(message)) # Ensure at least 3 elements for unpacking
-                summary_data = opt_data[0] if opt_data else ""
-
+                # Safely unpack message - handle variable length tuples
+                msg_type = message[0] if len(message) > 0 else None
+                data1 = message[1] if len(message) > 1 else ""
+                data2 = message[2] if len(message) > 2 else ""
+                summary_data = message[3] if len(message) > 3 else ""
 
                 if msg_type == "log": self.console_text.config(state=NORMAL); self.console_text.insert(END, data1); self.console_text.see(END); self.console_text.config(state=DISABLED)
                 elif msg_type == "error": self.console_text.config(state=NORMAL); self.console_text.insert(END, data1, "error_tag"); self.console_text.see(END); self.console_text.tag_configure("error_tag", foreground="red", font=self.font_settings["scrolledtext"]); self.console_text.config(state=DISABLED)

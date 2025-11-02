@@ -87,23 +87,16 @@ class TranscriberApp(ttk.Window):
 
         self.app_style = ttk.Style()
 
-        self.base_font_size = 10
-        self.font_settings = {
-            "default": tkFont.Font(family="Segoe UI Emoji", size=self.base_font_size),
-            "label": tkFont.Font(family="Segoe UI", size=self.base_font_size),
-            "button": tkFont.Font(family="Segoe UI", size=self.base_font_size),
-            "scrolledtext": tkFont.Font(family="Segoe UI Emoji", size=self.base_font_size),
-            "header": tkFont.Font(family="Segoe UI Emoji", size=self.base_font_size + 2, weight="bold"),
-            "tooltip": tkFont.Font(family="Segoe UI", size=max(8,self.base_font_size - 1)),
-            "list_header": tkFont.Font(family="Segoe UI", size=self.base_font_size, weight="bold"),
-        }
-        self.update_font_styles()
+        # Initialize FontManager
+        self.font_manager = FontManager(base_font_size=10)
+        self.font_settings = self.font_manager.get_all_fonts()
+        self.font_manager.update_ttk_styles(self.app_style)
 
         if getattr(sys, 'frozen', False):
             self.base_path = Path(sys._MEIPASS)
         else:
             self.base_path = Path(__file__).resolve().parent
-        self.config_file_path = CONFIG_PATH
+        self.config_file_path = config_manager.config_path
 
         top_controls_frame = ttk.Frame(self)
         top_controls_frame.pack(padx=10, pady=10, fill=X)
@@ -291,62 +284,43 @@ class TranscriberApp(ttk.Window):
 
         self.output_queue = queue.Queue()
         self.batch_processing_thread = None
-        self.processed_results_data = {}
+        
+        # Initialize ResultsManager
+        self.results_manager = ResultsManager()
         
         self.update_widget_fonts()
         self.tabs.select(self.results_manager_frame)
 
 
     def update_font_styles(self):
-        self.app_style.configure("TLabel", font=self.font_settings["label"])
-        self.app_style.configure("TButton", font=self.font_settings["button"])
-        self.app_style.configure("Outline.TButton", font=self.font_settings["button"])
-        self.app_style.configure("Success.TButton", font=self.font_settings["button"])
-        self.app_style.configure("TMenubutton", font=self.font_settings["button"])
-        self.app_style.configure("TCombobox", font=self.font_settings["default"])
-        self.app_style.configure("Treeview.Heading", font=self.font_settings["list_header"])
-        self.app_style.configure("Custom.Treeview", font=self.font_settings["default"], rowheight=int(self.font_settings["default"].actual("size") * 2.5))
-        self.app_style.configure("TProgressbar")
-        self.app_style.configure("TLabelframe.Label", font=self.font_settings["label"])
-        self.app_style.configure("Custom.TNotebook.Tab", font=self.font_settings["button"])
-        self.app_style.configure("Switch.TCheckbutton", font=self.font_settings["label"])
+        """Update TTK styles - delegates to FontManager."""
+        self.font_manager.update_ttk_styles(self.app_style)
 
 
     def update_widget_fonts(self):
+        """Update widget fonts - delegates to FontManager."""
         widgets_to_update_map = {
             self.input_text_area: self.font_settings["scrolledtext"],
         }
         if self.custom_llm_prompt_text_widget:
              widgets_to_update_map[self.custom_llm_prompt_text_widget] = self.font_settings["scrolledtext"]
         
-        for widget, font_obj in widgets_to_update_map.items():
-            if widget and widget.winfo_exists():
-                widget.config(font=font_obj)
-        
-        # ScrolledText widgets need special handling - access inner text widget
         scrolled_widgets = [
             self.console_text,
             self.current_transcription_text,
             self.current_summary_text,
         ]
-        for scrolled_widget in scrolled_widgets:
-            if scrolled_widget and scrolled_widget.winfo_exists():
-                scrolled_widget.text.config(font=self.font_settings["scrolledtext"])
         
-        self.app_style.configure("Custom.Treeview", font=self.font_settings["default"], rowheight=int(self.font_settings["default"].actual("size") * 2.5))
+        self.font_manager.update_widget_fonts(widgets_to_update_map, scrolled_widgets)
 
     def change_font_size(self, delta):
-        self.base_font_size += delta
-        if self.base_font_size < 8: self.base_font_size = 8
-        if self.base_font_size > 24: self.base_font_size = 24
-        for key in self.font_settings:
-            current_font = self.font_settings[key]; new_size = self.base_font_size
-            if key == "header": new_size = self.base_font_size + 2
-            elif key == "tooltip": new_size = max(8, self.base_font_size - 1)
-            current_font.config(size=new_size)
-        self.update_font_styles(); self.update_widget_fonts()
+        """Change font size - delegates to FontManager."""
+        new_size = self.font_manager.change_font_size(delta)
+        self.font_settings = self.font_manager.get_all_fonts()
+        self.update_font_styles()
+        self.update_widget_fonts()
         if hasattr(self, 'scrollable_inner_config_form'): self.populate_config_form()
-        print(f"Rozmiar czcionki zmieniony na bazowy: {self.base_font_size}")
+        print(f"Rozmiar czcionki zmieniony na bazowy: {new_size}")
 
     def on_closing(self):
         if self.batch_processing_thread and self.batch_processing_thread.is_alive():
@@ -362,10 +336,10 @@ class TranscriberApp(ttk.Window):
         self.add_config_field(form, "Dostawca podsumowania", "SUMMARY_PROVIDER", "System: 'ollama' (lokalnie) lub 'google' (API Gemini).", kind="combo", options=["ollama", "google"])
         self.add_config_field(form, "Język podsumowania", "SUMMARY_LANGUAGE", "np. Polish, English.")
         ttk.Label(form, text="Szablon Promptu LLM", font=self.font_settings["label"]).pack(anchor=W, padx=10, pady=(8,0))
-        tpl_cfg = getattr(config_module, "LLM_PROMPT_TEMPLATES", default_config_values["LLM_PROMPT_TEMPLATES"])
+        tpl_cfg = getattr(config_module, "LLM_PROMPT_TEMPLATES", DEFAULT_CONFIG["LLM_PROMPT_TEMPLATES"])
         tpl_names = list(tpl_cfg.keys()) + [CUSTOM_PROMPT_OPTION_TEXT]
-        curr_tpl_name = getattr(config_module, "LLM_PROMPT_TEMPLATE_NAME", default_config_values["LLM_PROMPT_TEMPLATE_NAME"])
-        if not curr_tpl_name and getattr(config_module, "LLM_PROMPT", default_config_values["LLM_PROMPT"]): self.llm_prompt_template_var.set(CUSTOM_PROMPT_OPTION_TEXT)
+        curr_tpl_name = getattr(config_module, "LLM_PROMPT_TEMPLATE_NAME", DEFAULT_CONFIG["LLM_PROMPT_TEMPLATE_NAME"])
+        if not curr_tpl_name and getattr(config_module, "LLM_PROMPT", DEFAULT_CONFIG["LLM_PROMPT"]): self.llm_prompt_template_var.set(CUSTOM_PROMPT_OPTION_TEXT)
         elif curr_tpl_name in tpl_names: self.llm_prompt_template_var.set(curr_tpl_name)
         else: self.llm_prompt_template_var.set(tpl_names[0] if tpl_names and tpl_names[0] != CUSTOM_PROMPT_OPTION_TEXT else CUSTOM_PROMPT_OPTION_TEXT)
         self.prompt_template_combo = ttk.Combobox(form, textvariable=self.llm_prompt_template_var, values=tpl_names, state="readonly", font=self.font_settings["default"])
@@ -374,7 +348,7 @@ class TranscriberApp(ttk.Window):
         ttk.Label(form, text="Prompt Niestandardowy (dla opcji powyżej)", font=self.font_settings["label"]).pack(anchor=W, padx=10, pady=(8,0))
         cust_prompt_fr = ttk.Frame(form); cust_prompt_fr.pack(fill=BOTH, expand=True, padx=10, pady=(0,8))
         self.custom_llm_prompt_text_widget = Text(cust_prompt_fr, height=5, wrap="word", font=self.font_settings["scrolledtext"], relief=SUNKEN, borderwidth=1)
-        self.custom_llm_prompt_text_widget.insert("1.0", getattr(config_module, "LLM_PROMPT", default_config_values.get("LLM_PROMPT")))
+        self.custom_llm_prompt_text_widget.insert("1.0", getattr(config_module, "LLM_PROMPT", DEFAULT_CONFIG.get("LLM_PROMPT")))
         self.custom_llm_prompt_text_widget.pack(fill=BOTH, expand=True)
         ToolTip(self.custom_llm_prompt_text_widget, "Wpisz własny prompt. Język i tekst dodane automatycznie."); self.fields["LLM_PROMPT"] = self.custom_llm_prompt_text_widget
         self.on_prompt_template_change()
@@ -400,7 +374,7 @@ class TranscriberApp(ttk.Window):
         is_custom = self.llm_prompt_template_var.get() == CUSTOM_PROMPT_OPTION_TEXT
         self.custom_llm_prompt_text_widget.config(state=NORMAL if is_custom else DISABLED, relief="solid" if is_custom else "flat", background="white" if is_custom else "#f0f0f0")
         if not is_custom:
-            selected_key = self.llm_prompt_template_var.get(); templates = getattr(config_module, "LLM_PROMPT_TEMPLATES", default_config_values["LLM_PROMPT_TEMPLATES"])
+            selected_key = self.llm_prompt_template_var.get(); templates = getattr(config_module, "LLM_PROMPT_TEMPLATES", DEFAULT_CONFIG["LLM_PROMPT_TEMPLATES"])
             if selected_key in templates:
                 self.custom_llm_prompt_text_widget.config(state=NORMAL); self.custom_llm_prompt_text_widget.delete("1.0", END)
                 self.custom_llm_prompt_text_widget.insert("1.0", templates[selected_key]); self.custom_llm_prompt_text_widget.config(state=DISABLED, relief="flat", background="#f0f0f0")
@@ -408,7 +382,7 @@ class TranscriberApp(ttk.Window):
     def add_config_field(self, parent, label, key, tooltip, kind="entry", default_value_key=None, options=None):
         if default_value_key is None: default_value_key = key
         ttk.Label(parent, text=label, font=self.font_settings["label"]).pack(anchor=W, padx=10, pady=(8,0))
-        current_value = getattr(config_module, key, default_config_values.get(default_value_key))
+        current_value = getattr(config_module, key, DEFAULT_CONFIG.get(default_value_key))
         if kind == "entry":
             var = StringVar(value=str(current_value)); entry_frame = ttk.Frame(parent); entry_frame.pack(fill=X, expand=True, padx=10, pady=(0,8))
             entry = ttk.Entry(entry_frame, textvariable=var, font=self.font_settings["default"]); entry.pack(side=LEFT, fill=X, expand=True)
@@ -448,12 +422,12 @@ class TranscriberApp(ttk.Window):
             content = ["# config.py - wygenerowany przez Pogadane GUI\n"]; order = ["FASTER_WHISPER_EXE", "YT_DLP_EXE", "WHISPER_LANGUAGE", "WHISPER_MODEL", "ENABLE_SPEAKER_DIARIZATION", "DIARIZE_METHOD", "DIARIZE_SPEAKER_PREFIX", "SUMMARY_PROVIDER", "SUMMARY_LANGUAGE", "LLM_PROMPT_TEMPLATES", "LLM_PROMPT_TEMPLATE_NAME", "LLM_PROMPT", "OLLAMA_MODEL", "GOOGLE_API_KEY", "GOOGLE_GEMINI_MODEL", "TRANSCRIPTION_FORMAT", "DOWNLOADED_AUDIO_FILENAME", "DEBUG_MODE"]
             cfg_dict = {}
             for k in order:
-                if k == "LLM_PROMPT_TEMPLATES": cfg_dict[k] = getattr(config_module, k, default_config_values.get(k)); continue
+                if k == "LLM_PROMPT_TEMPLATES": cfg_dict[k] = getattr(config_module, k, DEFAULT_CONFIG.get(k)); continue
                 if k in self.fields: var = self.fields[k]; cfg_dict[k] = var.get("1.0", "end-1c").strip() if isinstance(var, Text) else (var.get() if isinstance(var, BooleanVar) else var.get())
-                else: cfg_dict[k] = getattr(config_module, k, default_config_values.get(k))
+                else: cfg_dict[k] = getattr(config_module, k, DEFAULT_CONFIG.get(k))
             if cfg_dict.get("LLM_PROMPT_TEMPLATE_NAME") == CUSTOM_PROMPT_OPTION_TEXT: cfg_dict["LLM_PROMPT_TEMPLATE_NAME"] = ""
             for k in order:
-                val = cfg_dict.get(k, default_config_values.get(k))
+                val = cfg_dict.get(k, DEFAULT_CONFIG.get(k))
                 if k == "LLM_PROMPT_TEMPLATES": content.append(f"{k.upper()} = {repr(val)}")
                 elif isinstance(val, bool): content.append(f"{k.upper()} = {val}")
                 elif isinstance(val, (int, float)) and not isinstance(val, bool): content.append(f"{k.upper()} = {val}")
@@ -461,25 +435,15 @@ class TranscriberApp(ttk.Window):
             self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
             with open(self.config_file_path, "w", encoding="utf-8") as f: f.write("\n".join(content) + "\n")
             messagebox.showinfo("Zapisano", f"Konfiguracja zapisana do {self.config_file_path}.\nZmiany zostaną zastosowane.")
-            self.reload_config_module(); self.populate_config_form()
+            config_manager.reload(); self.populate_config_form()
         except Exception as e: messagebox.showerror("Błąd zapisu konfiguracji", str(e))
-
-    def reload_config_module(self):
-        global config_module
-        try:
-            if 'config' in sys.modules: importlib.reload(sys.modules['config']); config_module = sys.modules['config']
-            else: spec = importlib.util.spec_from_file_location("config", self.config_file_path); config_module = importlib.util.module_from_spec(spec); sys.modules['config'] = config_module; spec.loader.exec_module(config_module)
-            print("✅ Konfiguracja GUI przeładowana.")
-        except Exception as e:
-            messagebox.showerror("Błąd przeładowania konfiguracji", f"Nie udało się przeładować .config/config.py: {e}")
-            config_module = DummyConfigFallback(); [setattr(config_module, k, v) for k, v in default_config_values.items()]
 
 
     def run_batch_script(self):
         sources = [l.strip() for l in self.input_text_area.get("1.0", END).strip().splitlines() if l.strip()]
         if not sources: messagebox.showwarning("Brak danych", "Wprowadź źródła."); return
         self.total_to_process = len(sources); self.current_processed_count = 0
-        self.processed_results_data.clear(); self.processed_files_combo['values'] = []; self.processed_files_combo.set('')
+        self.results_manager.clear_all(); self.processed_files_combo['values'] = []; self.processed_files_combo.set('')
         for w in [self.current_transcription_text, self.current_summary_text]: w.text.config(state=NORMAL); w.text.delete("1.0", END); w.text.config(state=DISABLED)
         [self.files_queue_tree.delete(i) for i in self.files_queue_tree.get_children()]
         for i,s_val in enumerate(sources): # Zmiana nazwy zmiennej src na s_val
@@ -527,7 +491,7 @@ class TranscriberApp(ttk.Window):
                 elif msg_type == "update_status": item_id = data1; status_text = data2; (self.files_queue_tree.exists(item_id) and self.files_queue_tree.set(item_id, "status", status_text))
                 elif msg_type == "result":
                     src_name, trans, summ = data1, data2, summary_data # summary_data to teraz poprawnie summ
-                    self.processed_results_data[src_name] = {"transcription": trans, "summary": summ}
+                    self.results_manager.add_result(src_name, trans, summ)
                     combo_vals = list(self.processed_files_combo['values']); (src_name not in combo_vals and self.processed_files_combo.config(values=combo_vals + [src_name]))
                     (not self.processed_files_combo.get() and (self.processed_files_combo.set(src_name), self.display_selected_result()))
                     self.current_processed_count +=1; self.overall_progress['value'] = (self.current_processed_count / self.total_to_process) * 100
@@ -538,15 +502,14 @@ class TranscriberApp(ttk.Window):
             else: self._finalize_batch_run()
 
     def display_selected_result(self, event=None):
+        """Display selected result using ResultsManager."""
         selected_src = self.processed_files_combo.get()
-        if selected_src in self.processed_results_data:
-            data = self.processed_results_data[selected_src]
-            for widget, key, default in [(self.current_transcription_text, "transcription", "Brak transkrypcji."), (self.current_summary_text, "summary", "Brak podsumowania.")]:
-                widget.text.config(state=NORMAL); widget.text.delete("1.0", END)
-                content = data.get(key, default)
-                if key == "summary": insert_with_markdown(widget, content)
-                else: widget.text.insert("1.0", content); widget.text.config(state=DISABLED)
-        else: [w.text.config(state=NORMAL) or w.text.delete("1.0", END) or w.text.config(state=DISABLED) for w in [self.current_transcription_text, self.current_summary_text]]
+        self.results_manager.display_result(
+            selected_src,
+            self.current_transcription_text,
+            self.current_summary_text,
+            insert_with_markdown
+        )
 
     def _finalize_batch_run(self):
         self.overall_progress_label.config(text=f"Ukończono: {self.current_processed_count}/{self.total_to_process}")

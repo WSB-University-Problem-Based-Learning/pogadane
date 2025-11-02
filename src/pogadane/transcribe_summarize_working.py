@@ -29,16 +29,19 @@ config_manager = ConfigManager()
 config_manager.initialize()
 config = config_manager.config
 
-genai = None
-
-def ensure_google_ai_available():
-    global genai
-    if genai is None:
-        try: import google.generativeai as google_genai; genai = google_genai; print("✅ Biblioteka google-generativeai załadowana.")
-        except ImportError: print("❌ Błąd: Biblioteka google.generativeai nie jest zainstalowana.", file=sys.stderr); return False
-    return True
-
 def run_command(command_list, input_data=None, capture_output=True, text_encoding='utf-8'):
+    """
+    Execute a shell command with optional input data.
+    
+    Args:
+        command_list: List of command arguments
+        input_data: Optional input to pipe to the command
+        capture_output: Whether to capture stdout/stderr
+        text_encoding: Text encoding for input/output
+        
+    Returns:
+        CompletedProcess object or None on error
+    """
     debug_mode = getattr(config, 'DEBUG_MODE', DEFAULT_CONFIG['DEBUG_MODE'])
     cmd_str = ' '.join(shlex.quote(str(s)) for s in command_list)
     if debug_mode: print(f"🐞 DEBUG: Running command: {cmd_str}\n🐞 DEBUG: Input (100char): {input_data[:100]}..." if input_data else "🐞 DEBUG: No input data")
@@ -59,6 +62,15 @@ def run_command(command_list, input_data=None, capture_output=True, text_encodin
     except Exception as e: print(f"❌ Unexpected CMD error '{command_list[0]}': {e}", file=sys.stderr); return None
 
 def get_unique_download_filename(url):
+    """
+    Generate unique filename for downloaded YouTube audio.
+    
+    Args:
+        url: YouTube URL
+        
+    Returns:
+        Unique filename string
+    """
     base_name = getattr(config, 'DOWNLOADED_AUDIO_FILENAME', DEFAULT_CONFIG['DOWNLOADED_AUDIO_FILENAME'])
     base_stem, base_suffix = Path(base_name).stem, Path(base_name).suffix or ".mp3"
     try:
@@ -68,6 +80,16 @@ def get_unique_download_filename(url):
     except: return f"{base_stem}_{os.urandom(4).hex()}{base_suffix}"
 
 def download_youtube_audio(url, target_dir_path):
+    """
+    Download audio from YouTube URL using yt-dlp.
+    
+    Args:
+        url: YouTube URL to download
+        target_dir_path: Directory to save downloaded audio
+        
+    Returns:
+        Path to downloaded audio file or None on failure
+    """
     print(f"\n🔄 Downloading YouTube Audio: {url}")
     yt_dlp_exe = getattr(config, 'YT_DLP_EXE', DEFAULT_CONFIG['YT_DLP_EXE'])
     temp_audio_filename = get_unique_download_filename(url)
@@ -89,6 +111,16 @@ def download_youtube_audio(url, target_dir_path):
         return None
 
 def transcribe_audio(audio_path_str, original_input_name_stem):
+    """
+    Transcribe audio file using faster-whisper.
+    
+    Args:
+        audio_path_str: Path to audio file (string)
+        original_input_name_stem: Original input name for output file
+        
+    Returns:
+        Path to transcription file or None on failure
+    """
     audio_path = Path(audio_path_str)
     if not audio_path.is_file(): print(f"❌ Error: Audio file not found: '{audio_path}' for '{original_input_name_stem}'", file=sys.stderr); return None
     fmt = getattr(config, 'TRANSCRIPTION_FORMAT', DEFAULT_CONFIG['TRANSCRIPTION_FORMAT'])
@@ -122,41 +154,60 @@ def transcribe_audio(audio_path_str, original_input_name_stem):
     except OSError as e: print(f"⚠️ Warn: Rename failed '{chosen_file}' to '{trans_out_path}': {e}. Using original.", file=sys.stderr); return chosen_file
 
 def summarize_text(text_to_summarize, original_input_name_stem=""):
-    if not text_to_summarize: print(f"⚠️ Warn: No text for summarization (Input: {original_input_name_stem}).", file=sys.stderr); return None
-    provider = getattr(config, 'SUMMARY_PROVIDER', DEFAULT_CONFIG['SUMMARY_PROVIDER']).lower()
+    """
+    Summarize text using configured LLM provider.
+    
+    Args:
+        text_to_summarize: Text content to summarize
+        original_input_name_stem: Name of the source file for logging
+        
+    Returns:
+        Summary text or None if summarization fails
+    """
+    if not text_to_summarize:
+        print(f"⚠️ Warn: No text for summarization (Input: {original_input_name_stem}).", file=sys.stderr)
+        return None
+    
+    # Get prompt configuration
     templates = getattr(config, 'LLM_PROMPT_TEMPLATES', DEFAULT_CONFIG['LLM_PROMPT_TEMPLATES'])
     tpl_name = getattr(config, 'LLM_PROMPT_TEMPLATE_NAME', DEFAULT_CONFIG['LLM_PROMPT_TEMPLATE_NAME'])
     prompt_core = templates.get(tpl_name) or getattr(config, 'LLM_PROMPT', DEFAULT_CONFIG['LLM_PROMPT'])
     print(f"ℹ️ Using template '{tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'}' for '{original_input_name_stem}'.")
+    
+    # Clean up prompt template
     prompt_core = prompt_core.replace("{text}", "").replace("{Text}", "").strip()
     lang = getattr(config, 'SUMMARY_LANGUAGE', DEFAULT_CONFIG['SUMMARY_LANGUAGE'])
-    summary_result = None; print("--- POCZĄTEK STRESZCZENIA ---") # Znacznik dla GUI
-    if provider == "ollama":
-        model = getattr(config, 'OLLAMA_MODEL', DEFAULT_CONFIG['OLLAMA_MODEL'])
-        print(f"\n🔄 Summarizing '{original_input_name_stem}' with Ollama ({model})")
-        prompt_data = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
-        cmd = ["ollama", "run", model]; proc = run_command(cmd, input_data=prompt_data, capture_output=True)
-        if proc and proc.returncode == 0 and proc.stdout: summary_result = proc.stdout.strip(); print(f"✅ Summary OK for '{original_input_name_stem}' (Ollama).")
-        else: print(f"❌ Summary failed for '{original_input_name_stem}' (Ollama). Code: {proc.returncode if proc else 'N/A'}", file=sys.stderr); print(f"   Reason: Ollama gave no output.{' Code 0.' if proc and proc.returncode==0 else ''}", file=sys.stderr) if proc and not proc.stdout else None
-    elif provider == "google":
-        if ensure_google_ai_available():
-            api_key = getattr(config, 'GOOGLE_API_KEY', DEFAULT_CONFIG['GOOGLE_API_KEY'])
-            model_name = getattr(config, 'GOOGLE_GEMINI_MODEL', DEFAULT_CONFIG['GOOGLE_GEMINI_MODEL'])
-            if not api_key: print(f"❌ Error: GOOGLE_API_KEY not set for '{original_input_name_stem}'.", file=sys.stderr)
-            else:
-                print(f"\n🔄 Summarizing '{original_input_name_stem}' with Google Gemini ({model_name})")
-                try:
-                    genai.configure(api_key=api_key); model_obj = genai.GenerativeModel(model_name)
-                    prompt_data = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
-                    print(f"   Sending prompt to Google for '{original_input_name_stem}'...")
-                    resp = model_obj.generate_content(prompt_data)
-                    if resp.parts: summary_result = "".join(p.text for p in resp.parts if hasattr(p, 'text')).strip(); print(f"✅ Summary OK for '{original_input_name_stem}' (Google).")
-                    elif resp.prompt_feedback and resp.prompt_feedback.block_reason: print(f"❌ Summary blocked by Google for '{original_input_name_stem}'. Reason: {resp.prompt_feedback.block_reason}", file=sys.stderr)
-                    else: print(f"❌ Summary failed for '{original_input_name_stem}' (Google). No content/unknown error.", file=sys.stderr)
-                except Exception as e: print(f"❌ Google API error for '{original_input_name_stem}': {e}", file=sys.stderr)
-    else: print(f"❌ Error: Unknown provider '{provider}' for '{original_input_name_stem}'.", file=sys.stderr)
-    if summary_result: print(summary_result) # Drukuj streszczenie do konsoli (dla GUI)
-    print("--- KONIEC STRESZCZENIA ---") # Znacznik dla GUI
+    
+    # Build full prompt
+    full_prompt = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
+    
+    print(f"{SUMMARY_START_MARKER}")  # Marker for GUI
+    
+    try:
+        # Use LLMProviderFactory to get the appropriate provider
+        provider = LLMProviderFactory.create_provider(config)
+        
+        if not provider:
+            print(f"❌ Error: Could not create LLM provider for '{original_input_name_stem}'.", file=sys.stderr)
+            print(f"{SUMMARY_END_MARKER}")
+            return None
+        
+        print(f"\n🔄 Summarizing '{original_input_name_stem}' with {provider.__class__.__name__}")
+        
+        # Call the provider's summarize method
+        summary_result = provider.summarize(full_prompt)
+        
+        if summary_result:
+            print(f"✅ Summary OK for '{original_input_name_stem}'.")
+            print(summary_result)  # Print summary to console (for GUI)
+        else:
+            print(f"❌ Summary failed for '{original_input_name_stem}'. No content returned.", file=sys.stderr)
+    
+    except Exception as e:
+        print(f"❌ Summarization error for '{original_input_name_stem}': {e}", file=sys.stderr)
+        summary_result = None
+    
+    print(f"{SUMMARY_END_MARKER}")  # Marker for GUI
     return summary_result
 
 def _try_cleanup_temp_files(audio_file, trans_file):

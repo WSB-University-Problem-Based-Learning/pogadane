@@ -8,123 +8,27 @@ import queue
 import subprocess
 import sys
 import os
-import re
 from pathlib import Path
-import importlib.util
-import time
+
+# Import utility modules
+from .constants import (
+    APP_VERSION,
+    CUSTOM_PROMPT_OPTION_TEXT,
+    FILE_STATUS_PENDING,
+    FILE_STATUS_PROCESSING,
+    FILE_STATUS_COMPLETED,
+    FILE_STATUS_ERROR,
+    DEFAULT_CONFIG
+)
+from .text_utils import strip_ansi, extract_transcription_and_summary, insert_with_markdown
+from .config_loader import ConfigManager
+from .gui_utils import FontManager, ResultsManager
 
 # Wersja Alpha v0.1.8
 
-CUSTOM_PROMPT_OPTION_TEXT = "(Własny prompt poniżej)"
-FILE_STATUS_PENDING = "⏳ Oczekuje"
-FILE_STATUS_PROCESSING = "⚙️ Przetwarzanie..."
-FILE_STATUS_COMPLETED = "✅ Ukończono"
-FILE_STATUS_ERROR = "❌ Błąd"
-
-default_config_values = {
-    "FASTER_WHISPER_EXE": "faster-whisper-xxl.exe", "YT_DLP_EXE": "yt-dlp.exe",
-    "WHISPER_LANGUAGE": "Polish", "WHISPER_MODEL": "turbo",
-    "ENABLE_SPEAKER_DIARIZATION": False, "DIARIZE_METHOD": "pyannote_v3.1", "DIARIZE_SPEAKER_PREFIX": "MÓWCA",
-    "SUMMARY_PROVIDER": "ollama", "SUMMARY_LANGUAGE": "Polish",
-    "LLM_PROMPT_TEMPLATES": {
-        "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
-        "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",
-        "Główne Tematy": "Wylistuj główne tematy poruszone w poniższej dyskusji.",
-        "Kluczowe Pytania": "Na podstawie poniższej dyskusji, sformułuj listę kluczowych pytań, które pozostały bez odpowiedzi lub wymagają dalszej analizy.",
-        "ELI5": "Wyjaśnij główne tezy i wnioski z poniższego tekstu w maksymalnie prosty sposób, unikając skomplikowanego słownictwa."
-    },
-    "LLM_PROMPT_TEMPLATE_NAME": "Standardowy",
-    "LLM_PROMPT": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
-    "OLLAMA_MODEL": "gemma3:4b", "GOOGLE_API_KEY": "", "GOOGLE_GEMINI_MODEL": "gemini-1.5-flash-latest",
-    "TRANSCRIPTION_FORMAT": "txt", "DOWNLOADED_AUDIO_FILENAME": "downloaded_audio.mp3", "DEBUG_MODE": False,
-}
-config_module = None
-
-def _resolve_project_root():
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().parent
-    return Path(__file__).resolve().parents[2]
-
-CONFIG_PATH = _resolve_project_root() / ".config" / "config.py"
-
-def _ensure_config_placeholder():
-    try:
-        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
-
-_ensure_config_placeholder()
-
-class DummyConfigFallback: # Zdefiniowana globalnie, aby uniknąć NameError
-    pass
-
-try:
-    spec = importlib.util.spec_from_file_location("config", CONFIG_PATH)
-    if spec and spec.loader:
-        config_module = importlib.util.module_from_spec(spec)
-        sys.modules['config'] = config_module
-        spec.loader.exec_module(config_module)
-        print("✅ Konfiguracja GUI załadowana z pliku .config/config.py.")
-    else:
-        raise ImportError("Nie można utworzyć specyfikacji modułu lub loader jest None dla .config/config.py.")
-except (ImportError, FileNotFoundError) as e:
-    print(f"⚠️ Ostrzeżenie GUI: Plik .config/config.py nie znaleziony lub błąd importu ({e}). Używam wartości domyślnych.")
-    config_module = DummyConfigFallback()
-    for key, value in default_config_values.items():
-        setattr(config_module, key, value)
-except Exception as e:
-    print(f"❌ Krytyczny błąd ładowania .config/config.py w GUI: {e}. Używam wartości domyślnych.")
-    config_module = DummyConfigFallback()
-    for key, value in default_config_values.items():
-        setattr(config_module, key, value)
-
-def strip_ansi(text):
-    ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-    return re.sub(ansi_escape, "", text)
-
-def extract_transcription_and_summary(full_log_for_file):
-    transcription_start_marker = "--- POCZĄTEK TRANSKRYPCJI ---"
-    transcription_end_marker = "--- KONIEC TRANSKRYPCJI ---"
-    summary_start_marker = "--- POCZĄTEK STRESZCZENIA ---"
-    summary_end_marker = "--- KONIEC STRESZCZENIA ---"
-    transcription = "Nie znaleziono transkrypcji w logu."
-    summary = "Nie znaleziono streszczenia w logu."
-    trans_start_idx = full_log_for_file.find(transcription_start_marker)
-    if trans_start_idx != -1:
-        trans_end_idx = full_log_for_file.find(transcription_end_marker, trans_start_idx + len(transcription_start_marker))
-        if trans_end_idx != -1: transcription = full_log_for_file[trans_start_idx + len(transcription_start_marker):trans_end_idx].strip()
-        else: transcription = full_log_for_file[trans_start_idx + len(transcription_start_marker):].strip()
-    summary_start_idx = full_log_for_file.find(summary_start_marker)
-    if summary_start_idx != -1:
-        summary_end_idx = full_log_for_file.find(summary_end_marker, summary_start_idx + len(summary_start_marker))
-        if summary_end_idx != -1: summary = full_log_for_file[summary_start_idx + len(summary_start_marker):summary_end_idx].strip()
-        else: summary = full_log_for_file[summary_start_idx + len(summary_start_marker):].strip()
-    return transcription, summary
-
-def insert_with_markdown(text_widget, text_content):
-    text_widget.config(state=NORMAL)
-    text_widget.delete("1.0", END)
-    try: font_size = text_widget.cget("font").actual("size")
-    except: font_size = 10 
-    text_widget.tag_configure("bold", font=("Segoe UI", font_size, "bold"))
-    text_widget.tag_configure("italic", font=("Segoe UI", font_size, "italic"))
-    text_widget.tag_configure("h1", font=("Segoe UI", font_size + 4, "bold"), spacing1=10, spacing3=5)
-    text_widget.tag_configure("h2", font=("Segoe UI", font_size + 2, "bold"), spacing1=8, spacing3=4)
-    text_widget.tag_configure("bullet", lmargin1=20, lmargin2=35, font=("Segoe UI", font_size))
-    for line in text_content.splitlines():
-        stripped_line = line.lstrip()
-        if stripped_line.startswith("### "): text_widget.insert(END, stripped_line[4:] + "\n", "h2")
-        elif stripped_line.startswith("## "): text_widget.insert(END, stripped_line[3:] + "\n", "h2")
-        elif stripped_line.startswith("# "): text_widget.insert(END, stripped_line[2:] + "\n", "h1")
-        elif stripped_line.startswith("* ") or stripped_line.startswith("- "): text_widget.insert(END, "• " + stripped_line[2:] + "\n", "bullet")
-        else:
-            parts = re.split(r"(\*\*.*?\*\*|\*.*?\*)", line)
-            for part in parts:
-                if part.startswith("**") and part.endswith("**") and len(part) > 4: text_widget.insert(END, part[2:-2], "bold")
-                elif part.startswith("*") and part.endswith("*") and len(part) > 2: text_widget.insert(END, part[1:-1], "italic")
-                else: text_widget.insert(END, part)
-            text_widget.insert(END, "\n")
-    text_widget.config(state=DISABLED)
+# Initialize configuration manager
+config_manager = ConfigManager.get()
+config_module = config_manager.config
 
 # Poprawka: Definicja klasy ToolTip tylko raz.
 class ToolTip:

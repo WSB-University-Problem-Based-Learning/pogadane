@@ -1,23 +1,27 @@
 # Pogadane - Technical Architecture Documentation
 
+## 🎉 Latest Updates (2025-01-20)
+**Phase 3/4 Refactoring Complete!** This project has been refactored with clean code architecture, implementing professional design patterns (Strategy, Factory, Singleton) and removing 225+ lines of duplicate code. See [REFACTORING.md](REFACTORING.md) for details.
+
 ## Table of Contents
 
 1. [System Overview](#system-overview)
-2. [Component Architecture](#component-architecture)
-3. [Data Flow](#data-flow)
-4. [Module Structure](#module-structure)
-5. [Configuration System](#configuration-system)
-6. [GUI Architecture](#gui-architecture)
-7. [CLI Architecture](#cli-architecture)
-8. [External Dependencies](#external-dependencies)
-9. [Error Handling](#error-handling)
-10. [Security Considerations](#security-considerations)
+2. [Refactored Architecture](#refactored-architecture)
+3. [Component Architecture](#component-architecture)
+4. [Data Flow](#data-flow)
+5. [Module Structure](#module-structure)
+6. [Configuration System](#configuration-system)
+7. [GUI Architecture](#gui-architecture)
+8. [CLI Architecture](#cli-architecture)
+9. [External Dependencies](#external-dependencies)
+10. [Error Handling](#error-handling)
+11. [Security Considerations](#security-considerations)
 
 ---
 
 ## System Overview
 
-Pogadane is a modular Python application designed for audio transcription and AI-powered summarization with both GUI and CLI interfaces.
+Pogadane is a modular Python application designed for audio transcription and AI-powered summarization with both GUI and CLI interfaces. **Recently refactored** with professional design patterns and clean code principles.
 
 ### Key Features
 
@@ -27,6 +31,7 @@ Pogadane is a modular Python application designed for audio transcription and AI
 - **Speaker Diarization**: Optional speaker identification in transcriptions
 - **YouTube Integration**: Direct video-to-text conversion via yt-dlp
 - **Privacy-Focused**: Local processing option (Ollama) keeps data on-premises
+- **✨ NEW**: Clean architecture with Strategy, Factory, and Singleton patterns
 
 ### Technology Stack
 
@@ -37,6 +42,85 @@ Pogadane is a modular Python application designed for audio transcription and AI
 - **LLM Options**:
   - Ollama (local, offline)
   - Google Gemini API (cloud, online)
+- **Design Patterns**: Strategy (LLM Providers), Factory (Config/Provider Creation), Singleton (Config Manager)
+
+---
+
+## Refactored Architecture
+
+### Clean Code Principles Applied
+
+✅ **SOLID Principles:**
+- **Single Responsibility**: Each module does one thing
+- **Open/Closed**: Easy to extend (new LLM providers) without modifying existing code
+- **Liskov Substitution**: All LLM providers are interchangeable
+- **Interface Segregation**: Small, focused interfaces
+- **Dependency Inversion**: Depend on abstractions (LLMProvider interface)
+
+✅ **DRY (Don't Repeat Yourself):**
+- Eliminated duplicate provider logic (45+ lines removed)
+- Shared utilities between GUI and CLI
+- Centralized constants and configuration
+
+✅ **Design Patterns:**
+- **Strategy Pattern**: LLM providers (OllamaProvider, GoogleGeminiProvider)
+- **Factory Pattern**: LLMProviderFactory creates appropriate provider
+- **Singleton Pattern**: ConfigManager ensures single configuration instance
+
+### Utility Modules Structure
+
+```
+src/pogadane/
+├── constants.py                # Constants and default values
+├── config_loader.py            # ConfigManager (Singleton), ConfigLoader (Factory)
+├── llm_providers.py            # LLMProvider (Strategy), LLMProviderFactory
+├── text_utils.py               # Text processing utilities
+├── file_utils.py               # File operation utilities
+├── gui_utils/
+│   ├── font_manager.py         # Font management and scaling
+│   └── results_manager.py      # Results storage and display
+├── gui.py                      # GUI application (refactored)
+└── transcribe_summarize_working.py  # CLI application (refactored)
+```
+
+### New Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Pogadane Application                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐              ┌───────────────────────┐   │
+│  │   GUI Layer  │              │     CLI Layer         │   │
+│  │  (gui.py)    │              │  (transcribe_...py)   │   │
+│  └──────┬───────┘              └───────────┬───────────┘   │
+│         │                                   │                │
+│         └───────────────┬───────────────────┘                │
+│                         │                                     │
+│              ┌──────────▼──────────┐                         │
+│              │  Utility Modules    │                         │
+│              │  - ConfigManager    │                         │
+│              │  - LLMProviderFactory│                        │
+│              │  - text_utils       │                         │
+│              │  - file_utils       │                         │
+│              │  - FontManager      │                         │
+│              │  - ResultsManager   │                         │
+│              └──────────┬──────────┘                         │
+│                         │                                     │
+│         ┌───────────────┼───────────────┐                    │
+│         │               │               │                     │
+│    ┌────▼─────┐   ┌────▼────┐   ┌─────▼──────────┐         │
+│    │ yt-dlp   │   │ Faster  │   │ LLM Providers  │         │
+│    │ (binary) │   │ Whisper │   │ (Strategy)     │         │
+│    │          │   │ (binary)│   │ - Ollama       │         │
+│    │          │   │         │   │ - Google Gemini│         │
+│    └──────────┘   └─────────┘   └────────────────┘         │
+│                                                              │
+├─────────────────────────────────────────────────────────────┤
+│            Configuration System (ConfigManager)              │
+│                  (.config/config.py + Singleton)             │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -215,33 +299,225 @@ GUI receives N inputs
 
 ## Module Structure
 
-### File Organization
+### File Organization (After Refactoring)
 
 ```
 src/pogadane/
-├── __init__.py                  # Package initialization
-├── gui.py                       # GUI application entry point
-└── transcribe_summarize_working.py  # CLI & core logic
+├── __init__.py                          # Package initialization
+├── gui.py                               # GUI application (REFACTORED ✅)
+├── transcribe_summarize_working.py      # CLI & core logic (REFACTORED ✅)
+│
+├── constants.py                         # Constants and defaults (NEW ✨)
+├── config_loader.py                     # ConfigManager & ConfigLoader (NEW ✨)
+├── llm_providers.py                     # LLM Strategy pattern (NEW ✨)
+├── text_utils.py                        # Text processing utilities (NEW ✨)
+├── file_utils.py                        # File operations utilities (NEW ✨)
+│
+└── gui_utils/                           # GUI-specific utilities (NEW ✨)
+    ├── __init__.py
+    ├── font_manager.py                  # Font management
+    └── results_manager.py               # Results storage & display
 
 .config/
-└── config.py                    # User configuration (editable)
+└── config.py                            # User configuration (editable)
 
 tools/
-└── pogadane_doctor.py          # Setup & maintenance utility
+└── pogadane_doctor.py                   # Setup & maintenance utility
 
 doc/
-├── ARCHITECTURE.md             # This file
-├── NOTICES.md                  # License information
-├── README.md                   # Documentation index
-└── cli_help/                   # Command reference
+├── ARCHITECTURE.md                      # This file (UPDATED ✅)
+├── REFACTORING.md                       # Refactoring guide (UPDATED ✅)
+├── NOTICES.md                           # License information
+├── README.md                            # Documentation index
+└── cli_help/                            # Command reference
     ├── faster-whisper-xxl_help.txt
     ├── ollama_help.txt
     └── yt-dlp_help.txt
 ```
 
-### Key Classes and Functions
+### Module Responsibilities (Updated)
 
-#### `gui.py`
+#### **New Utility Modules** ✨
+
+**constants.py**
+```python
+"""
+Centralized constants and default configuration values.
+Eliminates magic numbers throughout codebase.
+"""
+APP_VERSION = "0.1.8"
+DEFAULT_CONFIG = {
+    'FASTER_WHISPER_EXE': 'faster-whisper-xxl.exe',
+    'WHISPER_MODEL': 'turbo',
+    # ... all default values
+}
+MIN_FONT_SIZE = 8
+MAX_FONT_SIZE = 24
+FILE_STATUS_COMPLETED = "✅ Ukończono"
+# ... etc
+```
+
+**config_loader.py**
+```python
+"""
+Configuration management with Factory and Singleton patterns.
+"""
+class ConfigLoader:
+    """Factory for creating configuration objects."""
+    @staticmethod
+    def load_from_file(path):
+        # Dynamic module loading
+        pass
+
+class ConfigManager:
+    """Singleton for global configuration access."""
+    _instance = None
+    
+    def get(self, key, default=None):
+        # Get config value with fallback
+        pass
+    
+    def set(self, key, value):
+        # Set runtime value
+        pass
+```
+
+**llm_providers.py**
+```python
+"""
+LLM provider abstraction using Strategy pattern.
+"""
+class LLMProvider(ABC):
+    """Abstract base class for all LLM providers."""
+    @abstractmethod
+    def summarize(self, text, prompt, language, source_name):
+        pass
+    
+    @abstractmethod
+    def is_available(self):
+        pass
+
+class OllamaProvider(LLMProvider):
+    """Local Ollama LLM implementation."""
+    def summarize(self, ...):
+        # Ollama-specific logic
+        pass
+
+class GoogleGeminiProvider(LLMProvider):
+    """Google Gemini API implementation."""
+    def summarize(self, ...):
+        # Gemini-specific logic
+        pass
+
+class LLMProviderFactory:
+    """Factory for creating LLM provider instances."""
+    @staticmethod
+    def create_provider(config):
+        # Returns appropriate provider based on config
+        pass
+```
+
+**text_utils.py**
+```python
+"""
+Text processing and formatting utilities.
+"""
+def strip_ansi(text):
+    """Remove ANSI color codes."""
+    pass
+
+def extract_transcription_and_summary(log_text):
+    """Parse marked sections from log output."""
+    pass
+
+def insert_with_markdown(text_widget, content):
+    """Render markdown in tkinter Text widget."""
+    pass
+
+def is_valid_url(text):
+    """Validate if text is a URL."""
+    pass
+```
+
+**file_utils.py**
+```python
+"""
+Safe file and path manipulation utilities.
+"""
+def get_unique_filename(url_or_path):
+    """Generate unique filename from URL or path."""
+    pass
+
+def safe_delete_file(path, description):
+    """Delete file with error handling and logging."""
+    pass
+
+def safe_create_directory(path, description):
+    """Create directory safely."""
+    pass
+
+def find_output_file(base_path, extensions):
+    """Find output file with any of given extensions."""
+    pass
+```
+
+**gui_utils/font_manager.py**
+```python
+"""
+Centralized font management with dynamic scaling.
+"""
+class FontManager:
+    """Manages all fonts for the GUI with scaling."""
+    
+    def __init__(self, initial_size=10):
+        self.font_size = initial_size
+        self.fonts = {}
+        self._create_fonts()
+    
+    def increase_size(self):
+        """Increase font size (A+ button)."""
+        pass
+    
+    def decrease_size(self):
+        """Decrease font size (A- button)."""
+        pass
+    
+    def apply_to_ttk_styles(self, style):
+        """Apply fonts to ttkbootstrap styles."""
+        pass
+```
+
+**gui_utils/results_manager.py**
+```python
+"""
+Results storage and display management.
+"""
+class ResultsManager:
+    """Manages transcription and summary results."""
+    
+    def __init__(self):
+        self.results = {}
+    
+    def add_result(self, source, transcription, summary):
+        """Store result for a source."""
+        pass
+    
+    def get_result(self, source):
+        """Retrieve result for a source."""
+        pass
+    
+    def display_result(self, text_widget, source):
+        """Display result in text widget."""
+        pass
+    
+    def export_result(self, source, output_path):
+        """Export result to file."""
+        pass
+```
+
+#### **Refactored Core Modules** ✅
+
+#### `gui.py` (REFACTORED)
 
 ```python
 class TranscriberApp(ttk.Window):

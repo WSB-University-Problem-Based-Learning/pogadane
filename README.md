@@ -1,14 +1,101 @@
-# pogadane
+# Pogadane
 
-<img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane"/>
+<p align="center">
+  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
+</p>
 
-Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline dla transkrypcji i podsumowań Ollama, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów. Od wersji v0.1.7 wspiera również Google Gemini API jako alternatywnego dostawcę podsumowań. Wersja v0.1.8 wprowadza możliwość wyboru szablonów promptów LLM, przetwarzanie wsadowe w CLI i GUI, menedżer wyników w GUI oraz opcję dostosowania rozmiaru czcionki. Dodano również narzędzie `pogadane_doctor.py` ułatwiające konfigurację i aktualizację plików projektu.
+<p align="center">
+  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+</p>
 
-Projekt zawiera zarówno interfejs linii komend (CLI) `src/pogadane/transcribe_summarize_working.py`, interfejs graficzny użytkownika (GUI) `src/pogadane/gui.py`, jak i skrypt pomocniczy `tools/pogadane_doctor.py`.
+<p align="center">
+  <a href="#quick-links">Quick Links</a> •
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#documentation">Documentation</a> •
+  <a href="#license">License</a>
+</p>
 
-Plik ustawień użytkownika znajduje się w `.config/config.py`; w dalszej części dokumentu odnosimy się do niego skrótowo jako `config.py`.
+---
 
-**Spis Treści**
+<!-- English quick start note -->
+**Uwaga (EN):** Sekcja szybkiego startu w języku angielskim znajduje się dalej w tym pliku — zobacz "Quick Start (English)".
+
+
+## Overview
+
+**Pogadane** is a privacy-focused application for generating transcripts and summaries from audio recordings (e.g., Teams meetings, podcasts) or YouTube videos. It runs locally (offline for transcription and Ollama summaries, except YouTube downloads), ensuring data security. Get the most important information from long materials quickly.
+
+Version **v0.1.8** includes:
+- 🎯 LLM prompt template selection
+- 📦 Batch processing in CLI and GUI
+- 📊 Results manager in GUI
+- 🔤 Font size adjustment
+- 🩺 `pogadane_doctor.py` setup tool
+
+The project includes:
+- **CLI**: `src/pogadane/transcribe_summarize_working.py`
+- **GUI**: `src/pogadane/gui.py` (recommended)
+- **Setup Tool**: `tools/pogadane_doctor.py`
+
+User settings are in `.config/config.py`.
+
+---
+
+## Quick Links
+
+| 📚 For Everyone | 👨‍💻 For Developers |
+|----------------|---------------------|
+| [🚀 Quick Start Guide (Beginners)](QUICK_START.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
+| [⚙️ Installation](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy) | [📖 API Documentation](#cli-architecture) |
+| [🎬 How to Use](#uruchomienie-aplikacji-wersja-alpha-v018) | [🔧 Contributing Guidelines](#development-guidelines) |
+| [❓ Troubleshooting](#troubleshooting) | [🧪 Testing Guide](#testing) |
+| [📄 License Information](doc/NOTICES.md) | [🔐 Security Considerations](doc/ARCHITECTURE.md#security-considerations) |
+
+---
+
+## Features
+
+### Core Capabilities
+
+✅ **Dual Interface**
+- 🖥️ Modern GUI (ttkbootstrap) - recommended for beginners
+- ⌨️ Command-line interface - for automation and advanced users
+
+✅ **Multiple Input Sources**
+- 📁 Local audio files (MP3, WAV, M4A, OGG, FLAC)
+- 🎬 YouTube videos (automatic audio extraction)
+- 📦 Batch processing of multiple files/URLs
+
+✅ **Powerful Transcription**
+- 🎙️ Faster-Whisper engine with GPU acceleration
+- 🌍 Multi-language support
+- 👥 Optional speaker diarization (identify who said what)
+- 🎯 Multiple model sizes (tiny to turbo)
+
+✅ **Flexible AI Summarization**
+- 🏠 **Local (Ollama)**: Complete privacy, offline operation
+- ☁️ **Cloud (Google Gemini)**: API-based, online
+- 📝 Customizable prompt templates
+- 🌐 Multi-language summaries
+
+✅ **Privacy & Security**
+- 🔒 Local processing option (no data leaves your computer)
+- 🔓 Open source (inspect the code yourself)
+- 🚫 No accounts or registrations required
+
+### User Experience
+
+- 🎨 Modern, intuitive GUI
+- 📊 Real-time progress tracking
+- 📋 Results manager with per-file views
+- 🔤 Adjustable font sizes for accessibility
+- 💾 Easy result export
+- 🩺 Automated setup with doctor script
+
+---
+
+**Spis Treści (Table of Contents)**
 1.  [Struktura Katalogów](#struktura-katalogów)
 2.  [Architektura Systemu](#architektura-systemu)
 3.  [Wymagania Wstępne](#wymagania-wstępne)
@@ -356,3 +443,64 @@ Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
     ```
 
 3.  **Monitoruj Proces:** Skrypt wyświetli postęp przetwarzania dla każdego pliku.
+
+---
+
+## Quick Start (English)
+
+This short Quick Start helps non-experts run the Pogadane GUI or CLI on Windows.
+It's intentionally minimal — follow Polish docs above for full details.
+
+Prerequisites (simple):
+- Windows
+- Python 3.8+ installed (select "Add Python to PATH" during install)
+- Optional: Faster-Whisper standalone (`faster-whisper-xxl.exe`), `yt-dlp.exe`, or Ollama if you plan to use those features.
+
+1) Create and activate a virtual environment (recommended):
+
+```powershell
+cd C:\path\to\pogadane
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+```
+
+2) Install Python dependencies (GUI + Google API client):
+
+```powershell
+pip install --upgrade pip
+pip install ttkbootstrap google-generativeai
+```
+
+3) (Optional) Run the helper script to fetch recommended files and Python packages:
+
+```powershell
+python tools\pogadane_doctor.py
+```
+
+4) Configure optional external tools:
+- If you want to transcribe YouTube videos, download `yt-dlp.exe` and put its path in `.config\config.py` or keep it in the project folder.
+- For high-quality offline transcription, download Faster-Whisper standalone and set `FASTER_WHISPER_EXE` in `.config\config.py`.
+- For local LLM summaries, install Ollama and pull a model (e.g. `ollama pull gemma3:4b`).
+
+5) Run the GUI (recommended for beginners):
+
+```powershell
+# from project root with venv activated
+python -m pogadane.gui
+```
+
+6) Run the CLI (batch runs / automation):
+
+```powershell
+python -m pogadane.transcribe_summarize_working "C:\path\to\file.mp3" -o "C:\path\to\summary.txt"
+
+# or multiple sources
+python -m pogadane.transcribe_summarize_working "URL1" "C:\file2.wav" -o "C:\output_dir"
+```
+
+7) Sample test audio included:
+- `samples/` contains `Styrta się pali.mp3` (small test audio taken from YouTube). Use it to verify a complete run.
+
+If you see errors about missing packages, activate the virtual environment and run the `pip install` commands above.
+
+For more detailed instructions and troubleshooting, see the Polish sections above or `doc/README.md`.

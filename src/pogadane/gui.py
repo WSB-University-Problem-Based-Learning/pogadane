@@ -27,7 +27,8 @@ from .gui_utils import FontManager, ResultsManager
 # Wersja Alpha v0.1.8
 
 # Initialize configuration manager
-config_manager = ConfigManager.get()
+config_manager = ConfigManager()
+config_manager.initialize()
 config_module = config_manager.config
 
 # Poprawka: Definicja klasy ToolTip tylko raz.

@@ -160,3 +160,10 @@ class ConfigManager:
         if self._config is None:
             self.initialize()
         return self._config
+    
+    @property
+    def config_path(self):
+        """Get the configuration file path."""
+        if self._config_path is None:
+            self.initialize()
+        return self._config_path

@@ -18,15 +18,16 @@ BRANCH = "main"
 BASE_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{GITHUB_REPO}/{BRANCH}/"
 
 FILES_TO_DOWNLOAD_OR_UPDATE = [
-    "LICENSE",
-    "NOTICES.md",
-    "README.md",
-    "config.py",
-    "gui.py",
-    "transcribe_summarize_working.py"
+    ("LICENSE", "LICENSE"),
+    ("doc/NOTICES.md", "doc/NOTICES.md"),
+    ("README.md", "README.md"),
+    (".config/config.py", ".config/config.py"),
+    ("src/pogadane/gui.py", "src/pogadane/gui.py"),
+    ("src/pogadane/transcribe_summarize_working.py", "src/pogadane/transcribe_summarize_working.py"),
+    ("doc/cli_help/faster-whisper-xxl_help.txt", "doc/cli_help/faster-whisper-xxl_help.txt"),
+    ("doc/cli_help/ollama_help.txt", "doc/cli_help/ollama_help.txt"),
+    ("doc/cli_help/yt-dlp_help.txt", "doc/cli_help/yt-dlp_help.txt")
 ]
-# Ścieżki względne plików w repozytorium (jeśli są w podkatalogach)
-FILE_PATHS_IN_REPO = {file_name: file_name for file_name in FILES_TO_DOWNLOAD_OR_UPDATE}
 
 # Zależności pip dla projektu "pogadane"
 REQUIRED_PIP_PACKAGES = [
@@ -160,12 +161,11 @@ def main():
     failed_project_files_downloads = []
     destination_folder = Path(".")  # Pobieranie do bieżącego katalogu
 
-    for file_key in FILES_TO_DOWNLOAD_OR_UPDATE:
-        file_name_in_repo = FILE_PATHS_IN_REPO[file_key]
-        local_file_path = destination_folder / file_key
+    for file_name_in_repo, local_rel_path in FILES_TO_DOWNLOAD_OR_UPDATE:
+        local_file_path = destination_folder / local_rel_path
         
         # Obsługa backupu dla config.py
-        if file_key == "config.py" and local_file_path.exists():
+        if local_rel_path.endswith("config.py") and local_file_path.exists():
             print(f"  ℹ️ Plik konfiguracyjny '{local_file_path}' istnieje.")
             timestamp = int(time.time())
             backup_path = destination_folder / f"{local_file_path.stem}.backup_{timestamp}{local_file_path.suffix}"
@@ -177,13 +177,13 @@ def main():
                 user_choice = input(f"      Czy chcesz kontynuować i nadpisać '{local_file_path}' bez backupu? (t/N): ").strip().lower()
                 if user_choice != 't':
                     print(f"      Pominięto pobieranie '{local_file_path}'.")
-                    failed_project_files_downloads.append(file_key)
+                    failed_project_files_downloads.append(local_rel_path)
                     continue
         
         if download_file_with_urllib(file_name_in_repo, str(local_file_path)):
             downloaded_project_files_count += 1
         else:
-            failed_project_files_downloads.append(file_key)
+            failed_project_files_downloads.append(local_rel_path)
 
     print("\n--- Podsumowanie pobierania plików projektu ---")
     if downloaded_project_files_count > 0:
@@ -199,7 +199,7 @@ def main():
     print("💡 Jeśli wystąpiły problemy, przejrzyj komunikaty powyżej.")
     if not all_pip_ok:
         print("   🔴 Nie udało się zainstalować wszystkich zależności pip. Główny program 'pogadane' może nie działać poprawnie.")
-    print("   Teraz możesz spróbować uruchomić 'gui.py' lub 'transcribe_summarize_working.py'.")
+    print("   Teraz możesz spróbować uruchomić 'python -m pogadane.gui' lub 'python -m pogadane.transcribe_summarize_working'.")
 
 if __name__ == "__main__":
     main()

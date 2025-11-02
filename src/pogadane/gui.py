@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import X, Y, BOTH, LEFT, RIGHT, TOP, BOTTOM, DISABLED, NORMAL, HORIZONTAL, VERTICAL, END, W, E, NW, YES, NO, SUNKEN, RAISED, CURRENT
+from ttkbootstrap.widgets.scrolled import ScrolledText
 from tkinter import filedialog, messagebox, StringVar, BooleanVar, Text, Canvas, Frame, Scrollbar
 from tkinter import font as tkFont
 import threading
@@ -38,27 +39,41 @@ default_config_values = {
     "TRANSCRIPTION_FORMAT": "txt", "DOWNLOADED_AUDIO_FILENAME": "downloaded_audio.mp3", "DEBUG_MODE": False,
 }
 config_module = None
-config_path = os.path.join(os.path.dirname(__file__), "config.py")
+
+def _resolve_project_root():
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[2]
+
+CONFIG_PATH = _resolve_project_root() / ".config" / "config.py"
+
+def _ensure_config_placeholder():
+    try:
+        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+
+_ensure_config_placeholder()
 
 class DummyConfigFallback: # Zdefiniowana globalnie, aby uniknąć NameError
     pass
 
 try:
-    spec = importlib.util.spec_from_file_location("config", config_path)
+    spec = importlib.util.spec_from_file_location("config", CONFIG_PATH)
     if spec and spec.loader:
         config_module = importlib.util.module_from_spec(spec)
         sys.modules['config'] = config_module
         spec.loader.exec_module(config_module)
-        print("✅ Konfiguracja GUI załadowana z pliku config.py.")
+        print("✅ Konfiguracja GUI załadowana z pliku .config/config.py.")
     else:
-        raise ImportError("Nie można utworzyć specyfikacji modułu lub loader jest None dla config.py.")
+        raise ImportError("Nie można utworzyć specyfikacji modułu lub loader jest None dla .config/config.py.")
 except (ImportError, FileNotFoundError) as e:
-    print(f"⚠️ Ostrzeżenie GUI: Plik config.py nie znaleziony lub błąd importu ({e}). Używam wartości domyślnych.")
+    print(f"⚠️ Ostrzeżenie GUI: Plik .config/config.py nie znaleziony lub błąd importu ({e}). Używam wartości domyślnych.")
     config_module = DummyConfigFallback()
     for key, value in default_config_values.items():
         setattr(config_module, key, value)
 except Exception as e:
-    print(f"❌ Krytyczny błąd ładowania config.py w GUI: {e}. Używam wartości domyślnych.")
+    print(f"❌ Krytyczny błąd ładowania .config/config.py w GUI: {e}. Używam wartości domyślnych.")
     config_module = DummyConfigFallback()
     for key, value in default_config_values.items():
         setattr(config_module, key, value)
@@ -180,80 +195,180 @@ class TranscriberApp(ttk.Window):
         }
         self.update_font_styles()
 
-        if getattr(sys, 'frozen', False): self.base_path = Path(sys._MEIPASS)
-        else: self.base_path = Path(__file__).parent
-        self.config_file_path = self.base_path / "config.py"
+        if getattr(sys, 'frozen', False):
+            self.base_path = Path(sys._MEIPASS)
+        else:
+            self.base_path = Path(__file__).resolve().parent
+        self.config_file_path = CONFIG_PATH
 
-        top_controls_frame = ttk.Frame(self); top_controls_frame.pack(padx=10, pady=10, fill=X)
-        font_controls_frame = ttk.Frame(top_controls_frame); font_controls_frame.pack(side=RIGHT, padx=(0, 5))
+        top_controls_frame = ttk.Frame(self)
+        top_controls_frame.pack(padx=10, pady=10, fill=X)
+        font_controls_frame = ttk.Frame(top_controls_frame)
+        font_controls_frame.pack(side=RIGHT, padx=(0, 5))
         btn_font_plus = ttk.Button(font_controls_frame, text="A+", command=lambda: self.change_font_size(1), width=3)
-        btn_font_plus.pack(side=LEFT, padx=2); ToolTip(btn_font_plus, "Zwiększ rozmiar czcionki.")
+        btn_font_plus.pack(side=LEFT, padx=2)
+        ToolTip(btn_font_plus, "Zwiększ rozmiar czcionki.")
         btn_font_minus = ttk.Button(font_controls_frame, text="A-", command=lambda: self.change_font_size(-1), width=3)
-        btn_font_minus.pack(side=LEFT); ToolTip(btn_font_minus, "Zmniejsz rozmiar czcionki.")
+        btn_font_minus.pack(side=LEFT)
+        ToolTip(btn_font_minus, "Zmniejsz rozmiar czcionki.")
 
-        input_label_frame = ttk.Frame(top_controls_frame); input_label_frame.pack(fill=X, pady=(0,5))
-        ttk.Label(input_label_frame, text="🎙️ Pliki audio / URL-e YouTube (każdy w nowej linii):", font=self.font_settings["label"]).pack(side=LEFT, anchor=W)
-        browse_btn = ttk.Button(input_label_frame, text="➕ Dodaj Pliki Audio", command=self.browse_and_add_files, bootstyle="info-outline", style="Outline.TButton")
-        browse_btn.pack(side=RIGHT, padx=(10,0)); ToolTip(browse_btn, "Kliknij, aby wybrać jeden lub więcej plików audio.")
+        input_label_frame = ttk.Frame(top_controls_frame)
+        input_label_frame.pack(fill=X, pady=(0, 5))
+        ttk.Label(
+            input_label_frame,
+            text="🎙️ Pliki audio / URL-e YouTube (każdy w nowej linii):",
+            font=self.font_settings["label"],
+        ).pack(side=LEFT, anchor=W)
+        browse_btn = ttk.Button(
+            input_label_frame,
+            text="➕ Dodaj Pliki Audio",
+            command=self.browse_and_add_files,
+            bootstyle="info-outline",
+            style="Outline.TButton",
+        )
+        browse_btn.pack(side=RIGHT, padx=(10, 0))
+        ToolTip(browse_btn, "Kliknij, aby wybrać jeden lub więcej plików audio.")
 
-        input_text_frame = ttk.Frame(top_controls_frame); input_text_frame.pack(fill=X, expand=YES, pady=(0,5))
-        self.input_text_area = Text(input_text_frame, height=4, font=self.font_settings["scrolledtext"], wrap="none", relief=SUNKEN, borderwidth=1)
+        input_text_frame = ttk.Frame(top_controls_frame)
+        input_text_frame.pack(fill=X, expand=YES, pady=(0, 5))
+        self.input_text_area = Text(
+            input_text_frame,
+            height=4,
+            font=self.font_settings["scrolledtext"],
+            wrap="none",
+            relief=SUNKEN,
+            borderwidth=1,
+        )
         sb_y_input = ttk.Scrollbar(input_text_frame, orient=VERTICAL, command=self.input_text_area.yview)
         sb_x_input = ttk.Scrollbar(input_text_frame, orient=HORIZONTAL, command=self.input_text_area.xview)
-        self.input_text_area['yscrollcommand'] = sb_y_input.set; self.input_text_area['xscrollcommand'] = sb_x_input.set
-        sb_y_input.pack(side=RIGHT, fill=Y); sb_x_input.pack(side=BOTTOM, fill=X)
+        self.input_text_area["yscrollcommand"] = sb_y_input.set
+        self.input_text_area["xscrollcommand"] = sb_x_input.set
+        sb_y_input.pack(side=RIGHT, fill=Y)
+        sb_x_input.pack(side=BOTTOM, fill=X)
         self.input_text_area.pack(side=LEFT, fill=BOTH, expand=YES)
         ToolTip(self.input_text_area, "Wklej ścieżki do plików lub URL-e, każdą w nowej linii.")
 
-        self.transcribe_button = ttk.Button(top_controls_frame, text="🚀 Rozpocznij Przetwarzanie Wsadowe", command=self.run_batch_script, style="Success.TButton")
-        self.transcribe_button.pack(pady=(5,10), fill=X); ToolTip(self.transcribe_button, "Rozpoczyna przetwarzanie wszystkich pozycji z listy.")
-        
-        queue_progress_frame = ttk.Frame(self); queue_progress_frame.pack(padx=10, pady=5, fill=BOTH, expand=YES)
-        ttk.Label(queue_progress_frame, text="Kolejka Przetwarzania:", font=self.font_settings["header"]).pack(anchor=W, pady=(0,5))
-        
-        tree_frame = ttk.Frame(queue_progress_frame); tree_frame.pack(side=TOP, fill=BOTH, expand=YES)
-        self.files_queue_tree = ttk.Treeview(tree_frame, columns=("source", "status"), show="headings", height=5, style="Custom.Treeview")
-        self.files_queue_tree.heading("source", text="Plik / URL"); self.files_queue_tree.heading("status", text="Status")
+        self.transcribe_button = ttk.Button(
+            top_controls_frame,
+            text="🚀 Rozpocznij Przetwarzanie Wsadowe",
+            command=self.run_batch_script,
+            style="Success.TButton",
+        )
+        self.transcribe_button.pack(pady=(5, 10), fill=X)
+        ToolTip(self.transcribe_button, "Rozpoczyna przetwarzanie wszystkich pozycji z listy.")
+
+        queue_progress_frame = ttk.Frame(self)
+        queue_progress_frame.pack(padx=10, pady=5, fill=BOTH, expand=YES)
+        ttk.Label(queue_progress_frame, text="Kolejka Przetwarzania:", font=self.font_settings["header"]).pack(anchor=W, pady=(0, 5))
+
+        tree_frame = ttk.Frame(queue_progress_frame)
+        tree_frame.pack(side=TOP, fill=BOTH, expand=YES)
+        self.files_queue_tree = ttk.Treeview(
+            tree_frame,
+            columns=("source", "status"),
+            show="headings",
+            height=5,
+            style="Custom.Treeview",
+        )
+        self.files_queue_tree.heading("source", text="Plik / URL")
+        self.files_queue_tree.heading("status", text="Status")
         self.files_queue_tree.column("source", width=450, anchor=W, stretch=YES)
         self.files_queue_tree.column("status", width=150, anchor=W, stretch=NO)
         self.files_queue_tree.pack(side=LEFT, fill=BOTH, expand=YES)
         tree_sb = ttk.Scrollbar(tree_frame, orient=VERTICAL, command=self.files_queue_tree.yview)
-        self.files_queue_tree.configure(yscrollcommand=tree_sb.set); tree_sb.pack(side=RIGHT, fill=Y)
+        self.files_queue_tree.configure(yscrollcommand=tree_sb.set)
+        tree_sb.pack(side=RIGHT, fill=Y)
         ToolTip(self.files_queue_tree, "Lista plików/URL-i do przetworzenia i ich status.")
 
-        progress_bar_frame = ttk.Frame(queue_progress_frame); progress_bar_frame.pack(fill=X, pady=(5,5), side=BOTTOM)
-        self.overall_progress_label = ttk.Label(progress_bar_frame, text="Postęp: 0/0", font=self.font_settings["label"])
-        self.overall_progress_label.pack(side=LEFT, padx=(0,10))
-        self.overall_progress = ttk.Progressbar(progress_bar_frame, mode="determinate", length=300, bootstyle="primary-striped")
-        self.overall_progress.pack(side=LEFT, fill=X, expand=YES); ToolTip(self.overall_progress, "Ogólny postęp przetwarzania.")
+        progress_bar_frame = ttk.Frame(queue_progress_frame)
+        progress_bar_frame.pack(fill=X, pady=(5, 5), side=BOTTOM)
+        self.overall_progress_label = ttk.Label(
+            progress_bar_frame,
+            text="Postęp: 0/0",
+            font=self.font_settings["label"],
+        )
+        self.overall_progress_label.pack(side=LEFT, padx=(0, 10))
+        self.overall_progress = ttk.Progressbar(
+            progress_bar_frame,
+            mode="determinate",
+            length=300,
+            bootstyle="primary-striped",
+        )
+        self.overall_progress.pack(side=LEFT, fill=X, expand=YES)
+        ToolTip(self.overall_progress, "Ogólny postęp przetwarzania.")
 
-        self.tabs = ttk.Notebook(self, style="Custom.TNotebook"); self.tabs.pack(padx=10, pady=10, fill=BOTH, expand=YES)
+        self.tabs = ttk.Notebook(self, style="Custom.TNotebook")
+        self.tabs.pack(padx=10, pady=10, fill=BOTH, expand=YES)
 
         self.console_tab = ttk.Frame(self.tabs)
-        self.console_text = ttk.ScrolledText(self.console_tab, font=self.font_settings["scrolledtext"], wrap="word", state=DISABLED)
+        self.console_text = ScrolledText(
+            self.console_tab,
+            font=self.font_settings["scrolledtext"],
+            wrap="word",
+            state=DISABLED,
+        )
         self.console_text.pack(fill=BOTH, expand=YES)
-        console_btns = ttk.Frame(self.console_tab); console_btns.pack(pady=5, fill=X)
-        btn_save_log = ttk.Button(console_btns, text="💾 Zapisz Log", command=self.save_console_log, style="Outline.TButton")
-        btn_save_log.pack(side=LEFT, padx=5); ToolTip(btn_save_log, "Zapisuje cały log z konsoli do pliku.")
+        console_btns = ttk.Frame(self.console_tab)
+        console_btns.pack(pady=5, fill=X)
+        btn_save_log = ttk.Button(
+            console_btns,
+            text="💾 Zapisz Log",
+            command=self.save_console_log,
+            style="Outline.TButton",
+        )
+        btn_save_log.pack(side=LEFT, padx=5)
+        ToolTip(btn_save_log, "Zapisuje cały log z konsoli do pliku.")
         self.tabs.add(self.console_tab, text="🖥️ Konsola")
 
-        self.results_manager_frame = ttk.Frame(self.tabs); self.tabs.add(self.results_manager_frame, text="📊 Wyniki")
-        results_controls_frame = ttk.Frame(self.results_manager_frame); results_controls_frame.pack(fill=X, pady=5, padx=5)
-        ttk.Label(results_controls_frame, text="Wybierz przetworzony plik:", font=self.font_settings["label"]).pack(side=LEFT, padx=(0,5))
-        self.processed_files_combo = ttk.Combobox(results_controls_frame, state="readonly", font=self.font_settings["default"], width=40)
-        self.processed_files_combo.pack(side=LEFT, fill=X, expand=YES); self.processed_files_combo.bind("<<ComboboxSelected>>", self.display_selected_result)
+        self.results_manager_frame = ttk.Frame(self.tabs)
+        self.tabs.add(self.results_manager_frame, text="📊 Wyniki")
+        results_controls_frame = ttk.Frame(self.results_manager_frame)
+        results_controls_frame.pack(fill=X, pady=5, padx=5)
+        ttk.Label(
+            results_controls_frame,
+            text="Wybierz przetworzony plik:",
+            font=self.font_settings["label"],
+        ).pack(side=LEFT, padx=(0, 5))
+        self.processed_files_combo = ttk.Combobox(
+            results_controls_frame,
+            state="readonly",
+            font=self.font_settings["default"],
+            width=40,
+        )
+        self.processed_files_combo.pack(side=LEFT, fill=X, expand=YES)
+        self.processed_files_combo.bind("<<ComboboxSelected>>", self.display_selected_result)
         ToolTip(self.processed_files_combo, "Wybierz plik, aby zobaczyć jego wyniki.")
 
-        results_display_pane = ttk.PanedWindow(self.results_manager_frame, orient=HORIZONTAL); results_display_pane.pack(fill=BOTH, expand=YES, padx=5, pady=5)
+        results_display_pane = ttk.Panedwindow(
+            self.results_manager_frame,
+            orient=HORIZONTAL,
+        )
+        results_display_pane.pack(fill=BOTH, expand=YES, padx=5, pady=5)
         trans_frame = ttk.Labelframe(results_display_pane, text="📝 Transkrypcja", padding=5)
-        self.current_transcription_text = ttk.ScrolledText(trans_frame, font=self.font_settings["scrolledtext"], wrap="word", state=DISABLED, height=10)
-        self.current_transcription_text.pack(fill=BOTH, expand=YES); results_display_pane.add(trans_frame, weight=1)
+        self.current_transcription_text = ScrolledText(
+            trans_frame,
+            font=self.font_settings["scrolledtext"],
+            wrap="word",
+            state=DISABLED,
+            height=10,
+        )
+        self.current_transcription_text.pack(fill=BOTH, expand=YES)
+        results_display_pane.add(trans_frame, weight=1)
         summary_frame = ttk.Labelframe(results_display_pane, text="📌 Streszczenie", padding=5)
-        self.current_summary_text = ttk.ScrolledText(summary_frame, font=self.font_settings["scrolledtext"], wrap="word", state=DISABLED, height=10)
-        self.current_summary_text.pack(fill=BOTH, expand=YES); results_display_pane.add(summary_frame, weight=1)
-        
-        self.config_tab = ttk.Frame(self.tabs); self.tabs.add(self.config_tab, text="⚙️ Konfiguracja")
-        config_outer = ttk.Frame(self.config_tab); config_outer.pack(fill=BOTH, expand=YES)
+        self.current_summary_text = ScrolledText(
+            summary_frame,
+            font=self.font_settings["scrolledtext"],
+            wrap="word",
+            state=DISABLED,
+            height=10,
+        )
+        self.current_summary_text.pack(fill=BOTH, expand=YES)
+        results_display_pane.add(summary_frame, weight=1)
+
+        self.config_tab = ttk.Frame(self.tabs)
+        self.tabs.add(self.config_tab, text="⚙️ Konfiguracja")
+        config_outer = ttk.Frame(self.config_tab)
+        config_outer.pack(fill=BOTH, expand=YES)
         canvas = ttk.Canvas(config_outer, highlightthickness=0); canvas.pack(side=LEFT, fill=BOTH, expand=YES, padx=(0,10))
         scrollbar = ttk.Scrollbar(config_outer, orient=VERTICAL, command=canvas.yview); scrollbar.pack(side=RIGHT, fill=Y)
         canvas.configure(yscrollcommand=scrollbar.set)
@@ -296,9 +411,6 @@ class TranscriberApp(ttk.Window):
     def update_widget_fonts(self):
         widgets_to_update_map = {
             self.input_text_area: self.font_settings["scrolledtext"],
-            self.console_text: self.font_settings["scrolledtext"],      
-            self.current_transcription_text: self.font_settings["scrolledtext"], 
-            self.current_summary_text: self.font_settings["scrolledtext"],       
         }
         if self.custom_llm_prompt_text_widget:
              widgets_to_update_map[self.custom_llm_prompt_text_widget] = self.font_settings["scrolledtext"]
@@ -306,6 +418,17 @@ class TranscriberApp(ttk.Window):
         for widget, font_obj in widgets_to_update_map.items():
             if widget and widget.winfo_exists():
                 widget.config(font=font_obj)
+        
+        # ScrolledText widgets need special handling - access inner text widget
+        scrolled_widgets = [
+            self.console_text,
+            self.current_transcription_text,
+            self.current_summary_text,
+        ]
+        for scrolled_widget in scrolled_widgets:
+            if scrolled_widget and scrolled_widget.winfo_exists():
+                scrolled_widget.text.config(font=self.font_settings["scrolledtext"])
+        
         self.app_style.configure("Custom.Treeview", font=self.font_settings["default"], rowheight=int(self.font_settings["default"].actual("size") * 2.5))
 
     def change_font_size(self, delta):
@@ -431,6 +554,7 @@ class TranscriberApp(ttk.Window):
                 elif isinstance(val, bool): content.append(f"{k.upper()} = {val}")
                 elif isinstance(val, (int, float)) and not isinstance(val, bool): content.append(f"{k.upper()} = {val}")
                 else: content.append(f"{k.upper()} = {repr(str(val))}")
+            self.config_file_path.parent.mkdir(parents=True, exist_ok=True)
             with open(self.config_file_path, "w", encoding="utf-8") as f: f.write("\n".join(content) + "\n")
             messagebox.showinfo("Zapisano", f"Konfiguracja zapisana do {self.config_file_path}.\nZmiany zostaną zastosowane.")
             self.reload_config_module(); self.populate_config_form()
@@ -443,7 +567,7 @@ class TranscriberApp(ttk.Window):
             else: spec = importlib.util.spec_from_file_location("config", self.config_file_path); config_module = importlib.util.module_from_spec(spec); sys.modules['config'] = config_module; spec.loader.exec_module(config_module)
             print("✅ Konfiguracja GUI przeładowana.")
         except Exception as e:
-            messagebox.showerror("Błąd przeładowania konfiguracji", f"Nie udało się przeładować config.py: {e}")
+            messagebox.showerror("Błąd przeładowania konfiguracji", f"Nie udało się przeładować .config/config.py: {e}")
             config_module = DummyConfigFallback(); [setattr(config_module, k, v) for k, v in default_config_values.items()]
 
 
@@ -452,7 +576,7 @@ class TranscriberApp(ttk.Window):
         if not sources: messagebox.showwarning("Brak danych", "Wprowadź źródła."); return
         self.total_to_process = len(sources); self.current_processed_count = 0
         self.processed_results_data.clear(); self.processed_files_combo['values'] = []; self.processed_files_combo.set('')
-        for w in [self.current_transcription_text, self.current_summary_text]: w.config(state=NORMAL); w.delete("1.0", END); w.config(state=DISABLED)
+        for w in [self.current_transcription_text, self.current_summary_text]: w.text.config(state=NORMAL); w.text.delete("1.0", END); w.text.config(state=DISABLED)
         [self.files_queue_tree.delete(i) for i in self.files_queue_tree.get_children()]
         for i,s_val in enumerate(sources): # Zmiana nazwy zmiennej src na s_val
             display_name = Path(s_val).name if len(s_val) < 60 else s_val[:57]+"..."
@@ -512,11 +636,11 @@ class TranscriberApp(ttk.Window):
         if selected_src in self.processed_results_data:
             data = self.processed_results_data[selected_src]
             for widget, key, default in [(self.current_transcription_text, "transcription", "Brak transkrypcji."), (self.current_summary_text, "summary", "Brak podsumowania.")]:
-                widget.config(state=NORMAL); widget.delete("1.0", END)
+                widget.text.config(state=NORMAL); widget.text.delete("1.0", END)
                 content = data.get(key, default)
                 if key == "summary": insert_with_markdown(widget, content)
-                else: widget.insert("1.0", content); widget.config(state=DISABLED)
-        else: [w.config(state=NORMAL) or w.delete("1.0", END) or w.config(state=DISABLED) for w in [self.current_transcription_text, self.current_summary_text]]
+                else: widget.text.insert("1.0", content); widget.text.config(state=DISABLED)
+        else: [w.text.config(state=NORMAL) or w.text.delete("1.0", END) or w.text.config(state=DISABLED) for w in [self.current_transcription_text, self.current_summary_text]]
 
     def _finalize_batch_run(self):
         self.overall_progress_label.config(text=f"Ukończono: {self.current_processed_count}/{self.total_to_process}")

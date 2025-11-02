@@ -9,6 +9,7 @@ import argparse
 from pathlib import Path
 import shlex
 import re
+import importlib.util
 
 # Wersja Alpha v0.1.8
 
@@ -41,19 +42,38 @@ class DefaultConfig:
 class DummyConfigCli:
     pass
 
-try:
-    import config
-    print("✅ Konfiguracja CLI załadowana z pliku config.py.")
-except ImportError:
-    print("⚠️ Ostrzeżenie CLI: Plik config.py nie znaleziony. Używam wartości domyślnych.", file=sys.stderr)
-    config = DummyConfigCli()
-    for key, value in vars(DefaultConfig).items():
-        if not key.startswith("__"): setattr(config, key, value)
-except Exception as e:
-    print(f"❌ Krytyczny błąd ładowania config.py w CLI: {e}. Używam wartości domyślnych.", file=sys.stderr)
-    config = DummyConfigCli()
-    for key, value in vars(DefaultConfig).items():
-        if not key.startswith("__"): setattr(config, key, value)
+def _resolve_project_root():
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parents[2]
+
+CONFIG_PATH = _resolve_project_root() / ".config" / "config.py"
+
+def _iter_default_config_items():
+    for attr, value in vars(DefaultConfig).items():
+        if not attr.startswith("__"):
+            yield attr, value
+
+def _load_config_module():
+    try:
+        if not CONFIG_PATH.exists():
+            raise FileNotFoundError(CONFIG_PATH)
+        spec = importlib.util.spec_from_file_location("config", CONFIG_PATH)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules['config'] = module
+            spec.loader.exec_module(module)
+            print("✅ Konfiguracja CLI załadowana z .config/config.py.")
+            return module
+        raise ImportError(f"Nie można utworzyć specyfikacji modułu dla {CONFIG_PATH}")
+    except Exception as exc:
+        print(f"⚠️ Ostrzeżenie CLI: Używam wartości domyślnych konfiguracji ({exc}).", file=sys.stderr)
+        fallback = DummyConfigCli()
+        for key, value in _iter_default_config_items():
+            setattr(fallback, key, value)
+        return fallback
+
+config = _load_config_module()
 
 genai = None
 

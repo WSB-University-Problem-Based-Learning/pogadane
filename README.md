@@ -4,12 +4,15 @@
 
 Aplikacja do generowania streszczeń z nagrań audio (np. spotkań Teams, podcastów) lub filmów na YouTube. Działa lokalnie (offline dla transkrypcji i podsumowań Ollama, poza pobieraniem z YouTube), co zapewnia bezpieczeństwo danych. Umożliwia szybkie uzyskanie najważniejszych informacji z długich materiałów. Od wersji v0.1.7 wspiera również Google Gemini API jako alternatywnego dostawcę podsumowań. Wersja v0.1.8 wprowadza możliwość wyboru szablonów promptów LLM, przetwarzanie wsadowe w CLI i GUI, menedżer wyników w GUI oraz opcję dostosowania rozmiaru czcionki. Dodano również narzędzie `pogadane_doctor.py` ułatwiające konfigurację i aktualizację plików projektu.
 
-Projekt zawiera zarówno interfejs linii komend (CLI) `transcribe_summarize_working.py`, interfejs graficzny użytkownika (GUI) `gui.py`, jak i skrypt pomocniczy `pogadane_doctor.py`.
+Projekt zawiera zarówno interfejs linii komend (CLI) `src/pogadane/transcribe_summarize_working.py`, interfejs graficzny użytkownika (GUI) `src/pogadane/gui.py`, jak i skrypt pomocniczy `tools/pogadane_doctor.py`.
+
+Plik ustawień użytkownika znajduje się w `.config/config.py`; w dalszej części dokumentu odnosimy się do niego skrótowo jako `config.py`.
 
 **Spis Treści**
-1.  [Architektura Systemu](#architektura-systemu)
-2.  [Wymagania Wstępne](#wymagania-wstępne)
-3.  [Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy)
+1.  [Struktura Katalogów](#struktura-katalogów)
+2.  [Architektura Systemu](#architektura-systemu)
+3.  [Wymagania Wstępne](#wymagania-wstępne)
+4.  [Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy)
     * [Użycie `pogadane_doctor.py`](#użycie-pogadane_doctorpy)
     * [Ręczna Instalacja Komponentów](#ręczna-instalacja-komponentów)
         * [Krok 1: Instalacja środowiska Python](#krok-1-instalacja-środowiska-python)
@@ -17,13 +20,41 @@ Projekt zawiera zarówno interfejs linii komend (CLI) `transcribe_summarize_work
         * [Krok 3: Pobranie yt-dlp](#krok-3-pobranie-yt-dlp-do-obsługi-youtube)
         * [Krok 4: Instalacja Systemu Podsumowań](#krok-4-instalacja-systemu-podsumowań)
         * [Krok 5: Instalacja bibliotek Python dla GUI i Google API](#krok-5-instalacja-bibliotek-python-dla-gui-i-google-api)
-4.  [Konfiguracja Pliku `config.py`](#konfiguracja-pliku-configpy)
-5.  [Uruchomienie Aplikacji (Wersja Alpha v0.1.8+)](#uruchomienie-aplikacji-wersja-alpha-v018)
+5.  [Konfiguracja Pliku `.config/config.py`](#konfiguracja-pliku-configconfigpy)
+6.  [Uruchomienie Aplikacji (Wersja Alpha v0.1.8+)](#uruchomienie-aplikacji-wersja-alpha-v018)
     * [Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)](#uruchomienie-interfejsu-graficznego-gui-zalecane)
     * [Uruchomienie Skryptu z Linii Komend (CLI)](#uruchomienie-skryptu-z-linii-komend-cli)
-6.  [Poprzednie Wersje](#poprzednie-wersje)
+7.  [Poprzednie Wersje](#poprzednie-wersje)
 
 ---
+## Struktura Katalogów
+
+```
+.
+├── .build/
+├── .config/
+│   └── config.py
+├── .github/
+├── dep/
+├── doc/
+│   ├── cli_help/
+│   ├── NOTICES.md
+│   └── README.md
+├── res/
+├── samples/
+├── src/
+│   └── pogadane/
+│       ├── __init__.py
+│       ├── gui.py
+│       └── transcribe_summarize_working.py
+├── test/
+├── tools/
+│   └── pogadane_doctor.py
+└── README.md
+```
+
+Folder `src/` zawiera kod źródłowy aplikacji, `.config/` przechowuje konfigurację lokalną, a katalog `doc/` gromadzi dokumentację oraz informacje licencyjne. Pozostałe katalogi są przygotowane do przechowywania zależności, wyników budowania lub zasobów zgodnie z wytycznymi struktury projektu.
+
 ## Architektura Systemu
 
 Poniższy diagram przedstawia ogólną architekturę aplikacji "pogadane":
@@ -53,7 +84,7 @@ flowchart TD
     user -. Uruchamia CLI (opcjonalnie) .-> cli_script
     input_source -. Argumenty / Plik wsadowy .-> cli_script
     
-    config_file["config.py"] <-. Konfiguruje .-> gui_app
+    config_file[".config/config.py"] <-. Konfiguruje .-> gui_app
     config_file -. Odczytuje konfigurację .-> cli_script
     
     gui_app -- Wywołuje logikę (sekwencyjnie dla każdego źródła) --> cli_script
@@ -94,16 +125,16 @@ flowchart TD
 
   * **Użytkownik**: Osoba inicjująca proces transkrypcji i streszczenia.
   * **Wejście (Plik(i) Audio / URL(e) YouTube)** (`input_source`): Plik(i) audio dostarczone przez użytkownika lub adres(y) URL do materiału(ów) na YouTube. GUI pozwala na wprowadzenie wielu źródeł w polu tekstowym (każde w nowej linii). CLI akceptuje wiele źródeł jako argumenty lub z pliku wsadowego.
-  * **config.py** (`config_file`): Plik konfiguracyjny aplikacji, zawierający ustawienia takie jak ścieżki do narzędzi, wybór modeli, parametry transkrypcji, dostawcę podsumowań, szablony promptów LLM oraz prompt niestandardowy.
+    * **.config/config.py** (`config_file`): Plik konfiguracyjny aplikacji, zawierający ustawienia takie jak ścieżki do narzędzi, wybór modeli, parametry transkrypcji, dostawcę podsumowań, szablony promptów LLM oraz prompt niestandardowy.
   * **Aplikacja Pogadane** (`pogadane_app`):
-      * **Interfejs Graficzny (GUI)** (`gui_app`): Zalecany sposób interakcji. Umożliwia wprowadzenie wielu źródeł, zarządzanie konfiguracją (`config.py`), śledzenie postępu w kolejce, przeglądanie indywidualnych wyników dla każdego przetworzonego pliku w menedżerze wyników oraz dostosowanie rozmiaru czcionki. Wywołuje Skrypt Główny sekwencyjnie dla każdego źródła.
+    * **Interfejs Graficzny (GUI)** (`gui_app`): Zalecany sposób interakcji. Umożliwia wprowadzenie wielu źródeł, zarządzanie konfiguracją (`.config/config.py`), śledzenie postępu w kolejce, przeglądanie indywidualnych wyników dla każdego przetworzonego pliku w menedżerze wyników oraz dostosowanie rozmiaru czcionki. Wywołuje Skrypt Główny sekwencyjnie dla każdego źródła.
       * **Skrypt Główny (CLI / Logika)** (`cli_script`): Plik `transcribe_summarize_working.py`. Rdzeń logiki: pobieranie audio, transkrypcja, generowanie streszczenia. Może być uruchamiany bezpośrednio z linii komend (z obsługą wsadową) lub być wywoływany przez GUI (dla pojedynczych zadań z listy wsadowej GUI).
   * **Pipeline Przetwarzania (dla każdego źródła)** (`processing_pipeline`): Sekwencja operacji wykonywana dla każdego pliku/URL-a z listy:
       * **yt-dlp** (`yt_dlp`): Narzędzie do pobierania audio z URL.
       * **Pobrane Audio** (`downloaded_audio`): Tymczasowy plik audio.
       * **Faster-Whisper** (`faster_whisper`): Narzędzie do transkrypcji audio na tekst.
       * **Tekst Transkrypcji** (`transcription_text`): Wynik działania `Faster-Whisper`.
-      * **Wybór Systemu Streszczeń** (`summarization_choice`): Logika w skrypcie decydująca na podstawie `config.py` (`SUMMARY_PROVIDER`), który system LLM zostanie użyty. Prompt jest konstruowany na podstawie wybranego szablonu (`LLM_PROMPT_TEMPLATE_NAME`) lub promptu niestandardowego (`LLM_PROMPT`) oraz języka podsumowania (`SUMMARY_LANGUAGE`).
+    * **Wybór Systemu Streszczeń** (`summarization_choice`): Logika w skrypcie decydująca na podstawie `.config/config.py` (`SUMMARY_PROVIDER`), który system LLM zostanie użyty. Prompt jest konstruowany na podstawie wybranego szablonu (`LLM_PROMPT_TEMPLATE_NAME`) lub promptu niestandardowego (`LLM_PROMPT`) oraz języka podsumowania (`SUMMARY_LANGUAGE`).
           * **Ollama (LLM Lokalny)** (`ollama_sum`): Platforma uruchamiająca lokalnie duże modele językowe.
           * **Google Gemini API (LLM Online)** (`google_gemini_sum`): Usługa Google Cloud AI.
   * **Indywidualne Wyniki** (`individual_results`): Transkrypcja i streszczenie generowane dla każdego przetworzonego źródła.
@@ -133,16 +164,17 @@ Aby ułatwić instalację i konfigurację, projekt "pogadane" dostarcza skrypt `
 
 1.  Sprawdzić wersję Pythona i dostępność `pip`.
 2.  Zainstalować wymagane biblioteki Python (`ttkbootstrap`, `google-generativeai`).
-3.  Pobrać (lub zaktualizować) najnowsze wersje kluczowych plików projektu "pogadane" (`transcribe_summarize_working.py`, `gui.py`, `config.py`, `README.md`, `LICENSE`, `NOTICES.md`) bezpośrednio z repozytorium GitHub.
-4.  Automatycznie utworzyć kopię zapasową istniejącego pliku `config.py` przed jego nadpisaniem.
+3.  Pobrać (lub zaktualizować) najnowsze wersje kluczowych plików projektu "pogadane" (`src/pogadane/transcribe_summarize_working.py`, `src/pogadane/gui.py`, `.config/config.py`, `README.md`, `LICENSE`, `doc/NOTICES.md`, pliki z `doc/cli_help/`) bezpośrednio z repozytorium GitHub.
+4.  Automatycznie utworzyć kopię zapasową istniejącego pliku `.config/config.py` przed jego nadpisaniem.
 
 **Jak uruchomić `pogadane_doctor.py`:**
 
-1.  **Pobierz `pogadane_doctor.py`:** Pobierz plik `pogadane_doctor.py` z repozytorium GitHub projektu "pogadane" do pustego katalogu na swoim komputerze, gdzie chcesz przechowywać projekt.
+1.  **Pobierz `pogadane_doctor.py`:** Pobierz plik `tools/pogadane_doctor.py` z repozytorium GitHub projektu "pogadane" do pustego katalogu na swoim komputerze, gdzie chcesz przechowywać projekt.
 2.  **Uruchom skrypt:** Otwórz terminal (np. PowerShell, CMD) w katalogu, do którego pobrałeś `pogadane_doctor.py`, i wykonaj polecenie:
     ```bash
-    python pogadane_doctor.py
+    python tools/pogadane_doctor.py
     ```
+    *(Jeśli uruchamiasz skrypt znajdując się bezpośrednio w katalogu z plikiem, użyj `python pogadane_doctor.py`.)*
 3.  **Postępuj zgodnie z instrukcjami:** Skrypt wyświetli informacje o wykonywanych krokach. Po jego zakończeniu powinieneś mieć gotowe środowisko i najnowsze pliki projektu.
 4.  **Przejdź do konfiguracji narzędzi:** Po uruchomieniu `pogadane_doctor.py`, upewnij się, że masz pobrane i skonfigurowane narzędzia `yt-dlp.exe` i `faster-whisper-xxl.exe` oraz system Ollama (z modelem) zgodnie z opisem w sekcjach poniżej ([Ręczna Instalacja Komponentów](https://www.google.com/search?q=%23r%C4%99czna-instalacja-komponent%C3%B3w)). Skrypt `pogadane_doctor.py` na razie nie instaluje tych zewnętrznych programów, a jedynie pliki projektu i zależności Python.
 
@@ -165,13 +197,13 @@ Jeśli nie chcesz używać `pogadane_doctor.py` lub napotkasz problemy, możesz 
 
 1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` (lub nowszą, która wspiera diaryzację) i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z`.
 2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum do wybranej przez siebie lokalizacji (np. `C:\pogadane_narzedzia`). W wyniku powstanie folder, np. `C:\pogadane_narzedzia\Faster-Whisper-XXL_r245.4_windows`.
-3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe`. Skonfiguruj ścieżkę do tego pliku w `config.py` (lub w GUI) albo umieść go w katalogu projektu.
+3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe`. Skonfiguruj ścieżkę do tego pliku w `.config/config.py` (lub w GUI) albo umieść go w katalogu projektu.
 
 #### Krok 3: Pobranie yt-dlp
 
 1.  **Pobierz yt-dlp:** Przejdź na stronę najnowszych wydań projektu yt-dlp na GitHub: [https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest](https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest).
 2.  **Pobierz Plik:** Znajdź i pobierz plik `yt-dlp.exe`.
-3.  **Umieść Plik:** Skopiuj pobrany plik `yt-dlp.exe` do katalogu, w którym znajdują się skrypty `gui.py` i `transcribe_summarize_working.py`, lub skonfiguruj ścieżkę w `config.py` (lub w GUI).
+3.  **Umieść Plik:** Skopiuj pobrany plik `yt-dlp.exe` do katalogu, w którym znajdują się skrypty `src/pogadane/gui.py` i `src/pogadane/transcribe_summarize_working.py`, lub skonfiguruj ścieżkę w `.config/config.py` (lub w GUI).
 
 #### Krok 4: Instalacja Systemu Podsumowań
 
@@ -183,7 +215,7 @@ Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online p
 
 2.  **Zainstaluj Ollama:** Uruchom instalator.
 
-3.  **Pobierz Model Językowy:** Otwórz terminal PowerShell i wykonaj polecenie, aby pobrać model zdefiniowany w `config.py` (domyślnie `OLLAMA_MODEL="gemma3:4b"`):
+3.  **Pobierz Model Językowy:** Otwórz terminal PowerShell i wykonaj polecenie, aby pobrać model zdefiniowany w `.config/config.py` (domyślnie `OLLAMA_MODEL="gemma3:4b"`):
 
     ```powershell
     ollama pull gemma3:4b
@@ -194,7 +226,7 @@ Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online p
 
 4.  **Sprawdź Działanie Ollama:** Upewnij się, że Ollama działa w tle (`ollama list`).
 
-5.  **Konfiguracja w `pogadane`:** W pliku `config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
+5.  **Konfiguracja w `pogadane`:** W pliku `.config/config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
 
 ##### Opcja B: Konfiguracja Google Gemini API (Online)
 
@@ -206,7 +238,7 @@ Jeśli chcesz używać Google Gemini API do generowania podsumowań (wymaga poł
       * Utwórz nowy projekt lub wybierz istniejący.
       * Wygeneruj klucz API ("Get API key"). Skopiuj go i przechowuj w bezpiecznym miejscu.
 2.  **Konfiguracja w `pogadane`:**
-      * Otwórz plik `config.py` (lub użyj GUI).
+    * Otwórz plik `.config/config.py` (lub użyj GUI).
       * Ustaw `SUMMARY_PROVIDER = "google"`.
       * Wklej swój klucz API do `GOOGLE_API_KEY = "TWOJ_KLUCZ_API_TUTAJ"`.
       * Możesz również dostosować `GOOGLE_GEMINI_MODEL` (domyślnie "gemini-1.5-flash-latest").
@@ -225,18 +257,18 @@ Aby uruchomić interfejs graficzny oraz korzystać z Google Gemini API, potrzebn
 
 -----
 
-## Konfiguracja Pliku `config.py`
+## Konfiguracja Pliku `.config/config.py`
 
-Skrypt `transcribe_summarize_working.py` oraz interfejs `gui.py` zarządzają konfiguracją w następujący sposób:
+Skrypt `src/pogadane/transcribe_summarize_working.py` oraz interfejs `src/pogadane/gui.py` zarządzają konfiguracją w następujący sposób:
 
-1.  **Plik `config.py` (Zalecane):** Aplikacja w pierwszej kolejności próbuje załadować konfigurację z pliku `config.py`. Skrypt `pogadane_doctor.py` pobiera najnowszą wersję tego pliku z repozytorium (tworząc backup Twojej lokalnej wersji, jeśli istnieje).
-      * **Edycja przez GUI:** Możesz wygodnie edytować większość opcji konfiguracyjnych bezpośrednio w zakładce "⚙️ Konfiguracja" w aplikacji GUI. Zmiany są zapisywane do pliku `config.py`.
-      * **Edycja Manualna:** Możesz również bezpośrednio edytować plik `config.py`.
-2.  **Konfiguracja Domyślna (Fallback):** Jeśli plik `config.py` nie zostanie znaleziony, skrypt CLI i GUI użyją predefiniowanych wartości domyślnych.
+1.  **Plik `.config/config.py` (Zalecane):** Aplikacja w pierwszej kolejności próbuje załadować konfigurację z pliku `.config/config.py`. Skrypt `pogadane_doctor.py` pobiera najnowszą wersję tego pliku z repozytorium (tworząc backup Twojej lokalnej wersji, jeśli istnieje).
+    * **Edycja przez GUI:** Możesz wygodnie edytować większość opcji konfiguracyjnych bezpośrednio w zakładce "⚙️ Konfiguracja" w aplikacji GUI. Zmiany są zapisywane do pliku `.config/config.py`.
+    * **Edycja Manualna:** Możesz również bezpośrednio edytować plik `.config/config.py`.
+2.  **Konfiguracja Domyślna (Fallback):** Jeśli plik `.config/config.py` nie zostanie znaleziony, skrypt CLI i GUI użyją predefiniowanych wartości domyślnych.
 
-**Aby dostosować konfigurację, zaleca się użycie zakładki "Konfiguracja" w GUI lub edycję pliku `config.py` (po jego pobraniu przez `pogadane_doctor.py` lub ręcznie).**
+**Aby dostosować konfigurację, zaleca się użycie zakładki "Konfiguracja" w GUI lub edycję pliku `.config/config.py` (po jego pobraniu przez `pogadane_doctor.py` lub ręcznie).**
 
-Przykładowa zawartość pliku `config.py` znajduje się w repozytorium (i jest pobierana przez `pogadane_doctor.py`).
+Przykładowa zawartość pliku `.config/config.py` znajduje się w repozytorium (i jest pobierana przez `pogadane_doctor.py`).
 
 **Opis opcji konfiguracyjnych (dostępnych w `config.py` oraz w GUI):**
 
@@ -268,7 +300,7 @@ Przykładowa zawartość pliku `config.py` znajduje się w repozytorium (i jest 
 
 ### Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)
 
-Interfejs graficzny `gui.py` jest zalecanym sposobem korzystania z aplikacji i obsługuje przetwarzanie wsadowe.
+Interfejs graficzny `src/pogadane/gui.py` jest zalecanym sposobem korzystania z aplikacji i obsługuje przetwarzanie wsadowe.
 
 1.  **Otwórz Terminal:** Otwórz terminal PowerShell.
 2.  **Przejdź do Katalogu Projektu:** Użyj polecenia `cd`, aby przejść do katalogu, w którym umieściłeś pliki.
@@ -277,7 +309,7 @@ Interfejs graficzny `gui.py` jest zalecanym sposobem korzystania z aplikacji i o
     ```
 3.  **Uruchom GUI:** Wpisz polecenie:
     ```powershell
-    python gui.py
+    python -m pogadane.gui
     ```
 4.  **Korzystanie z GUI:**
       * **Dane Wejściowe:** W polu tekstowym "Pliki audio / URL-e YouTube" wprowadź jedną lub więcej ścieżek do lokalnych plików audio lub URL-i YouTube, **każdą w nowej linii**. Możesz użyć przycisku "➕ Dodaj Pliki Audio" do wybrania i dodania plików.
@@ -300,7 +332,7 @@ Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
     **Ogólny wzór:**
 
     ```powershell
-    python transcribe_summarize_working.py [<ścieżka1_LUB_URL1> <ścieżka2_LUB_URL2>...] [-a <plik_wsadowy.txt>] [--diarize | --no-diarize] [-o "<ścieżka_do_katalogu_LUB_pliku_podsumowania>"]
+    python -m pogadane.transcribe_summarize_working [<ścieżka1_LUB_URL1> <ścieżka2_LUB_URL2>...] [-a <plik_wsadowy.txt>] [--diarize | --no-diarize] [-o "<ścieżka_do_katalogu_LUB_pliku_podsumowania>"]
     ```
 
       * `<ścieżka1_LUB_URL1> ...`: Jedna lub więcej ścieżek do plików audio lub URL-i YouTube, podanych bezpośrednio. Można pominąć, jeśli używana jest opcja `-a`.
@@ -314,13 +346,13 @@ Skrypt `transcribe_summarize_working.py` obsługuje przetwarzanie wsadowe.
 
     ```powershell
     # Przetwarzanie jednego pliku, zapis podsumowania do konkretnego pliku
-    python transcribe_summarize_working.py "C:\Nagrania\spotkanie.mp3" -o "C:\Podsumowania\spotkanie_summary.txt"
+    python -m pogadane.transcribe_summarize_working "C:\Nagrania\spotkanie.mp3" -o "C:\Podsumowania\spotkanie_summary.txt"
 
     # Przetwarzanie wielu URL-i, zapis podsumowań do katalogu "WynikiYouTube"
-    python transcribe_summarize_working.py "URL_YOUTUBE_1" "URL_YOUTUBE_2" -o "C:\MojeDokumenty\WynikiYouTube"
+    python -m pogadane.transcribe_summarize_working "URL_YOUTUBE_1" "URL_YOUTUBE_2" -o "C:\MojeDokumenty\WynikiYouTube"
 
     # Przetwarzanie z pliku wsadowego, podsumowania drukowane do konsoli
-    python transcribe_summarize_working.py -a "C:\lista_do_przetworzenia.txt"
+    python -m pogadane.transcribe_summarize_working -a "C:\lista_do_przetworzenia.txt"
     ```
 
 3.  **Monitoruj Proces:** Skrypt wyświetli postęp przetwarzania dla każdego pliku.

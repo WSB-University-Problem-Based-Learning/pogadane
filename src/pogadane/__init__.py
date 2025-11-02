@@ -1,0 +1,1 @@
+"""Core Pogadane application package."""

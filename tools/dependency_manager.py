@@ -158,7 +158,33 @@ class DependencyManager:
             self.print_info(f"Or manually extract {archive_path} to {extract_to}", indent=1)
             return False
         except Exception as e:
-            self.print_status(f"Extraction failed: {e}", success=False, indent=1)
+            # py7zr doesn't support BCJ2 filter used by Faster-Whisper
+            # Try using 7z command-line if available
+            self.print_warning(f"py7zr extraction failed: {e}", indent=1)
+            self.print_info("Attempting extraction with 7-Zip command-line...", indent=1)
+            
+            # Try to use 7z.exe from common locations
+            seven_zip_paths = [
+                r"C:\Program Files\7-Zip\7z.exe",
+                r"C:\Program Files (x86)\7-Zip\7z.exe",
+                "7z",  # If in PATH
+            ]
+            
+            for seven_zip_exe in seven_zip_paths:
+                try:
+                    result = subprocess.run(
+                        [seven_zip_exe, "x", str(archive_path), f"-o{extract_to}", "-y"],
+                        check=True,
+                        capture_output=True,
+                        text=True
+                    )
+                    self.print_status("Extraction complete using 7-Zip", indent=1)
+                    return True
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    continue
+            
+            # All extraction methods failed
+            self.print_status("Automatic extraction failed", success=False, indent=1)
             return False
     
     def check_dependency_installed(self, dep_name: str) -> Tuple[bool, Optional[Path]]:
@@ -219,17 +245,27 @@ class DependencyManager:
                 return False
             
             self.print_info(f"Installer downloaded to: {installer_path}")
-            self.print_warning("Please run the installer manually:", indent=1)
-            self.print_info(f"  {installer_path}", indent=2)
             
-            # Try to launch installer
+            # Ask user if they want to run installer now
+            self.print_warning("Ollama installer is ready.", indent=1)
+            self.print_info("You can:", indent=1)
+            self.print_info(f"  1. Run installer now: {installer_path}", indent=2)
+            self.print_info(f"  2. Run it later manually", indent=2)
+            self.print_info(f"  3. Skip if already installed", indent=2)
+            
+            # Try to launch installer (non-blocking)
             try:
                 if sys.platform == "win32":
-                    os.startfile(str(installer_path))
-                    self.print_status("Installer launched", indent=1)
+                    import subprocess
+                    # Use Popen instead of os.startfile for non-blocking behavior
+                    subprocess.Popen([str(installer_path)], shell=True)
+                    self.print_status("Installer launched in background", indent=1)
+                    self.print_info("Complete the installation, then continue here", indent=2)
             except Exception as e:
                 self.print_warning(f"Could not auto-launch: {e}", indent=1)
+                self.print_info(f"Please run manually: {installer_path}", indent=2)
             
+            # Mark as successful - user needs to complete installation manually
             return True
         
         # Handle archives (like Faster-Whisper)
@@ -279,7 +315,27 @@ class DependencyManager:
                     
                 return True
             else:
-                self.print_status(f"Could not find {exe_in_archive}", success=False)
+                self.print_status(f"Could not find {exe_in_archive} in extracted files", success=False)
+                self.print_info(f"Expected path: {exe_in_archive}", indent=1)
+                
+                # List what we actually extracted
+                if extract_dir.exists():
+                    self.print_info("Extracted files:", indent=1)
+                    try:
+                        for item in extract_dir.rglob("*"):
+                            if item.is_file():
+                                rel_path = item.relative_to(extract_dir)
+                                self.print_info(f"  {rel_path}", indent=2)
+                                # Check if this is the exe we're looking for
+                                if item.name.lower() == "faster-whisper-xxl.exe":
+                                    self.print_info(f"Found exe at different location: {rel_path}", indent=1)
+                                    install_path.parent.mkdir(parents=True, exist_ok=True)
+                                    shutil.copy2(item, install_path)
+                                    self.print_status(f"Installed to: {install_path}")
+                                    return True
+                    except Exception as e:
+                        self.print_warning(f"Error listing files: {e}", indent=2)
+                
                 return False
         
         # Handle simple exe downloads (like yt-dlp)

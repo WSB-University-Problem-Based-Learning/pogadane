@@ -330,7 +330,22 @@ class PogadaneInstaller:
             print("  CLI:  pogadane-cli --help")
         else:
             print("⚠️  Installation completed with some issues")
-            print("\nPlease review the errors above and install missing components manually.")
+            print("\nMissing components detected. Common fixes:")
+            
+            # Check what's missing and provide specific help
+            if not dep_results.get("faster-whisper", False):
+                print("\n❌ Faster-Whisper missing:")
+                print("   This usually means extraction failed (BCJ2 filter issue)")
+                print("   FIX: python tools/extract_faster_whisper.py")
+                print("   (Requires 7-Zip: https://www.7-zip.org/)")
+            
+            if not dep_results.get("ollama", False):
+                print("\n⚠️  Ollama shows as missing:")
+                print("   If you ran the installer, this is OK - Ollama is installed")
+                print("   VERIFY: Run 'ollama --version' in terminal")
+                print("   If not installed: Run dep/ollama/ollama_setup.exe")
+            
+            print("\n📖 For detailed troubleshooting, see: INSTALL.md")
         print(f"{'=' * 70}\n")
     
     def run_full_installation(
@@ -376,7 +391,12 @@ class PogadaneInstaller:
         # Step 6: Install external dependencies
         if not self.install_external_dependencies(include_ollama=include_ollama):
             print("\n⚠️  Some external dependencies failed to install")
-            print("You can retry with: python tools/dependency_manager.py")
+            print("\n📋 Quick fixes:")
+            print("   • For Faster-Whisper extraction error:")
+            print("     python tools/extract_faster_whisper.py")
+            print("\n   • For manual dependency management:")
+            print("     python tools/dependency_manager.py")
+            print("\n   • See INSTALL.md for detailed troubleshooting")
         
         # Step 7: Update config with correct paths
         self.dep_manager.update_config()

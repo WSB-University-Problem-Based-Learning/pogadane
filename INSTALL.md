@@ -196,20 +196,33 @@ python -m pogadane.transcribe_summarize_working "samples/Styrta się pali.mp3"
 pip install setuptools
 ```
 
-### "py7zr import error"
+### "py7zr extraction failed: BCJ2 filter is not supported"
 
-**Problem:** Can't extract Faster-Whisper archive
+**Problem:** py7zr can't extract Faster-Whisper archive (BCJ2 compression not supported)
 
-**Solution:**
+**Solution - Automatic (Recommended):**
 ```powershell
-# Install py7zr
-pip install py7zr
-
-# Or extract manually:
-# 1. Download 7-Zip: https://www.7-zip.org/
-# 2. Extract Faster-Whisper-XXL_r245.4_windows.7z
-# 3. Copy faster-whisper-xxl.exe to dep/faster-whisper/
+# Use our helper script (requires 7-Zip installed)
+python tools/extract_faster_whisper.py
 ```
+
+**Solution - Manual:**
+```powershell
+# 1. Install 7-Zip from: https://www.7-zip.org/
+
+# 2. Extract the archive:
+# Right-click on dep/faster-whisper/Faster-Whisper-XXL_r245.4_windows.7z
+# Select: 7-Zip → Extract Here
+
+# 3. Find faster-whisper-xxl.exe in the extracted folders
+
+# 4. Copy it to:
+#    dep/faster-whisper/faster-whisper-xxl.exe
+
+# 5. Delete the extracted folders and .7z file
+```
+
+**Note:** The automatic installer will try to use 7-Zip command-line if available, but if py7zr fails and 7-Zip is not installed, you'll need to extract manually.
 
 ### "Permission denied" errors
 
@@ -224,19 +237,29 @@ pip install py7zr
 python tools/install.py
 ```
 
-### Ollama installation fails
+### Ollama installation fails or not detected
 
-**Problem:** Automatic Ollama setup didn't work
+**Problem:** Automatic Ollama setup didn't work or shows as "Missing" after installation
 
 **Solution:**
 ```powershell
-# Download and install manually:
+# Option 1: Install manually from downloaded file
+# The installer was downloaded to: dep/ollama/ollama_setup.exe
+# Just double-click it to install
+
+# Option 2: Download fresh from website
 # 1. Visit https://ollama.com/
 # 2. Download Ollama for Windows
 # 3. Run installer
 # 4. Download model:
 ollama pull gemma3:4b
+
+# Verify installation:
+ollama --version
+ollama list
 ```
+
+**Note:** Ollama verification might show "Missing" because it's an installer, not a standalone exe. As long as `ollama --version` works in your terminal, it's installed correctly.
 
 ### Config file not updated
 

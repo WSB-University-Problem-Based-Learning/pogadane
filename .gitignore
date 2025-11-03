@@ -35,6 +35,18 @@ MANIFEST
 # Pogadane temp artifacts
 src/pogadane/pogadane_temp_audio/
 
+# Pogadane external dependencies (downloaded by tools/install.py)
+# These are NOT stored in Git to keep repository clean
+dep/yt-dlp/
+dep/faster-whisper/
+dep/ollama/
+# Keep the dep/ folder structure but ignore downloaded binaries
+!dep/.gitkeep
+!dep/*/.gitkeep
+
+# Pogadane configuration backups
+.config/config.backup_*.py
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

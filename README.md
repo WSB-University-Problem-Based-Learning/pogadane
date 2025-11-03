@@ -46,11 +46,12 @@ User settings are in `.config/config.py`.
 
 | 📚 For Everyone | 👨‍💻 For Developers |
 |----------------|---------------------|
-| [🚀 Quick Start Guide (Beginners)](QUICK_START.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
-| [⚙️ Installation](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy) | [📖 API Documentation](#cli-architecture) |
-| [🎬 How to Use](#uruchomienie-aplikacji-wersja-alpha-v018) | [🔧 Contributing Guidelines](#development-guidelines) |
-| [❓ Troubleshooting](#troubleshooting) | [🧪 Testing Guide](#testing) |
-| [📄 License Information](doc/NOTICES.md) | [🔐 Security Considerations](doc/ARCHITECTURE.md#security-considerations) |
+| [🚀 **Automatic Installation (NEW!)**](INSTALL.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
+| [📖 Quick Start Guide (Beginners)](QUICK_START.md) | [📖 API Documentation](#cli-architecture) |
+| [⚙️ Manual Installation](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy) | [� Contributing Guidelines](#development-guidelines) |
+| [🎬 How to Use](#uruchomienie-aplikacji-wersja-alpha-v018) | [🧪 Testing Guide](test/README.md) |
+| [❓ Troubleshooting](#troubleshooting) | [🔐 Security Considerations](doc/ARCHITECTURE.md#security-considerations) |
+| [📄 License Information](doc/NOTICES.md) | [� Package Structure](dep/STRUCTURE.md) |
 
 ---
 
@@ -241,9 +242,38 @@ flowchart TD
 
 -----
 
-## Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)
+## Instalacja i Konfiguracja
 
-Aby ułatwić instalację i konfigurację, projekt "pogadane" dostarcza skrypt `pogadane_doctor.py`.
+### ⚡ Instalacja Automatyczna (ZALECANE - NOWE!)
+
+**Jedna komenda instaluje wszystko:**
+
+```powershell
+python tools/install.py
+```
+
+To najłatwiejszy sposób! Instalator automatycznie:
+- ✅ Sprawdza Python i pip
+- ✅ Instaluje wszystkie pakiety Python
+- ✅ Pobiera yt-dlp.exe i faster-whisper-xxl.exe do folderu `dep/`
+- ✅ Konfiguruje ścieżki w `.config/config.py`
+- ✅ Opcjonalnie instaluje Ollama
+- ✅ Weryfikuje instalację
+
+**Szczegółowa instrukcja:** [INSTALL.md](INSTALL.md)
+
+**Opcje instalacji:**
+```powershell
+python tools/install.py              # Pełna instalacja z Ollama
+python tools/install.py --no-ollama  # Bez Ollama (użyj Google Gemini)
+python tools/install.py --dev        # Z narzędziami deweloperskimi
+```
+
+---
+
+### 📝 Instalacja Ręczna (Zaawansowana)
+
+Jeśli automatyczna instalacja zawiedzie lub preferujesz kontrolę, użyj `pogadane_doctor.py`.
 
 ### Użycie `pogadane_doctor.py`
 

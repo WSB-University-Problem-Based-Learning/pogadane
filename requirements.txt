@@ -1,8 +1,14 @@
-# Pogadane - Python Dependencies
+# Pogadane - Production Dependencies
 # Install with: pip install -r requirements.txt
+#
+# For development: pip install -r requirements-dev.txt
+# For testing: pip install -r requirements-test.txt
 
 # GUI Framework
 ttkbootstrap>=1.10.0
 
 # Google Gemini API client (optional - only needed if using Google instead of Ollama)
 google-generativeai>=0.3.0
+
+# Archive extraction (for automatic installation of Faster-Whisper)
+py7zr>=0.20.0

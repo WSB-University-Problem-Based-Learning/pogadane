@@ -77,10 +77,16 @@ def check_and_install_package(pkg_info):
     import_name = pkg_info.get("import_name", package_name)
     
     print(f"  🔎 Sprawdzanie pakietu: {package_name}")
-    spec = importlib.util.find_spec(import_name)
-    if spec is not None:
-        print_status(f"Pakiet '{package_name}' jest już zainstalowany.", indent=2)
-        return True
+    
+    # Try to find the module spec, but catch ModuleNotFoundError
+    try:
+        spec = importlib.util.find_spec(import_name)
+        if spec is not None:
+            print_status(f"Pakiet '{package_name}' jest już zainstalowany.", indent=2)
+            return True
+    except (ModuleNotFoundError, ValueError, ImportError):
+        # Module not found, need to install
+        pass
     
     print(f"  ⚠️ Pakiet '{package_name}' nie znaleziony. Próba instalacji...")
     try:

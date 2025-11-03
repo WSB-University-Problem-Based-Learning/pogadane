@@ -89,19 +89,33 @@ The easiest way to set up everything!
    - Select **"Open PowerShell window here"**
 
 2. **Run the Doctor Script:**
-   - Type this command and press Enter:
-     ```powershell
-     python tools/pogadane_doctor.py
-     ```
-   - The script will:
-     - ✅ Check your Python version
-     - ✅ Install required Python libraries
-     - ✅ Download latest project files
-     - ✅ Create necessary folders
+   
+   **Option A - Simple One-Line Install (Recommended):**
+   ```powershell
+   python -m pip install ttkbootstrap google-generativeai && python tools/pogadane_doctor.py
+   ```
+   
+   **Option B - Step by Step:**
+   First install required packages:
+   ```powershell
+   python -m pip install ttkbootstrap google-generativeai
+   ```
+   
+   Then run the doctor script:
+   ```powershell
+   python tools/pogadane_doctor.py
+   ```
+   
+   The script will:
+   - ✅ Check your Python version
+   - ✅ Verify required Python libraries are installed
+   - ✅ Download latest project files
+   - ✅ Create necessary folders
 
 3. **Wait for Completion:**
    - You'll see green ✅ checkmarks as each step completes
    - This may take 2-5 minutes depending on your internet speed
+   - **Note:** If you see any errors, try running the doctor script again
 
 ---
 
@@ -242,6 +256,17 @@ Now let's test if everything works:
 ---
 
 ## Troubleshooting
+
+### "ModuleNotFoundError: No module named 'google'" when running pogadane_doctor.py
+- This is a known issue with the doctor script checking for packages
+- **Solution:** Install the packages manually first:
+  ```powershell
+  python -m pip install ttkbootstrap google-generativeai
+  ```
+- Then run the doctor script again:
+  ```powershell
+  python tools/pogadane_doctor.py
+  ```
 
 ### "Python is not recognized..."
 - You forgot to check "Add Python to PATH" during installation

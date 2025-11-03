@@ -46,8 +46,8 @@ User settings are in `.config/config.py`.
 
 | 📚 For Everyone | 👨‍💻 For Developers |
 |----------------|---------------------|
-| [🚀 **Automatic Installation (NEW!)**](INSTALL.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
-| [📖 Quick Start Guide (Beginners)](QUICK_START.md) | [📖 API Documentation](#cli-architecture) |
+| [🚀 **GUI Installer (NEW!)**](INSTALL.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
+| [� **Command-Line Installer**](INSTALL.md) | [📖 API Documentation](#cli-architecture) |
 | [⚙️ Manual Installation](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy) | [� Contributing Guidelines](#development-guidelines) |
 | [🎬 How to Use](#uruchomienie-aplikacji-wersja-alpha-v018) | [🧪 Testing Guide](test/README.md) |
 | [❓ Troubleshooting](#troubleshooting) | [🔐 Security Considerations](doc/ARCHITECTURE.md#security-considerations) |
@@ -69,14 +69,16 @@ User settings are in `.config/config.py`.
 - 📦 Batch processing of multiple files/URLs
 
 ✅ **Powerful Transcription**
-- 🎙️ Faster-Whisper engine with GPU acceleration
+- 🎙️ **Faster-Whisper** (default): GPU acceleration, speaker diarization
+- ⚡ **Whisper (Python)**: Lightweight, pure Python, no external executables
 - 🌍 Multi-language support
-- 👥 Optional speaker diarization (identify who said what)
-- 🎯 Multiple model sizes (tiny to turbo)
+- 👥 Speaker diarization (Faster-Whisper only)
+- 🎯 Multiple model sizes (tiny to large)
 
 ✅ **Flexible AI Summarization**
-- 🏠 **Local (Ollama)**: Complete privacy, offline operation
-- ☁️ **Cloud (Google Gemini)**: API-based, online
+- 🏠 **Local (Ollama)**: Complete privacy, offline operation after setup
+- ⚡ **Local (Transformers)**: Lightweight Python-based, no Ollama needed
+- ☁️ **Cloud (Google Gemini)**: API-based, requires internet connection
 - 📝 Customizable prompt templates
 - 🌐 Multi-language summaries
 
@@ -246,6 +248,24 @@ flowchart TD
 
 ### ⚡ Instalacja Automatyczna (ZALECANE - NOWE!)
 
+**Opcja 1: Instalator GUI (Najprostszy!)**
+
+**NOWY! Przyjazny instalator graficzny z krokami:**
+
+```powershell
+python tools/install_gui.py
+```
+
+Instalator GUI oferuje:
+- ✅ Wizualny kreator krok po kroku
+- ✅ Opcje wyboru komponentów (checkboxy)
+- ✅ Śledzenie postępu w czasie rzeczywistym
+- ✅ Szczegółowe logi instalacji
+- ✅ Automatyczna konfiguracja
+- ✅ Przycisk uruchomienia po zakończeniu
+
+**Opcja 2: Instalator Konsolowy**
+
 **Jedna komenda instaluje wszystko:**
 
 ```powershell
@@ -324,9 +344,9 @@ Jeśli nie chcesz używać `pogadane_doctor.py` lub napotkasz problemy, możesz 
 
 #### Krok 4: Instalacja Systemu Podsumowań
 
-Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online przez Google Gemini API.
+Masz trzy opcje generowania podsumowań: lokalnie za pomocą Ollama, lokalnie przez Transformers (bez Ollama), lub online przez Google Gemini API.
 
-##### Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie)
+##### Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie - Pełna Funkcjonalność)
 
 1.  **Pobierz Ollama:** Przejdź na oficjalną stronę Ollama ([https://ollama.com/](https://ollama.com/)) i pobierz wersję dla Windows.
 
@@ -345,7 +365,39 @@ Masz dwie opcje generowania podsumowań: lokalnie za pomocą Ollama lub online p
 
 5.  **Konfiguracja w `pogadane`:** W pliku `.config/config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
 
-##### Opcja B: Konfiguracja Google Gemini API (Online)
+##### Opcja B: Instalacja Transformers (Lokalnie - Lekka Opcja bez Ollama)
+
+Jeśli nie chcesz instalować Ollama, możesz użyć Transformers - lekkiej opcji lokalnego AI opartej wyłącznie na bibliotekach Python.
+
+1.  **Zainstaluj biblioteki Transformers:**
+    Otwórz terminal PowerShell i wykonaj:
+    ```powershell
+    pip install -r requirements-transformers.txt
+    ```
+    
+    Lub ręcznie:
+    ```powershell
+    pip install transformers torch
+    ```
+
+2.  **Konfiguracja w `pogadane`:**
+    * Otwórz plik `.config/config.py` (lub użyj GUI).
+    * Ustaw `SUMMARY_PROVIDER = "transformers"`.
+    * Opcjonalnie dostosuj `TRANSFORMERS_MODEL` (domyślnie "facebook/bart-large-cnn", ~1.6GB).
+    * Mniejsze alternatywy:
+        * `"google/flan-t5-small"` (~300MB, najszybszy)
+        * `"sshleifer/distilbart-cnn-12-6"` (~500MB)
+        * `"google/flan-t5-base"` (~900MB)
+
+**Uwaga:** Większość modeli Transformers generuje podsumowania tylko po angielsku. Jeśli potrzebujesz podsumowań w języku polskim, użyj Ollama lub Google Gemini.
+
+**Przyspieszenie GPU (Opcjonalne):**
+Jeśli masz kartę graficzną NVIDIA z CUDA:
+```powershell
+pip install torch --index-url https://download.pytorch.org/whl/cu118
+```
+
+##### Opcja C: Konfiguracja Google Gemini API (Online)
 
 Jeśli chcesz używać Google Gemini API do generowania podsumowań (wymaga połączenia z internetem i klucza API):
 
@@ -509,8 +561,13 @@ python tools\pogadane_doctor.py
 
 4) Configure optional external tools:
 - If you want to transcribe YouTube videos, download `yt-dlp.exe` and put its path in `.config\config.py` or keep it in the project folder.
-- For high-quality offline transcription, download Faster-Whisper standalone and set `FASTER_WHISPER_EXE` in `.config\config.py`.
-- For local LLM summaries, install Ollama and pull a model (e.g. `ollama pull gemma3:4b`).
+- For transcription, choose one option:
+  * **Faster-Whisper (recommended)**: Download Faster-Whisper standalone and set `FASTER_WHISPER_EXE` in `.config\config.py`. Best quality, GPU support, speaker diarization.
+  * **Whisper (lightweight)**: Run `pip install -r requirements-whisper.txt`. Pure Python, no executables needed. Models: 75MB-3GB.
+- For AI summaries, choose one option:
+  * **Ollama (recommended)**: Install Ollama and pull a model (e.g. `ollama pull gemma3:4b`). Multi-language support.
+  * **Transformers (lightweight)**: Run `pip install -r requirements-transformers.txt`. No Ollama needed, but English summaries only.
+  * **Google Gemini**: Set `GOOGLE_API_KEY` in `.config\config.py`. Requires internet.
 
 5) Run the GUI (recommended for beginners):
 
@@ -544,6 +601,22 @@ python -m pogadane.transcribe_summarize_working "URL1" "C:\file2.wav" -o "C:\out
   pip install -r requirements.txt
   ```
 
+**Problem: "No module named 'transformers'" or "No module named 'torch'"**
+- **Solution:** You're using `SUMMARY_PROVIDER="transformers"` but libraries aren't installed:
+  ```powershell
+  pip install -r requirements-transformers.txt
+  # Or manually: pip install transformers torch
+  ```
+- **Verify:** `python -c "import transformers; print('OK')"`
+
+**Problem: "No module named 'whisper'"**
+- **Solution:** You're using `TRANSCRIPTION_PROVIDER="whisper"` but library isn't installed:
+  ```powershell
+  pip install -r requirements-whisper.txt
+  # Or manually: pip install openai-whisper
+  ```
+- **Verify:** `python -c "import whisper; print('OK')"`
+
 **Problem: GUI window doesn't open**
 - **Check:** Are you in the correct directory? (`cd C:\path\to\pogadane`)
 - **Check:** Is venv activated? (you should see `(.venv)` in prompt)
@@ -552,6 +625,7 @@ python -m pogadane.transcribe_summarize_working "URL1" "C:\file2.wav" -o "C:\out
 
 **Problem: Transcription fails with "File not found: faster-whisper-xxl.exe"**
 - **Solution:** Configure path in GUI (⚙️ Konfiguracja tab → Plik Faster Whisper → click 📂)
+- **Alternative:** Use lightweight Whisper: `pip install -r requirements-whisper.txt` and set `TRANSCRIPTION_PROVIDER="whisper"` in config
 - **Alternative:** Place `faster-whisper-xxl.exe` in project root directory
 - **Verify:** Check `.config/config.py` has correct `FASTER_WHISPER_EXE` path
 

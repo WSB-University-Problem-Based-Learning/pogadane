@@ -12,3 +12,8 @@ google-generativeai>=0.3.0
 
 # Archive extraction (for automatic installation of Faster-Whisper)
 py7zr>=0.20.0
+
+# Transformers for local AI without Ollama (optional)
+# Uncomment to use SUMMARY_PROVIDER="transformers"
+# transformers>=4.30.0
+# torch>=2.0.0

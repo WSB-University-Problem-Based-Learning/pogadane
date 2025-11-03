@@ -21,6 +21,7 @@ from .constants import (
     SUMMARY_END_MARKER
 )
 from .llm_providers import LLMProviderFactory
+from .transcription_providers import TranscriptionProviderFactory
 
 # Wersja Alpha v0.1.8
 
@@ -112,7 +113,7 @@ def download_youtube_audio(url, target_dir_path):
 
 def transcribe_audio(audio_path_str, original_input_name_stem):
     """
-    Transcribe audio file using faster-whisper.
+    Transcribe audio file using configured transcription provider.
     
     Args:
         audio_path_str: Path to audio file (string)
@@ -122,36 +123,31 @@ def transcribe_audio(audio_path_str, original_input_name_stem):
         Path to transcription file or None on failure
     """
     audio_path = Path(audio_path_str)
-    if not audio_path.is_file(): print(f"❌ Error: Audio file not found: '{audio_path}' for '{original_input_name_stem}'", file=sys.stderr); return None
-    fmt = getattr(config, 'TRANSCRIPTION_FORMAT', DEFAULT_CONFIG['TRANSCRIPTION_FORMAT'])
-    trans_out_path = audio_path.parent / f"{original_input_name_stem}_transcription.{fmt}"
-    print(f"\n🔄 Transcribing: {audio_path} (Original: {original_input_name_stem})")
-    fw_exe = getattr(config, 'FASTER_WHISPER_EXE', DEFAULT_CONFIG['FASTER_WHISPER_EXE'])
-    print(f"   Using FW: {fw_exe}, Expected output: {trans_out_path.name} in {audio_path.parent}")
-    cmd = [fw_exe, str(audio_path), "--language", getattr(config, 'WHISPER_LANGUAGE', DEFAULT_CONFIG['WHISPER_LANGUAGE']), "--model", getattr(config, 'WHISPER_MODEL', DEFAULT_CONFIG['WHISPER_MODEL']), "--output_format", fmt, "--output_dir", str(audio_path.parent)]
-    use_diarize = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DEFAULT_CONFIG['ENABLE_SPEAKER_DIARIZATION'])
-    if use_diarize:
-        print("   Diarization: ENABLED"); cmd.extend(["--diarize", getattr(config, 'DIARIZE_METHOD', DEFAULT_CONFIG['DIARIZE_METHOD'])])
-        prefix = getattr(config, 'DIARIZE_SPEAKER_PREFIX', DEFAULT_CONFIG['DIARIZE_SPEAKER_PREFIX'])
-        if prefix: cmd.extend(["--speaker", prefix])
-    else: print("   Diarization: DISABLED")
-    process = run_command(cmd, capture_output=True)
-    fw_stem = audio_path.stem; found_files = list(audio_path.parent.glob(f"{fw_stem}*.{fmt}"))
-    if not found_files: print(f"❌ Transcription failed for '{original_input_name_stem}'. No file like '{fw_stem}*.{fmt}' in '{audio_path.parent}'.", file=sys.stderr); return None
-    chosen_file = None
-    if use_diarize:
-        spk_pref_low = getattr(config, 'DIARIZE_SPEAKER_PREFIX', "").lower()
-        for f in found_files:
-            if any(k in f.name.lower() for k in ["speaker", "diarize", spk_pref_low] if spk_pref_low): chosen_file = f; break
-    if not chosen_file: chosen_file = audio_path.parent / f"{fw_stem}.{fmt}" if (audio_path.parent / f"{fw_stem}.{fmt}") in found_files else found_files[0]
-    print(f"ℹ️ FW output: {chosen_file}")
-    try:
-        if chosen_file.resolve() != trans_out_path.resolve():
-            if trans_out_path.exists(): trans_out_path.unlink()
-            final_path = chosen_file.rename(trans_out_path)
-        else: final_path = trans_out_path
-        print(f"✅ Transcription finalized: {final_path}"); return final_path
-    except OSError as e: print(f"⚠️ Warn: Rename failed '{chosen_file}' to '{trans_out_path}': {e}. Using original.", file=sys.stderr); return chosen_file
+    if not audio_path.is_file():
+        print(f"❌ Error: Audio file not found: '{audio_path}' for '{original_input_name_stem}'", 
+              file=sys.stderr)
+        return None
+    
+    # Create transcription provider
+    provider = TranscriptionProviderFactory.create_provider(config)
+    if not provider:
+        print(f"❌ Error: Could not create transcription provider", file=sys.stderr)
+        return None
+    
+    # Get configuration
+    language = getattr(config, 'WHISPER_LANGUAGE', DEFAULT_CONFIG['WHISPER_LANGUAGE'])
+    model = getattr(config, 'WHISPER_MODEL', DEFAULT_CONFIG['WHISPER_MODEL'])
+    
+    # Transcribe
+    result = provider.transcribe(
+        audio_path=audio_path,
+        output_dir=audio_path.parent,
+        original_stem=original_input_name_stem,
+        language=language,
+        model=model
+    )
+    
+    return result
 
 def summarize_text(text_to_summarize, original_input_name_stem=""):
     """

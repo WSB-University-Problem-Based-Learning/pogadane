@@ -1,0 +1,23 @@
+# Requirements for lightweight Whisper transcription (Python-based)
+# Install this if you want to use TRANSCRIPTION_PROVIDER="whisper"
+# 
+# This provides a pure Python transcription solution without needing
+# the external faster-whisper-xxl.exe executable.
+#
+# Installation:
+#   pip install -r requirements-whisper.txt
+#
+# Models available:
+#   - tiny (~75MB) - Very fast, basic quality
+#   - base (~150MB) - Fast, good for simple audio  
+#   - small (~500MB) - Balanced speed/quality (recommended)
+#   - medium (~1.5GB) - High quality, slower
+#   - large (~3GB) - Best quality, slowest
+#
+# GPU Acceleration (optional):
+#   For NVIDIA GPUs with CUDA support, install torch with CUDA:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu118
+
+openai-whisper>=20230314
+# torch is installed automatically with openai-whisper
+# If you need CPU-only version or specific CUDA version, install torch separately first

@@ -1,0 +1,21 @@
+# Pogadane - Transformers (Local AI) Dependencies
+# Install with: pip install -r requirements-transformers.txt
+#
+# This enables SUMMARY_PROVIDER="transformers" for local AI summarization
+# without needing to install Ollama. Models run directly with Python.
+
+# Core transformers library
+transformers>=4.30.0
+
+# PyTorch (required by transformers)
+# CPU-only version (smaller download, works everywhere):
+torch>=2.0.0
+
+# For GPU acceleration (CUDA), replace torch above with:
+# torch>=2.0.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+
+# Optional: Accelerate for faster inference
+accelerate>=0.20.0
+
+# Optional: SentencePiece for some models
+sentencepiece>=0.1.99

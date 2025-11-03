@@ -13,14 +13,33 @@ This guide shows you how to install Pogadane with a single command that handles 
 
 ## 🚀 Quick Start (Recommended)
 
-### Windows PowerShell
+### Option 1: GUI Installer (Easiest!)
+
+**NEW! User-friendly graphical installer with step-by-step wizard:**
 
 ```powershell
-# 1. Clone or download Pogadane
-git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
-cd pogadane
+# Method 1: Double-click the batch file
+# Just double-click: install.bat
 
-# 2. Run ONE COMMAND to install everything
+# Method 2: Run from PowerShell
+cd pogadane
+python tools\install_gui.py
+```
+
+The GUI installer provides:
+- ✅ Visual step-by-step wizard
+- ✅ Checkbox options for components
+- ✅ Real-time progress tracking
+- ✅ Detailed installation logs
+- ✅ Automatic configuration
+- ✅ Launch button when complete
+
+### Option 2: Command-Line Installer
+
+**One command to install everything:**
+
+```powershell
+# From the pogadane directory
 python tools/install.py
 ```
 
@@ -34,7 +53,72 @@ That's it! The installer will:
 7. Update configuration with correct paths
 8. Verify everything is installed correctly
 
-**Installation time:** 5-15 minutes (depending on internet speed)
+**Installation time:** 5-15 minutes (depending on internet speed and selected options)
+
+### 🤖 AI Summarization Options
+
+Pogadane supports **three AI providers** for generating summaries:
+
+1. **Ollama** (default) - Full-featured local AI
+   - ✅ Best quality
+   - ✅ Multi-language support
+   - ✅ Large model selection
+   - ❌ Requires separate installation (~3GB download)
+
+2. **Transformers** - Lightweight local AI (NEW!)
+   - ✅ Works without Ollama
+   - ✅ Pure Python (pip install)
+   - ✅ GPU acceleration support
+   - ⚠️ English summaries only
+   - 📦 Models: 300MB - 1.6GB
+
+3. **Google Gemini** - Cloud AI
+   - ✅ No local installation
+   - ✅ Multi-language support
+   - ❌ Requires API key
+   - ❌ Needs internet connection
+
+**To use Transformers (no Ollama needed):**
+```powershell
+# Install transformers support
+pip install -r requirements-transformers.txt
+
+# Or manually:
+pip install transformers torch
+
+# Then in .config/config.py:
+# SUMMARY_PROVIDER = "transformers"
+```
+
+---
+
+### 🎙️ Transcription Options
+
+Pogadane supports **two transcription engines**:
+
+1. **Faster-Whisper** (default) - High-quality external binary
+   - ✅ Best accuracy
+   - ✅ GPU acceleration
+   - ✅ Speaker diarization support
+   - ❌ Requires ~1.5GB download
+   - ❌ Windows executable needed
+
+2. **Whisper** (Python) - Lightweight Python library (NEW!)
+   - ✅ Pure Python (pip install)
+   - ✅ No external executables
+   - ✅ GPU acceleration support
+   - ✅ Models: 75MB - 3GB (smaller options available)
+   - ⚠️ No speaker diarization
+
+**To use Whisper (Python):**
+```powershell
+# Install Whisper support
+pip install -r requirements-whisper.txt
+
+# Then in .config/config.py:
+# TRANSCRIPTION_PROVIDER = "whisper"
+# WHISPER_MODEL = "base"  # or "tiny", "small", "medium", "large"
+```
 
 ---
 
@@ -46,10 +130,17 @@ That's it! The installer will:
 python tools/install.py
 ```
 
-### Skip Ollama (Use Google Gemini API Instead)
+### Skip Ollama (Use Alternative AI)
 
 ```powershell
+# Option A: Use Transformers (lightweight local AI, no Ollama)
 python tools/install.py --no-ollama
+pip install -r requirements-transformers.txt
+# Then set SUMMARY_PROVIDER = "transformers" in .config/config.py
+
+# Option B: Use Google Gemini (cloud AI)
+python tools/install.py --no-ollama
+# Then set SUMMARY_PROVIDER = "google" and add your API key in .config/config.py
 ```
 
 ### Include Development Tools
@@ -223,6 +314,87 @@ python tools/extract_faster_whisper.py
 ```
 
 **Note:** The automatic installer will try to use 7-Zip command-line if available, but if py7zr fails and 7-Zip is not installed, you'll need to extract manually.
+
+### "No module named 'transformers'" or "No module named 'torch'"
+
+**Problem:** Using SUMMARY_PROVIDER="transformers" but libraries not installed
+
+**Solution:**
+```powershell
+# Install transformers support
+pip install -r requirements-transformers.txt
+
+# Or manually install
+pip install transformers torch
+
+# Verify installation
+python -c "import transformers; print('OK')"
+```
+
+**GPU Acceleration (Optional):**
+```powershell
+# For NVIDIA GPUs with CUDA support
+pip install torch --index-url https://download.pytorch.org/whl/cu118
+```
+
+### Transformers model download is slow
+
+**Problem:** First-time model download takes long time
+
+**Solution:**
+This is normal! Models are 300MB-1.6GB and download from Hugging Face.
+- Default model (BART): ~1.6GB
+- Smaller alternative: Change to `"google/flan-t5-small"` in config (~300MB)
+- Models cache in `~/.cache/huggingface/` - only downloaded once
+
+**Speed up:**
+```powershell
+# Use smaller, faster model in .config/config.py:
+TRANSFORMERS_MODEL = "google/flan-t5-small"
+```
+
+### "No module named 'whisper'" or Whisper transcription fails
+
+**Problem:** Using TRANSCRIPTION_PROVIDER="whisper" but library not installed
+
+**Solution:**
+```powershell
+# Install Whisper support
+pip install -r requirements-whisper.txt
+
+# Or manually install
+pip install openai-whisper
+
+# Verify installation
+python -c "import whisper; print('OK')"
+```
+
+**GPU Acceleration (Optional):**
+```powershell
+# For NVIDIA GPUs with CUDA support
+pip install torch --index-url https://download.pytorch.org/whl/cu118
+```
+
+### Whisper model download is slow
+
+**Problem:** First-time Whisper model download takes time
+
+**Solution:**
+This is normal! Whisper models are downloaded on first use:
+- tiny: ~75MB (fastest, basic quality)
+- base: ~150MB (recommended for lightweight)
+- small: ~500MB (balanced)
+- medium: ~1.5GB (high quality)
+- large: ~3GB (best quality)
+
+Models cache in `~/.cache/whisper/` - only downloaded once.
+
+**Speed up:**
+```powershell
+# Use smaller model in .config/config.py:
+TRANSCRIPTION_PROVIDER = "whisper"
+WHISPER_MODEL = "tiny"  # or "base" for better quality
+```
 
 ### "Permission denied" errors
 

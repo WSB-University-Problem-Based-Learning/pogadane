@@ -2,9 +2,39 @@
 
 This folder contains tools for installing and managing Pogadane dependencies.
 
-## 🚀 Main Installation Script
+## 🚀 Main Installation Scripts
 
-### `install.py` - Complete Automatic Installation
+### `install_gui.py` - GUI Installer (Recommended!)
+
+**NEW! User-friendly graphical installer with step-by-step wizard:**
+
+```powershell
+python tools/install_gui.py
+```
+
+**Features:**
+- 🎨 Visual step-by-step wizard
+- ✅ Checkbox options for components
+- 📊 Real-time progress tracking
+- 📝 Detailed installation logs
+- ⚙️ Automatic configuration
+- 🚀 Launch button when complete
+- 💾 Estimated download size calculator
+
+**What you can choose:**
+- Transcription engine (Faster-Whisper or Python Whisper)
+- YouTube support (yt-dlp)
+- AI provider (Ollama, Transformers, or Google Gemini)
+- Development tools
+
+**Best for:**
+- First-time users
+- Visual preference
+- Customized installation
+
+---
+
+### `install.py` - Command-Line Installer
 
 **One-command installation for everything:**
 
@@ -106,13 +136,16 @@ python tools/pogadane_doctor.py
 
 ### Fresh Installation
 ```powershell
-# 1. Run main installer
+# Option 1: GUI Installer (Easiest)
+python tools/install_gui.py
+
+# Option 2: Command-line
 python tools/install.py
 
-# 2. If Faster-Whisper extraction fails:
+# If Faster-Whisper extraction fails:
 python tools/extract_faster_whisper.py
 
-# 3. Verify everything
+# Verify everything
 python tools/dependency_manager.py --verify-only
 ```
 
@@ -199,7 +232,8 @@ This is just a warning. The installer still works.
 
 | Situation | Tool | Command |
 |-----------|------|---------|
-| **Fresh installation** | install.py | `python tools/install.py` |
+| **Fresh installation (GUI)** | install_gui.py | `python tools/install_gui.py` |
+| **Fresh installation (CLI)** | install.py | `python tools/install.py` |
 | **Faster-Whisper extraction failed** | extract_faster_whisper.py | `python tools/extract_faster_whisper.py` |
 | **Update one component** | dependency_manager.py | `python tools/dependency_manager.py --install <name>` |
 | **Verify installation** | dependency_manager.py | `python tools/dependency_manager.py --verify-only` |

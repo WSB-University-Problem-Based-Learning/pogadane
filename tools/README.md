@@ -1,244 +1,272 @@
-# Pogadane Installation Tools
+# Pogadane Tools Directory
 
-This folder contains tools for installing and managing Pogadane dependencies.
+This folder contains utility scripts for maintaining and troubleshooting Pogadane.
 
-## 🚀 Main Installation Scripts
+> **Note:** The main installation system has been replaced with `install.py` in the project root.  
+> The scripts in this folder are **legacy tools** kept for troubleshooting and advanced use cases.
 
-### `install_gui.py` - GUI Installer (Recommended!)
+---
 
-**NEW! User-friendly graphical installer with step-by-step wizard:**
+## 🆕 NEW Installation System (Recommended)
 
-```powershell
-python tools/install_gui.py
+### Use `install.py` in Project Root
+
+The new cross-platform installer is located in the project root directory:
+
+```bash
+# Windows:
+python install.py
+
+# macOS/Linux:
+python3 install.py
+
+# Or use convenient launchers:
+# Windows: install.bat
+# macOS/Linux: ./install.sh
 ```
 
 **Features:**
-- 🎨 Visual step-by-step wizard
-- ✅ Checkbox options for components
-- 📊 Real-time progress tracking
-- 📝 Detailed installation logs
-- ⚙️ Automatic configuration
-- 🚀 Launch button when complete
-- 💾 Estimated download size calculator
+- ✅ Cross-platform (Windows, macOS, Linux)
+- ✅ Three installation modes (LIGHTWEIGHT, FULL, DEV)
+- ✅ Interactive wizard or command-line flags
+- ✅ No setuptools required
+- ✅ Automatic configuration
+- ✅ Lightweight Python-only option
 
-**What you can choose:**
-- Transcription engine (Faster-Whisper or Python Whisper)
-- YouTube support (yt-dlp)
-- AI provider (Ollama, Transformers, or Google Gemini)
-- Development tools
-
-**Best for:**
-- First-time users
-- Visual preference
-- Customized installation
+**See:** [INSTALL.md](../INSTALL.md) for complete documentation
 
 ---
 
-### `install.py` - Command-Line Installer
+## 🔧 Legacy Tools (Advanced/Troubleshooting)
 
-**One-command installation for everything:**
+The following scripts are older tools that remain available for specific use cases:
 
-```powershell
-python tools/install.py
-```
+### `pogadane_doctor.py` - Legacy Setup Tool
 
-**What it does:**
-- ✅ Checks Python version (3.7+)
-- ✅ Upgrades pip
-- ✅ Installs Python packages
-- ✅ Downloads yt-dlp.exe
-- ✅ Downloads and extracts Faster-Whisper
-- ✅ Downloads Ollama installer
-- ✅ Updates config paths
-- ✅ Verifies installation
+**Status:** ⚠️ DEPRECATED - Use `install.py` instead
 
-**Options:**
-```powershell
-python tools/install.py              # Full installation with Ollama
-python tools/install.py --no-ollama  # Skip Ollama (use Google Gemini API)
-python tools/install.py --dev        # Include development tools
-```
-
----
-
-## 🔧 Utility Scripts
-
-### `dependency_manager.py` - Manage External Dependencies
-
-**Standalone tool for managing yt-dlp, Faster-Whisper, and Ollama:**
-
-```powershell
-# Verify what's installed
-python tools/dependency_manager.py --verify-only
-
-# Install specific dependency
-python tools/dependency_manager.py --install yt-dlp
-python tools/dependency_manager.py --install faster-whisper
-python tools/dependency_manager.py --install ollama
-
-# Install all with optional dependencies
-python tools/dependency_manager.py --include-optional
-```
-
-**Use when:**
-- Main installer fails
-- You want to update a specific component
-- You need to verify installation
-
----
-
-### `extract_faster_whisper.py` - Fix Faster-Whisper Extraction
-
-**Helper for when automatic extraction fails (BCJ2 filter issue):**
-
-```powershell
-python tools/extract_faster_whisper.py
-```
-
-**What it does:**
-- Finds 7-Zip installation on your system
-- Extracts Faster-Whisper archive using 7-Zip
-- Locates faster-whisper-xxl.exe
-- Copies to correct location
-- Updates configuration
-- Cleans up temporary files
-
-**Requirements:**
-- 7-Zip must be installed: https://www.7-zip.org/
-- Archive must be downloaded (run `install.py` first)
-
-**Use when:**
-- You see error: "BCJ2 filter is not supported by py7zr"
-- Faster-Whisper shows as "Missing" after installation
-- Manual extraction is needed
-
----
-
-### `pogadane_doctor.py` - Legacy Installation Helper
-
-**Original installation helper (still works):**
+Original helper script for checking and installing dependencies.
 
 ```powershell
 python tools/pogadane_doctor.py
 ```
 
-**What it does:**
-- Checks Python and pip
-- Installs Python packages
-- Downloads project files from GitHub
-- Creates backups of config files
-
-**Note:** This is the older method. Use `install.py` for new installations.
+**Note:** This script may reference outdated installation methods. Use the new `install.py` for current installation.
 
 ---
 
-## 📋 Common Workflows
+### `install.py` (Legacy - in tools/)
 
-### Fresh Installation
+**Status:** ⚠️ DEPRECATED - Use root `install.py` instead
+
+Original command-line installer (Windows-focused).
+
+**Why deprecated:**
+- Not cross-platform
+- Complex binary downloading logic
+- Requires external binaries
+- No lightweight mode
+
+**Replacement:**  
+Use `/install.py` (in project root) which provides cross-platform support and lightweight installation options.
+
+---
+
+### `install_gui.py` - GUI Installer
+
+**Status:** ⚠️ DEPRECATED - Needs updating
+
+Graphical installation wizard.
+
 ```powershell
-# Option 1: GUI Installer (Easiest)
 python tools/install_gui.py
-
-# Option 2: Command-line
-python tools/install.py
-
-# If Faster-Whisper extraction fails:
-python tools/extract_faster_whisper.py
-
-# Verify everything
-python tools/dependency_manager.py --verify-only
 ```
 
-### Update Dependencies
-```powershell
-# Update all
-python tools/dependency_manager.py --include-optional
+**Issues:**
+- May not work with current project structure
+- References old installation system
+- Tkinter dependency
 
-# Update specific
+**Note:** This tool needs to be updated to work with the new installation system, or may be removed in future versions.
+
+---
+
+### `dependency_manager.py` - Binary Dependency Manager
+
+**Status:** ✅ FUNCTIONAL (for specific use cases)
+
+Standalone tool for managing external binary dependencies (Windows-specific).
+
+```powershell
+# Verify installed binaries
+python tools/dependency_manager.py --verify-only
+
+# Install specific component
 python tools/dependency_manager.py --install yt-dlp
+python tools/dependency_manager.py --install faster-whisper
+python tools/dependency_manager.py --install ollama
 ```
 
-### Troubleshooting
-```powershell
-# Check what's installed
-python tools/dependency_manager.py --verify-only
+**Use when:**
+- Troubleshooting specific binary installations
+- You need to update just one component
+- Working with Windows-specific binaries
 
-# Fix Faster-Whisper
-python tools/extract_faster_whisper.py
-
-# Re-run full installation
-python tools/install.py
-```
+**Note:** The new `install.py` handles most of these tasks automatically.
 
 ---
 
-## 🐛 Known Issues & Fixes
+###`extract_faster_whisper.py` - 7-Zip Extraction Helper
 
-### Issue: "BCJ2 filter is not supported by py7zr"
+**Status:** ✅ FUNCTIONAL
 
-**Cause:** py7zr library can't extract Faster-Whisper archive
+Helper for when automatic extraction fails (BCJ2 filter issue with py7zr).
 
-**Fix:**
 ```powershell
 python tools/extract_faster_whisper.py
 ```
 
-**Requirements:** 7-Zip must be installed
+**What it does:**
+- Locates 7-Zip on your system
+- Extracts Faster-Whisper archive using 7-Zip CLI
+- Works around py7zr BCJ2 compression limitation
+
+**When to use:**
+- Faster-Whisper extraction fails during installation
+- Error message mentions "BCJ2 filter not supported"
+- You have 7-Zip installed
 
 ---
 
-### Issue: Ollama shows as "Missing" after installation
+## 📊 Tool Comparison
 
-**Cause:** Ollama is an installer, not a standalone exe
-
-**Fix:** This is normal! Verify with:
-```powershell
-ollama --version
-ollama list
-```
-
-If these commands work, Ollama is installed correctly.
+| Tool | Status | Platform | Purpose | Recommendation |
+|------|--------|----------|---------|----------------|
+| **`/install.py`** (root) | ✅ CURRENT | All | Main installer | **Use this!** |
+| `pogadane_doctor.py` | ⚠️ DEPRECATED | All | Legacy setup | Use `/install.py` |
+| `tools/install.py` | ⚠️ DEPRECATED | Windows | Old CLI installer | Use `/install.py` |
+| `install_gui.py` | ⚠️ NEEDS UPDATE | Windows | GUI wizard | Needs work |
+| `dependency_manager.py` | ✅ FUNCTIONAL | Windows | Binary management | For troubleshooting |
+| `extract_faster_whisper.py` | ✅ FUNCTIONAL | Windows | Extraction helper | For BCJ2 errors |
 
 ---
 
-### Issue: "The script py7zr.exe is installed in ... which is not on PATH"
+## 🎯 Recommended Workflow
 
-**Cause:** Python Scripts folder not in PATH
+### For New Users
 
-**Fix 1 - Add to PATH:**
-```powershell
-# Add C:\Users\<YourName>\AppData\Roaming\Python\Python313\Scripts to PATH
-```
+1. **Use the new installer:**
+   ```bash
+   python install.py --lightweight
+   ```
 
-**Fix 2 - Use full path:**
-```powershell
-python -m py7zr ...
-```
+2. **If you encounter issues:**
+   - Check [INSTALL.md](../INSTALL.md) troubleshooting section
+   - Try different installation mode
+   - Check GitHub issues
 
-**Fix 3 - Ignore:**
-This is just a warning. The installer still works.
+### For Advanced Users / Troubleshooting
+
+1. **Try new installer first:**
+   ```bash
+   python install.py --full
+   ```
+
+2. **If specific component fails:**
+   - Use `dependency_manager.py` to install that component
+   - Use `extract_faster_whisper.py` for extraction issues
+   - Check tool-specific documentation
+
+### For Developers
+
+1. **Install in DEV mode:**
+   ```bash
+   python install.py --dev
+   ```
+
+2. **Run tests:**
+   ```bash
+   pytest
+   ```
+
+3. **See:**
+   - [test/README.md](../test/README.md) - Testing guide
+   - [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Technical docs
 
 ---
 
 ## 📖 Documentation
 
-- [INSTALL.md](../INSTALL.md) - Complete installation guide
-- [README.md](../README.md) - Main project documentation
-- [QUICK_START.md](../QUICK_START.md) - Beginner guide
+- **Installation Guide:** [INSTALL.md](../INSTALL.md) - Complete installation documentation
+- **Quick Start:** [QUICK_START.md](../QUICK_START.md) - Beginner-friendly guide
+- **Main README:** [README.md](../README.md) - Full project documentation
+- **Architecture:** [doc/ARCHITECTURE.md](../doc/ARCHITECTURE.md) - Technical details
 
 ---
 
-## 🎯 Which Tool Should I Use?
+## 🚨 Migration Notes
 
-| Situation | Tool | Command |
-|-----------|------|---------|
-| **Fresh installation (GUI)** | install_gui.py | `python tools/install_gui.py` |
-| **Fresh installation (CLI)** | install.py | `python tools/install.py` |
-| **Faster-Whisper extraction failed** | extract_faster_whisper.py | `python tools/extract_faster_whisper.py` |
-| **Update one component** | dependency_manager.py | `python tools/dependency_manager.py --install <name>` |
-| **Verify installation** | dependency_manager.py | `python tools/dependency_manager.py --verify-only` |
-| **Legacy method** | pogadane_doctor.py | `python tools/pogadane_doctor.py` |
+If you previously used the old installation tools:
+
+### Old System → New System
+
+**Before (old):**
+```powershell
+python tools/install.py              # Windows-only, complex
+python tools/install_gui.py          # GUI wizard
+python tools/pogadane_doctor.py      # Legacy setup
+```
+
+**Now (new):**
+```bash
+python install.py                    # Cross-platform, simple
+python install.py --lightweight      # Pure Python mode
+python install.py --full             # All features
+```
+
+### Key Differences
+
+| Feature | Old System | New System |
+|---------|-----------|-----------|
+| Platform Support | Windows only | Windows, macOS, Linux |
+| Setup Complexity | Multiple scripts | Single script |
+| Lightweight Mode | ❌ Not available | ✅ Available |
+| External Binaries | Always required | Optional (lightweight mode) |
+| Configuration | Manual editing | Auto-generated |
+| Setuptools Required | ✅ Yes | ❌ No |
 
 ---
 
-**Need help?** See [INSTALL.md](../INSTALL.md) for comprehensive troubleshooting.
+## ❓ FAQ
+
+### Q: Should I still use pogadane_doctor.py?
+**A:** No. Use `python install.py` instead. It's simpler and cross-platform.
+
+### Q: What about install_gui.py?
+**A:** It needs updating to work with the new system. Use the command-line `install.py` for now.
+
+### Q: When should I use dependency_manager.py?
+**A:** Only for troubleshooting specific binary installations on Windows. The new installer handles this automatically.
+
+### Q: Will the old tools be removed?
+**A:** They're kept for compatibility and troubleshooting, but may be archived in future versions.
+
+### Q: I used the old installer. Can I switch?
+**A:** Yes! Just run `python install.py` and it will set up the new configuration.
+
+---
+
+## 🔄 Future Plans
+
+- [ ] Update `install_gui.py` to work with new system
+- [ ] Archive fully deprecated tools
+- [ ] Add more platform-specific helpers
+- [ ] Improve error handling in legacy tools
+
+---
+
+**Last Updated:** 2025-11-04  
+**Status:** Tools directory contains legacy scripts + extraction helpers  
+**Recommendation:** Use `/install.py` for all new installations
+
+For help, see [INSTALL.md](../INSTALL.md) or create an issue on GitHub.

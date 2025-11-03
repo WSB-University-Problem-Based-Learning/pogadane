@@ -60,8 +60,9 @@ User settings are in `.config/config.py`.
 ### Core Capabilities
 
 ✅ **Dual Interface**
-- 🖥️ Modern GUI (ttkbootstrap) - recommended for beginners
-- ⌨️ Command-line interface - for automation and advanced users
+- 🎨 **Material Design GUI** (`gui_material.py`) - Modern Material Design 3 with dark/light themes
+- 🖥️ **Legacy GUI** (`gui.py`) - Stable Bootstrap-style interface
+- ⌨️ **Command-line** - For automation and advanced users
 
 ✅ **Multiple Input Sources**
 - 📁 Local audio files (MP3, WAV, M4A, OGG, FLAC)
@@ -89,7 +90,10 @@ User settings are in `.config/config.py`.
 
 ### User Experience
 
-- 🎨 Modern, intuitive GUI
+- 🎨 **Two Modern GUIs** - Choose Material Design or Legacy Bootstrap
+  - 🌙 Material Design with dark/light theme toggle
+  - 🎯 Clean, rounded corners and card layouts
+  - See [GUI Comparison](doc/GUI_COMPARISON.md) for details
 - 📊 Real-time progress tracking
 - 📋 Results manager with per-file views
 - 🔤 Adjustable font sizes for accessibility
@@ -469,17 +473,42 @@ Przykładowa zawartość pliku `.config/config.py` znajduje się w repozytorium 
 
 ### Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)
 
-Interfejs graficzny `src/pogadane/gui.py` jest zalecanym sposobem korzystania z aplikacji i obsługuje przetwarzanie wsadowe.
+Pogadane oferuje **dwa interfejsy graficzne** do wyboru:
+
+#### 🎨 Material Design GUI (NOWY - Zalecany)
+Nowoczesny interfejs z Material Design 3, wsparciem dla trybu ciemnego i zaokrąglonymi rogami.
+
+```powershell
+python run_gui_material.py
+```
+
+**Funkcje:**
+- 🌙 Przełącznik trybu ciemnego/jasnego
+- 🎯 Nowoczesny wygląd Material Design
+- 📱 Zaokrąglone rogi i karty
+- 🎨 Lepsza hierarchia wizualna
+- Wszystkie funkcje GUI Legacy
+
+**Dokumentacja:** [GUI_MATERIAL_DESIGN.md](doc/GUI_MATERIAL_DESIGN.md)
+
+#### 🖥️ Legacy GUI (Bootstrap)
+Stabilny, sprawdzony interfejs w stylu Bootstrap.
+
+```powershell
+python -m pogadane.gui
+```
+
+**Zobacz również:** [Porównanie GUI](doc/GUI_COMPARISON.md) aby wybrać najlepszą opcję dla siebie.
+
+#### Korzystanie z GUI (obie wersje):
 
 1.  **Otwórz Terminal:** Otwórz terminal PowerShell.
 2.  **Przejdź do Katalogu Projektu:** Użyj polecenia `cd`, aby przejść do katalogu, w którym umieściłeś pliki.
     ```powershell
     cd "C:\Sciezka\Do\Twojego\Katalogu\Pogadane"
     ```
-3.  **Uruchom GUI:** Wpisz polecenie:
-    ```powershell
-    python -m pogadane.gui
-    ```
+3.  **Uruchom wybraną wersję GUI** (zobacz powyżej)
+
 4.  **Korzystanie z GUI:**
       * **Dane Wejściowe:** W polu tekstowym "Pliki audio / URL-e YouTube" wprowadź jedną lub więcej ścieżek do lokalnych plików audio lub URL-i YouTube, **każdą w nowej linii**. Możesz użyć przycisku "➕ Dodaj Pliki Audio" do wybrania i dodania plików.
       * **Kolejka Przetwarzania:** Poniżej pola wejściowego znajduje się tabela "Kolejka Przetwarzania", która wyświetli dodane pliki i ich status podczas przetwarzania.

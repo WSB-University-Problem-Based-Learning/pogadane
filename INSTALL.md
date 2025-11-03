@@ -1,486 +1,317 @@
-# Pogadane - Automatic Installation Guide
+# Pogadane - Installation Guide
 
-**One-command installation for Pogadane with all dependencies!**
+**Simple cross-platform installation for Pogadane with all dependencies!**
 
-This guide shows you how to install Pogadane with a single command that handles everything automatically:
-- ✅ Python package dependencies
-- ✅ External binaries (yt-dlp, Faster-Whisper)
-- ✅ Ollama AI (optional)
-- ✅ Configuration setup
-- ✅ Directory structure
+This guide shows you how to install Pogadane on Windows, macOS, or Linux with a single command.
 
 ---
 
 ## 🚀 Quick Start (Recommended)
 
-### Option 1: GUI Installer (Easiest!)
+### Simple One-Command Installation
 
-**NEW! User-friendly graphical installer with step-by-step wizard:**
+```bash
+# Windows (PowerShell):
+python install.py
 
-```powershell
-# Method 1: Double-click the batch file
-# Just double-click: install.bat
-
-# Method 2: Run from PowerShell
-cd pogadane
-python tools\install_gui.py
+# macOS/Linux:
+python3 install.py
 ```
 
-The GUI installer provides:
-- ✅ Visual step-by-step wizard
-- ✅ Checkbox options for components
-- ✅ Real-time progress tracking
-- ✅ Detailed installation logs
-- ✅ Automatic configuration
-- ✅ Launch button when complete
+The installer provides **three installation modes**:
 
-### Option 2: Command-Line Installer
+1. **LIGHTWEIGHT** (~500MB-2GB)
+   - Python-based Whisper for transcription
+   - Transformers AI for summaries
+   - No external binaries required
+   - Works on all platforms
 
-**One command to install everything:**
+2. **FULL** (All Features)
+   - Everything from LIGHTWEIGHT
+   - yt-dlp for YouTube downloads
+   - Platform-specific enhancements
+   - Faster-Whisper (Windows only)
+   - Ollama instructions (all platforms)
 
+3. **DEV** (Development Mode)
+   - Everything from FULL
+   - Testing tools (pytest, pylint, black)
+   - Development dependencies
+
+### Quick Launch Scripts
+
+**Windows:**
 ```powershell
-# From the pogadane directory
-python tools/install.py
+# Just double-click:
+install.bat
+
+# Or run in PowerShell:
+python install.py
 ```
 
-That's it! The installer will:
-1. Check your Python version (3.7+ required)
-2. Upgrade pip to latest version
-3. Install all Python packages
-4. Download yt-dlp.exe to `dep/yt-dlp/`
-5. Download and extract Faster-Whisper-XXL to `dep/faster-whisper/`
-6. Download Ollama installer (optional)
-7. Update configuration with correct paths
-8. Verify everything is installed correctly
+**macOS/Linux:**
+```bash
+# Make executable (one time):
+chmod +x install.sh
 
-**Installation time:** 5-15 minutes (depending on internet speed and selected options)
-
-### 🤖 AI Summarization Options
-
-Pogadane supports **three AI providers** for generating summaries:
-
-1. **Ollama** (default) - Full-featured local AI
-   - ✅ Best quality
-   - ✅ Multi-language support
-   - ✅ Large model selection
-   - ❌ Requires separate installation (~3GB download)
-
-2. **Transformers** - Lightweight local AI (NEW!)
-   - ✅ Works without Ollama
-   - ✅ Pure Python (pip install)
-   - ✅ GPU acceleration support
-   - ⚠️ English summaries only
-   - 📦 Models: 300MB - 1.6GB
-
-3. **Google Gemini** - Cloud AI
-   - ✅ No local installation
-   - ✅ Multi-language support
-   - ❌ Requires API key
-   - ❌ Needs internet connection
-
-**To use Transformers (no Ollama needed):**
-```powershell
-# Install transformers support
-pip install -r requirements-transformers.txt
-
-# Or manually:
-pip install transformers torch
-
-# Then in .config/config.py:
-# SUMMARY_PROVIDER = "transformers"
-```
-
----
-
-### 🎙️ Transcription Options
-
-Pogadane supports **two transcription engines**:
-
-1. **Faster-Whisper** (default) - High-quality external binary
-   - ✅ Best accuracy
-   - ✅ GPU acceleration
-   - ✅ Speaker diarization support
-   - ❌ Requires ~1.5GB download
-   - ❌ Windows executable needed
-
-2. **Whisper** (Python) - Lightweight Python library (NEW!)
-   - ✅ Pure Python (pip install)
-   - ✅ No external executables
-   - ✅ GPU acceleration support
-   - ✅ Models: 75MB - 3GB (smaller options available)
-   - ⚠️ No speaker diarization
-
-**To use Whisper (Python):**
-```powershell
-# Install Whisper support
-pip install -r requirements-whisper.txt
-
-# Then in .config/config.py:
-# TRANSCRIPTION_PROVIDER = "whisper"
-# WHISPER_MODEL = "base"  # or "tiny", "small", "medium", "large"
+# Run installer:
+./install.sh
 ```
 
 ---
 
 ## 📋 Installation Options
 
-### Full Installation (with Ollama)
+### Interactive Mode (Default)
 
-```powershell
-python tools/install.py
+```bash
+python install.py
 ```
 
-### Skip Ollama (Use Alternative AI)
+The installer will guide you through:
+- Choosing installation mode
+- Confirming download sizes
+- Setting up configuration
+- Verifying installation
 
-```powershell
-# Option A: Use Transformers (lightweight local AI, no Ollama)
-python tools/install.py --no-ollama
-pip install -r requirements-transformers.txt
-# Then set SUMMARY_PROVIDER = "transformers" in .config/config.py
+### Non-Interactive Mode
 
-# Option B: Use Google Gemini (cloud AI)
-python tools/install.py --no-ollama
-# Then set SUMMARY_PROVIDER = "google" and add your API key in .config/config.py
-```
+```bash
+# Lightweight installation (fastest):
+python install.py --lightweight
 
-### Include Development Tools
+# Full installation:
+python install.py --full
 
-```powershell
-python tools/install.py --dev
-```
-
-### Combination
-
-```powershell
-python tools/install.py --no-ollama --dev
+# Development mode:
+python install.py --dev
 ```
 
 ---
 
-## 📁 Where Files Are Installed
+## 🎯 Which Mode Should I Choose?
 
-The installer creates this clean structure:
+### LIGHTWEIGHT - Best for:
+- ✅ First-time users
+- ✅ Limited disk space
+- ✅ Cross-platform compatibility
+- ✅ Quick setup (no external binaries)
+- ✅ Python-only environment
 
-```
-pogadane/
-├── dep/                          # External dependencies (NOT in Git)
-│   ├── yt-dlp/
-│   │   └── yt-dlp.exe           # YouTube downloader
-│   ├── faster-whisper/
-│   │   └── faster-whisper-xxl.exe  # Transcription engine
-│   └── ollama/
-│       └── OllamaSetup.exe      # Ollama installer (if requested)
-│
-├── .config/
-│   └── config.py                # Auto-updated with correct paths
-│
-├── src/pogadane/                # Your repository code
-├── test/                        # Your tests
-├── tools/                       # Installation tools
-└── ...
-```
+**Includes:**
+- OpenAI Whisper (Python) - 75MB to 3GB models
+- Transformers + PyTorch - AI summarization
+- All core functionality
 
-**Key Benefits:**
-- 🔒 **Clean repository**: No binaries in Git, only in `dep/` (gitignored)
-- 📦 **Organized structure**: All external tools in one place
-- ⚙️ **Auto-configuration**: Paths automatically updated in config
-- 🔄 **Easy updates**: Re-run installer to update components
+**Download size:** ~500MB-2GB
+
+### FULL - Best for:
+- ✅ Advanced users
+- ✅ YouTube transcription
+- ✅ Best quality transcription (Faster-Whisper on Windows)
+- ✅ Local AI with Ollama
+- ✅ Maximum features
+
+**Includes:**
+- Everything from LIGHTWEIGHT
+- yt-dlp for YouTube downloads
+- Platform-specific binaries (Windows)
+- Instructions for Faster-Whisper and Ollama
+
+**Download size:** ~1-5GB (depending on platform)
+
+### DEV - Best for:
+- ✅ Contributors and developers
+- ✅ Code testing
+- ✅ Running test suite
+- ✅ Code quality tools
+
+**Includes:**
+- Everything from FULL
+- pytest, pylint, black
+- Development dependencies
 
 ---
 
-## 🛠️ Manual Installation (Advanced)
+## 🖥️ Platform-Specific Features
 
-If automatic installation fails, you can install components manually:
+### Windows
+- Full support for all modes
+- Faster-Whisper binary available (FULL mode)
+- Ollama desktop app (instructions provided)
 
-### Step 1: Python Dependencies
+### macOS
+- All modes supported
+- Ollama via Homebrew (instructions provided)
+- Faster-Whisper via package manager
 
-```powershell
-pip install -r requirements.txt
+### Linux
+- All modes supported
+- Ollama via curl script (instructions provided)
+- Faster-Whisper via package manager
+
+---
+
+## 📦 What Gets Installed
+
+### LIGHTWEIGHT Mode
+```
+Python Packages:
+├── openai-whisper>=20230314    # Transcription
+├── transformers>=4.30.0        # AI summarization
+├── torch>=2.0.0                # ML framework
+├── ttkbootstrap                # GUI
+└── google-generativeai         # Optional cloud AI
+
+Configuration:
+└── .config/config.py (auto-generated)
 ```
 
-### Step 2: External Dependencies
+### FULL Mode (adds to LIGHTWEIGHT)
+```
+Additional Packages:
+└── yt-dlp                      # YouTube downloads (pip)
 
-```powershell
-# Install just external binaries
-python tools/dependency_manager.py
+Windows-Specific (optional):
+├── dep/yt-dlp/yt-dlp.exe      # YouTube downloader
+└── Instructions for Faster-Whisper and Ollama
 
-# Or install specific component
-python tools/dependency_manager.py --install yt-dlp
-python tools/dependency_manager.py --install faster-whisper
-
-# Verify installation
-python tools/dependency_manager.py --verify-only
+macOS/Linux:
+└── Instructions for Ollama installation
 ```
 
-### Step 3: Install Package (Optional)
-
-```powershell
-# Install as editable package (recommended for development)
-pip install -e .
-
-# Or regular install
-pip install .
+### DEV Mode (adds to FULL)
+```
+Development Tools:
+├── pytest                      # Testing framework
+├── pylint                      # Code linter
+└── black                       # Code formatter
 ```
 
 ---
 
 ## ✅ Verifying Installation
 
-After installation, verify everything works:
+After installation, test that everything works:
 
-### 1. Check Dependencies
+### 1. Check Installation
 
-```powershell
-python tools/dependency_manager.py --verify-only
+The installer shows success messages. Look for:
+```
+✅ Installation Complete!
+
+You can now run Pogadane:
+  GUI:  python -m pogadane.gui
+  CLI:  python -m pogadane.transcribe_summarize_working --help
 ```
 
-You should see:
-```
-✅ Installed - yt-dlp (YouTube Downloader) (Required)
-  📁 Location: dep\yt-dlp\yt-dlp.exe
+### 2. Test the GUI
 
-✅ Installed - Faster-Whisper-XXL (Transcription Engine) (Required)
-  📁 Location: dep\faster-whisper\faster-whisper-xxl.exe
-
-✅ Installed - Ollama (Local AI) (Optional)
-  📁 Location: dep\ollama\OllamaSetup.exe
-```
-
-### 2. Test the Application
-
-```powershell
-# Test GUI
+```bash
+# Windows:
 python -m pogadane.gui
 
-# Or if installed as package
-pogadane-gui
+# macOS/Linux:
+python3 -m pogadane.gui
 ```
 
-### 3. Run Sample Test
+### 3. Test the CLI
 
-```powershell
-# Test with included sample audio
-python -m pogadane.transcribe_summarize_working "samples/Styrta się pali.mp3"
+```bash
+# Windows:
+python -m pogadane.transcribe_summarize_working --help
+
+# macOS/Linux:
+python3 -m pogadane.transcribe_summarize_working --help
 ```
 
 ---
 
 ## 🔧 Troubleshooting
 
-### "Python not recognized"
+### "Python is not recognized"
 
-**Problem:** Windows can't find Python
+**Windows:**
+- Reinstall Python from https://www.python.org/
+- ✅ Check "Add Python to PATH" during installation
+- Restart PowerShell/Command Prompt
 
-**Solution:**
-1. Reinstall Python from https://www.python.org/
-2. ✅ **Check "Add Python to PATH"** during installation
-3. Restart PowerShell
+**macOS/Linux:**
+- Use `python3` instead of `python`
+- Install Python via package manager:
+  - macOS: `brew install python3`
+  - Ubuntu/Debian: `sudo apt install python3 python3-pip`
+  - Fedora: `sudo dnf install python3 python3-pip`
 
-### "Import setuptools could not be resolved"
-
-**Problem:** Lint warning (harmless)
-
-**Solution:** This is just a warning. Installation will work fine.
-
-```powershell
-# If you want to fix it:
-pip install setuptools
-```
-
-### "py7zr extraction failed: BCJ2 filter is not supported"
-
-**Problem:** py7zr can't extract Faster-Whisper archive (BCJ2 compression not supported)
-
-**Solution - Automatic (Recommended):**
-```powershell
-# Use our helper script (requires 7-Zip installed)
-python tools/extract_faster_whisper.py
-```
-
-**Solution - Manual:**
-```powershell
-# 1. Install 7-Zip from: https://www.7-zip.org/
-
-# 2. Extract the archive:
-# Right-click on dep/faster-whisper/Faster-Whisper-XXL_r245.4_windows.7z
-# Select: 7-Zip → Extract Here
-
-# 3. Find faster-whisper-xxl.exe in the extracted folders
-
-# 4. Copy it to:
-#    dep/faster-whisper/faster-whisper-xxl.exe
-
-# 5. Delete the extracted folders and .7z file
-```
-
-**Note:** The automatic installer will try to use 7-Zip command-line if available, but if py7zr fails and 7-Zip is not installed, you'll need to extract manually.
-
-### "No module named 'transformers'" or "No module named 'torch'"
-
-**Problem:** Using SUMMARY_PROVIDER="transformers" but libraries not installed
+### "No module named 'transformers'"
 
 **Solution:**
-```powershell
-# Install transformers support
+```bash
+# Windows:
 pip install -r requirements-transformers.txt
 
-# Or manually install
-pip install transformers torch
-
-# Verify installation
-python -c "import transformers; print('OK')"
+# macOS/Linux:
+pip3 install -r requirements-transformers.txt
 ```
 
-**GPU Acceleration (Optional):**
-```powershell
-# For NVIDIA GPUs with CUDA support
-pip install torch --index-url https://download.pytorch.org/whl/cu118
-```
-
-### Transformers model download is slow
-
-**Problem:** First-time model download takes long time
+### "No module named 'whisper'"
 
 **Solution:**
-This is normal! Models are 300MB-1.6GB and download from Hugging Face.
-- Default model (BART): ~1.6GB
-- Smaller alternative: Change to `"google/flan-t5-small"` in config (~300MB)
-- Models cache in `~/.cache/huggingface/` - only downloaded once
-
-**Speed up:**
-```powershell
-# Use smaller, faster model in .config/config.py:
-TRANSFORMERS_MODEL = "google/flan-t5-small"
-```
-
-### "No module named 'whisper'" or Whisper transcription fails
-
-**Problem:** Using TRANSCRIPTION_PROVIDER="whisper" but library not installed
-
-**Solution:**
-```powershell
-# Install Whisper support
+```bash
+# Windows:
 pip install -r requirements-whisper.txt
 
-# Or manually install
-pip install openai-whisper
-
-# Verify installation
-python -c "import whisper; print('OK')"
+# macOS/Linux:
+pip3 install -r requirements-whisper.txt
 ```
 
-**GPU Acceleration (Optional):**
-```powershell
-# For NVIDIA GPUs with CUDA support
-pip install torch --index-url https://download.pytorch.org/whl/cu118
+### Model downloads are slow
+
+**This is normal!** Models are downloaded once on first use:
+- Whisper models: 75MB (tiny) to 3GB (large)
+- Transformers models: 300MB to 1.6GB
+- Models are cached - subsequent runs are instant
+
+**Speed up:** Choose smaller models in `.config/config.py`:
+```python
+WHISPER_MODEL = "tiny"  # or "base"
+TRANSFORMERS_MODEL = "google/flan-t5-small"  # 300MB
 ```
 
-### Whisper model download is slow
+### Permission errors (Linux/macOS)
 
-**Problem:** First-time Whisper model download takes time
+```bash
+# Give install.sh execute permission:
+chmod +x install.sh
 
-**Solution:**
-This is normal! Whisper models are downloaded on first use:
-- tiny: ~75MB (fastest, basic quality)
-- base: ~150MB (recommended for lightweight)
-- small: ~500MB (balanced)
-- medium: ~1.5GB (high quality)
-- large: ~3GB (best quality)
-
-Models cache in `~/.cache/whisper/` - only downloaded once.
-
-**Speed up:**
-```powershell
-# Use smaller model in .config/config.py:
-TRANSCRIPTION_PROVIDER = "whisper"
-WHISPER_MODEL = "tiny"  # or "base" for better quality
+# Or run with python3:
+python3 install.py
 ```
 
-### "Permission denied" errors
+### Installation fails on Windows
 
-**Problem:** Windows blocking downloads or file operations
-
-**Solution:**
-```powershell
-# Run PowerShell as Administrator
-# Right-click PowerShell → "Run as Administrator"
-
-# Then run installer again
-python tools/install.py
-```
-
-### Ollama installation fails or not detected
-
-**Problem:** Automatic Ollama setup didn't work or shows as "Missing" after installation
-
-**Solution:**
-```powershell
-# Option 1: Install manually from downloaded file
-# The installer was downloaded to: dep/ollama/ollama_setup.exe
-# Just double-click it to install
-
-# Option 2: Download fresh from website
-# 1. Visit https://ollama.com/
-# 2. Download Ollama for Windows
-# 3. Run installer
-# 4. Download model:
-ollama pull gemma3:4b
-
-# Verify installation:
-ollama --version
-ollama list
-```
-
-**Note:** Ollama verification might show "Missing" because it's an installer, not a standalone exe. As long as `ollama --version` works in your terminal, it's installed correctly.
-
-### Config file not updated
-
-**Problem:** Paths in `.config/config.py` still point to current directory
-
-**Solution:**
-```powershell
-# Manually update paths in .config/config.py:
-FASTER_WHISPER_EXE = r"dep\faster-whisper\faster-whisper-xxl.exe"
-YT_DLP_EXE = r"dep\yt-dlp\yt-dlp.exe"
-```
-
-### Internet connection issues
-
-**Problem:** Downloads fail due to network issues
-
-**Solution:**
-```powershell
-# Retry installation
-python tools/install.py
-
-# Or download manually:
-# yt-dlp: https://github.com/yt-dlp/yt-dlp/releases/latest
-# Faster-Whisper: https://github.com/Purfview/whisper-standalone-win/releases
-```
+Try running PowerShell as Administrator:
+1. Right-click PowerShell
+2. Select "Run as Administrator"
+3. Run `python install.py` again
 
 ---
 
 ## 🔄 Updating Pogadane
 
-### Update Repository Code
+### Update Code
 
-```powershell
+```bash
 git pull origin main
 ```
 
-### Update External Dependencies
+### Update Dependencies
 
-```powershell
-# Re-run installer to update all components
-python tools/install.py
+```bash
+# Re-run installer to update everything:
+python install.py
 
-# Or update specific component
-python tools/dependency_manager.py --install yt-dlp
-```
-
-### Update Python Packages
-
-```powershell
+# Or update just Python packages:
 pip install --upgrade -r requirements.txt
 ```
 
@@ -488,25 +319,25 @@ pip install --upgrade -r requirements.txt
 
 ## 🧹 Uninstalling
 
-### Remove External Dependencies
+### Remove Python Packages
 
-```powershell
-# Simply delete the dep/ folder
-Remove-Item -Recurse -Force dep/
-```
-
-### Uninstall Python Package
-
-```powershell
+```bash
 pip uninstall pogadane
+pip uninstall openai-whisper transformers torch ttkbootstrap
 ```
 
-### Complete Removal
+### Remove Project
 
-```powershell
-# Remove entire pogadane directory
+```bash
+# Navigate to parent directory
 cd ..
-Remove-Item -Recurse -Force pogadane/
+
+# Remove project folder
+# Windows:
+Remove-Item -Recurse -Force pogadane
+
+# macOS/Linux:
+rm -rf pogadane
 ```
 
 ---
@@ -516,36 +347,24 @@ Remove-Item -Recurse -Force pogadane/
 After successful installation:
 
 1. **Configure your preferences:**
-   - Open `.config/config.py` or use the GUI Settings tab
-   - Choose LLM provider (Ollama local or Google Gemini API)
+   - Edit `.config/config.py` or use GUI Settings tab
+   - Choose AI provider (Transformers, Ollama, or Google Gemini)
    - Set your preferred language
 
 2. **Try the GUI:**
-   ```powershell
+   ```bash
    python -m pogadane.gui
    ```
 
 3. **Or use CLI:**
-   ```powershell
+   ```bash
    python -m pogadane.transcribe_summarize_working --help
    ```
 
 4. **Read documentation:**
-   - [Quick Start Guide](QUICK_START.md) - Beginner-friendly guide
+   - [Quick Start Guide](QUICK_START.md) - Beginner-friendly
    - [README.md](README.md) - Complete documentation
    - [Architecture](doc/ARCHITECTURE.md) - Technical details
-
----
-
-## 🎯 Installation Methods Comparison
-
-| Method | Best For | Command |
-|--------|----------|---------|
-| **Automatic (Recommended)** | Everyone | `python tools/install.py` |
-| **No Ollama** | Using Google Gemini API | `python tools/install.py --no-ollama` |
-| **Development** | Contributors | `python tools/install.py --dev` |
-| **Manual Components** | Troubleshooting | `python tools/dependency_manager.py` |
-| **Python Only** | Advanced users | `pip install -r requirements.txt` |
 
 ---
 
@@ -553,11 +372,11 @@ After successful installation:
 
 If you encounter issues:
 
-1. **Check this guide** - Most issues are covered in Troubleshooting
-2. **Run verification** - `python tools/dependency_manager.py --verify-only`
-3. **Check logs** - Look for error messages in terminal output
+1. **Check this guide** - Most issues covered above
+2. **Check terminal output** - Look for error messages
+3. **Try lightweight mode** - `python install.py --lightweight`
 4. **GitHub Issues** - https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues
-5. **Quick Start Guide** - [QUICK_START.md](QUICK_START.md) for beginners
+5. **Quick Start Guide** - [QUICK_START.md](QUICK_START.md)
 
 ---
 
@@ -567,10 +386,6 @@ If you see this after running the installer:
 
 ```
 ✅ Installation Complete!
-
-You can now run Pogadane:
-  GUI:  python -m pogadane.gui
-  CLI:  python -m pogadane.transcribe_summarize_working --help
 ```
 
 **Congratulations!** Pogadane is ready to use. 🚀

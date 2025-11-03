@@ -1,8 +1,16 @@
-# Pogadane - Automatic Installation System
+# Pogadane - Automatic Installation System (LEGACY)
 
-## Summary of Changes
+> **⚠️ DEPRECATED DOCUMENTATION**  
+> This document describes the **OLD** installation system (`tools/install.py` and related scripts).  
+> **For current installation instructions, see [INSTALL.md](../INSTALL.md)**
+>
+> This file is kept for historical reference only.
 
-This document describes the new fully automatic installation system for Pogadane that organizes dependencies properly and enables one-command installation.
+---
+
+## Summary of Changes (Historical)
+
+This document describes the old automatic installation system for Pogadane that was replaced in November 2025 with a simpler, cross-platform installer.
 
 ## 🎯 Goals Achieved
 

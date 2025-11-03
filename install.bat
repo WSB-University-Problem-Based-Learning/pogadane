@@ -1,20 +1,20 @@
 @echo off
-REM Quick launcher for Pogadane GUI Installer
-REM Double-click this file to start the installation wizard
+REM Quick launcher for Pogadane Installer
+REM Double-click this file to start the installation
 
 echo ========================================
-echo   Pogadane Installation Wizard
+echo   Pogadane Installer
 echo ========================================
 echo.
-echo Starting GUI installer...
+echo Starting installer...
 echo.
 
-python tools\install_gui.py
+python install.py
 
 if errorlevel 1 (
     echo.
     echo ========================================
-    echo   Error: Installation failed to start
+    echo   Error: Installation failed
     echo ========================================
     echo.
     echo Possible causes:
@@ -24,7 +24,6 @@ if errorlevel 1 (
     echo Please ensure:
     echo 1. Python 3.7+ is installed
     echo 2. You are in the pogadane directory
-    echo 3. Run from Command Prompt if needed
     echo.
     pause
 )

@@ -38,7 +38,19 @@ class PogadaneApp:
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "Pogadane"
-        self.page.theme_mode = ft.ThemeMode.LIGHT  # Start with light mode
+        
+        # Initialize configuration first to load theme preference
+        self.config_manager = ConfigManager()
+        self.config_manager.initialize()
+        self.config_module = self.config_manager.config
+        
+        # Load theme preference from config
+        theme_mode_value = getattr(self.config_module, "THEME_MODE", "light")
+        if theme_mode_value == "dark":
+            self.page.theme_mode = ft.ThemeMode.DARK
+        else:
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+        
         self.page.padding = 0
         
         # Set window size properties
@@ -244,11 +256,6 @@ class PogadaneApp:
             },
         }
         
-        # Initialize configuration
-        self.config_manager = ConfigManager()
-        self.config_manager.initialize()
-        self.config_module = self.config_manager.config
-        
         # Initialize variables
         self.output_queue = queue.Queue()
         self.batch_processing_thread = None
@@ -264,6 +271,9 @@ class PogadaneApp:
         self.topic_segments = []
         self.playback_position = 0.0
         self.is_playing = False
+        
+        # Audio player will be initialized when needed (to avoid "src" error)
+        self.audio_player = None
         
         # UI Components
         self.input_field = None
@@ -306,6 +316,33 @@ class PogadaneApp:
                 spacing=0,
                 expand=True,
             )
+        )
+    
+    def _create_theme_toggle_button(self):
+        """Create theme toggle button with proper initial state"""
+        # Determine initial icon based on current theme
+        if self.page.theme_mode == ft.ThemeMode.DARK:
+            icon = ft.Icons.LIGHT_MODE_ROUNDED
+            tooltip = "Przełącz na tryb jasny"
+        else:
+            icon = ft.Icons.DARK_MODE_ROUNDED
+            tooltip = "Przełącz na tryb ciemny"
+        
+        # Create button and store reference
+        self.theme_toggle_button = ft.IconButton(
+            icon=icon,
+            icon_size=self.design_tokens["icon_size"]["lg"],
+            tooltip=tooltip,
+            on_click=self.toggle_theme,
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["md"]),
+                animation_duration=self.design_tokens["motion"]["medium"],
+            ),
+        )
+        
+        return ft.Container(
+            content=self.theme_toggle_button,
+            animate_scale=self.design_tokens["motion"]["fast"],
         )
     
     def create_app_bar(self):
@@ -383,20 +420,7 @@ class PogadaneApp:
                     ),
                     
                     # Theme Toggle - Enhanced with M3 state layers
-                    ft.Container(
-                        content=ft.IconButton(
-                            ref=lambda ref: setattr(self, 'theme_toggle_button', ref),
-                            icon=ft.Icons.DARK_MODE_ROUNDED,
-                            icon_size=self.design_tokens["icon_size"]["lg"],
-                            tooltip="Przełącz na tryb ciemny",
-                            on_click=self.toggle_theme,
-                            style=ft.ButtonStyle(
-                                shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["md"]),
-                                animation_duration=self.design_tokens["motion"]["medium"],
-                            ),
-                        ),
-                        animate_scale=self.design_tokens["motion"]["fast"],
-                    ),
+                    self._create_theme_toggle_button(),
                     
                     # Font Size Controls - Grouped with M3 spacing
                     ft.Container(
@@ -488,7 +512,7 @@ class PogadaneApp:
         # File input field
         self.input_field = ft.TextField(
             label="Pliki audio / URL-e YouTube",
-            hint_text="Wklej ścieżki do plików lub URL-e YouTube, każdą w nowej linii...",
+            hint_text="Wklej ścieżki do plików lub URL-e YouTube, każdą w nowej linii...\n💡 Lub użyj przycisku 'Dodaj Pliki' aby wybrać wiele plików naraz",
             multiline=True,
             min_lines=3,
             max_lines=5,
@@ -1162,6 +1186,24 @@ class PogadaneApp:
                 self.audio_sample_rate = audio_info['sample_rate']
                 self.waveform_data = audio_info['waveform']
                 
+                # Initialize audio player with source (if not already created)
+                try:
+                    if not self.audio_player:
+                        self.audio_player = ft.Audio(
+                            src=str(audio_path),
+                            autoplay=False,
+                            on_position_changed=self.on_position_update,
+                            on_duration_changed=self.on_duration_changed,
+                        )
+                        self.page.overlay.append(self.audio_player)
+                    else:
+                        # Update existing audio player source
+                        self.audio_player.src = str(audio_path)
+                    self.page.update()
+                except Exception as e:
+                    print(f"Warning: Could not initialize audio player: {e}")
+                    self.audio_player = None
+                
                 # Try to get transcription/summary if available
                 transcription = self.transcription_output.value if self.transcription_output else ""
                 summary = self.summary_output.value if self.summary_output else ""
@@ -1380,20 +1422,41 @@ class PogadaneApp:
     
     def toggle_playback(self, e):
         """Toggle audio playback"""
-        self.is_playing = not self.is_playing
+        # Check if audio player is available
+        if not self.audio_player:
+            self.show_snackbar("⚠️ Odtwarzacz audio niedostępny. Zainstaluj pakiet flet-audio.", error=True)
+            return
         
         if self.is_playing:
-            self.play_pause_button.icon = ft.Icons.PAUSE_ROUNDED
-            self.show_snackbar("▶️ Odtwarzanie...", success=True)
-            # TODO: Implement actual audio playback
-        else:
+            self.audio_player.pause()
             self.play_pause_button.icon = ft.Icons.PLAY_ARROW_ROUNDED
             self.show_snackbar("⏸️ Pauza", success=True)
+        else:
+            if not self.audio_player.src:
+                self.show_snackbar("⚠️ Proszę najpierw wygenerować wizualizację", error=True)
+                return
+            self.audio_player.play()
+            self.play_pause_button.icon = ft.Icons.PAUSE_ROUNDED
+            self.show_snackbar("▶️ Odtwarzanie...", success=True)
         
+        self.is_playing = not self.is_playing
         self.play_pause_button.update()
     
-    def update_playback_position(self):
-        """Update playback position UI"""
+    def on_position_update(self, e):
+        """Handle audio position updates from the Audio control"""
+        # e.data is position in milliseconds
+        self.playback_position = int(e.data) / 1000.0
+        self.update_playback_position_ui()
+    
+    def on_duration_changed(self, e):
+        """Handle audio duration updates from the Audio control"""
+        # e.data is duration in milliseconds
+        if e.data:
+            self.audio_duration = int(e.data) / 1000.0
+            self.update_playback_position_ui()
+    
+    def update_playback_position_ui(self):
+        """Update playback position UI elements"""
         if hasattr(self, 'playback_progress') and hasattr(self, 'playback_time_text'):
             progress = self.playback_position / self.audio_duration if self.audio_duration > 0 else 0
             self.playback_progress.value = progress
@@ -1403,6 +1466,10 @@ class PogadaneApp:
             total_time = self.seconds_to_timestamp(self.audio_duration) if self.audio_duration > 0 else "0:00"
             self.playback_time_text.value = f"{current_time} / {total_time}"
             self.playback_time_text.update()
+    
+    def update_playback_position(self):
+        """Legacy method - redirects to update_playback_position_ui"""
+        self.update_playback_position_ui()
     
     def export_visualization(self, e):
         """Export visualization to PNG"""
@@ -1763,18 +1830,28 @@ class PogadaneApp:
     def toggle_theme(self, e):
         """Toggle between light and dark theme with animation"""
         # Toggle theme mode
+        new_mode = ft.ThemeMode.LIGHT
         if self.page.theme_mode == ft.ThemeMode.LIGHT:
             self.page.theme_mode = ft.ThemeMode.DARK
             theme_name = "ciemny"
+            new_mode = ft.ThemeMode.DARK
             # Update icon button
             if e and hasattr(e.control, 'icon'):
                 e.control.icon = ft.Icons.LIGHT_MODE_ROUNDED
         else:
             self.page.theme_mode = ft.ThemeMode.LIGHT
             theme_name = "jasny"
+            new_mode = ft.ThemeMode.LIGHT
             # Update icon button
             if e and hasattr(e.control, 'icon'):
                 e.control.icon = ft.Icons.DARK_MODE_ROUNDED
+        
+        # Save theme to config
+        try:
+            setattr(self.config_module, "THEME_MODE", new_mode.value)
+            self.config_manager.save_config_to_file(self.config_module)
+        except Exception as ex:
+            print(f"Error saving theme: {ex}")
         
         # Animate the transition
         self.page.update()
@@ -2117,8 +2194,20 @@ class PogadaneApp:
     
     def display_selected_result(self, e):
         """Display selected file results"""
-        # TODO: Implement results display
-        pass
+        selected_key = e.control.value
+        if not selected_key:
+            return
+        
+        result = self.results_manager.get_result(selected_key)
+        if result:
+            self.transcription_output.value = result.get("transcription", "Brak transkrypcji.")
+            self.summary_output.value = result.get("summary", "Brak streszczenia.")
+        else:
+            self.transcription_output.value = ""
+            self.summary_output.value = ""
+        
+        self.transcription_output.update()
+        self.summary_output.update()
     
     def save_config(self, e):
         """Save configuration to file"""

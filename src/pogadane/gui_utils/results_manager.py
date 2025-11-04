@@ -1,24 +1,20 @@
 """
-ResultsManager - Manages processed results storage and display.
+ResultsManager - Manages processed results storage.
 
-This module handles storage, retrieval, and display of processing results
+This module handles storage and retrieval of processing results
 following the Single Responsibility Principle.
 """
 
-from typing import Dict, Any, Optional, Tuple
-from ttkbootstrap.widgets.scrolled import ScrolledText
-import ttkbootstrap as ttk
-from tkinter import END, DISABLED, NORMAL
+from typing import Dict, Any, Optional
 
 
 class ResultsManager:
     """
-    Manages processed results storage and display.
+    Manages processed results storage.
     
     Handles:
     - Storage of transcription and summary results
     - Results retrieval by source identifier
-    - Display of results in GUI widgets
     - Results metadata tracking
     
     Attributes:
@@ -86,72 +82,6 @@ class ResultsManager:
         """
         return len(self.results_data)
     
-    def display_result(
-        self,
-        source: str,
-        transcription_widget: ScrolledText,
-        summary_widget: ScrolledText,
-        insert_markdown_func: callable = None
-    ) -> bool:
-        """
-        Display result in GUI widgets.
-        
-        Args:
-            source: Source identifier
-            transcription_widget: ScrolledText widget for transcription
-            summary_widget: ScrolledText widget for summary
-            insert_markdown_func: Optional function to render markdown in summary
-            
-        Returns:
-            True if result was displayed, False if source not found
-        """
-        result = self.get_result(source)
-        
-        if result:
-            # Display transcription (plain text)
-            self._update_scrolled_text(
-                transcription_widget,
-                result.get("transcription", "Brak transkrypcji.")
-            )
-            
-            # Display summary (with markdown if function provided)
-            summary_text = result.get("summary", "Brak podsumowania.")
-            if insert_markdown_func:
-                insert_markdown_func(summary_widget, summary_text)
-            else:
-                self._update_scrolled_text(summary_widget, summary_text)
-            
-            return True
-        else:
-            # Clear both widgets if source not found
-            self._clear_scrolled_text(transcription_widget)
-            self._clear_scrolled_text(summary_widget)
-            return False
-    
-    def _update_scrolled_text(self, widget: ScrolledText, content: str) -> None:
-        """
-        Update ScrolledText widget content.
-        
-        Args:
-            widget: ScrolledText widget to update
-            content: Text content to display
-        """
-        widget.text.config(state=NORMAL)
-        widget.text.delete("1.0", END)
-        widget.text.insert("1.0", content)
-        widget.text.config(state=DISABLED)
-    
-    def _clear_scrolled_text(self, widget: ScrolledText) -> None:
-        """
-        Clear ScrolledText widget content.
-        
-        Args:
-            widget: ScrolledText widget to clear
-        """
-        widget.text.config(state=NORMAL)
-        widget.text.delete("1.0", END)
-        widget.text.config(state=DISABLED)
-    
     def export_all_results(self) -> str:
         """
         Export all results as formatted text.
@@ -176,3 +106,4 @@ class ResultsManager:
             lines.append("")
         
         return "\n".join(lines)
+

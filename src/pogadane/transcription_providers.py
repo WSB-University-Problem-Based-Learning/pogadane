@@ -185,55 +185,8 @@ class FasterWhisperProvider(TranscriptionProvider):
     
     def _run_command(self, command_list):
         """Execute command with proper Windows handling."""
-        cmd_str = ' '.join(shlex.quote(str(s)) for s in command_list)
-        
-        if self.debug_mode:
-            print(f"🐞 DEBUG: Running command: {cmd_str}")
-        else:
-            print(f"▶️ Running: {cmd_str}")
-        
-        # Windows-specific startup info to hide console window
-        startupinfo = None
-        if os.name == 'nt':
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = subprocess.SW_HIDE
-        
-        try:
-            process = subprocess.run(
-                command_list,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                check=False,
-                shell=False,
-                startupinfo=startupinfo
-            )
-            
-            if self.debug_mode:
-                print(f"☑️ Exit code: {process.returncode}")
-                if process.stdout:
-                    print(f"--- stdout ---\n{process.stdout.strip()}\n--------------")
-                if process.stderr:
-                    print(f"--- stderr ---\n{process.stderr.strip()}\n--------------", 
-                          file=sys.stderr)
-            else:
-                if process.returncode == 0:
-                    print(f"☑️ Command finished successfully")
-                else:
-                    print(f"⚠️ Command exited with code {process.returncode}", 
-                          file=sys.stderr)
-                    if process.stderr:
-                        print(f"--- Error output ---\n{process.stderr.strip()}\n-------------------",
-                              file=sys.stderr)
-            
-            return process
-        except FileNotFoundError:
-            print(f"❌ Error: Executable not found: {command_list[0]}", file=sys.stderr)
-            return None
-        except Exception as e:
-            print(f"❌ Unexpected error running '{command_list[0]}': {e}", file=sys.stderr)
-            return None
+        from .file_utils import run_subprocess
+        return run_subprocess(command_list, debug_mode=self.debug_mode)
 
 
 class WhisperProvider(TranscriptionProvider):

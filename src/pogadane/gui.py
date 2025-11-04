@@ -257,6 +257,7 @@ class PogadaneApp:
         }
         
         # Initialize variables
+        self.base_path = Path(__file__).parent  # Path to src/pogadane directory
         self.output_queue = queue.Queue()
         self.batch_processing_thread = None
         self.results_manager = ResultsManager()

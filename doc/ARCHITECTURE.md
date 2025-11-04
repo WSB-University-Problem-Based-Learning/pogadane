@@ -25,7 +25,7 @@ Pogadane is a modular Python application designed for audio transcription and AI
 
 ### Key Features
 
-- **Dual Interface**: Graphical (ttkbootstrap) and Command-line
+- **Dual Interface**: Graphical (Flet/Material Design 3) and Command-line
 - **Batch Processing**: Sequential processing of multiple audio sources
 - **Flexible AI Backend**: Supports local (Ollama) and cloud (Google Gemini) LLMs
 - **Speaker Diarization**: Optional speaker identification in transcriptions
@@ -36,12 +36,14 @@ Pogadane is a modular Python application designed for audio transcription and AI
 ### Technology Stack
 
 - **Language**: Python 3.8+
-- **GUI Framework**: ttkbootstrap (Bootstrap-themed tkinter)
-- **Transcription Engine**: Faster-Whisper (standalone binary)
+- **GUI Framework**: Flet (Flutter-based Material Design 3)
+  - *Legacy support*: ttkbootstrap/customtkinter available via `pip install pogadane[legacy-gui]`
+- **Transcription Engine**: Faster-Whisper (standalone binary) or OpenAI Whisper (Python package)
 - **Video Download**: yt-dlp (standalone binary)
 - **LLM Options**:
   - Ollama (local, offline)
   - Google Gemini API (cloud, online)
+  - Transformers (local, offline with Hugging Face models)
 - **Design Patterns**: Strategy (LLM Providers), Factory (Config/Provider Creation), Singleton (Config Manager)
 
 ---
@@ -162,11 +164,15 @@ src/pogadane/
 ### Component Responsibilities
 
 #### 1. GUI Layer (`src/pogadane/gui.py`)
-- User interface management (ttkbootstrap)
+- User interface management (Flet - Flutter/Material Design 3)
+  - *Legacy option: ttkbootstrap/customtkinter via `pip install pogadane[legacy-gui]`*
 - Input validation and file selection
+- Drag-and-drop file input support
 - Batch queue management and progress tracking
 - Results presentation with tabbed interface
+- Audio playback and visualization
 - Configuration editor with live updates
+- Theme persistence and customization
 - Font size adjustment for accessibility
 
 #### 2. CLI Layer (`src/pogadane/transcribe_summarize_working.py`)
@@ -482,8 +488,8 @@ class FontManager:
         """Decrease font size (A- button)."""
         pass
     
-    def apply_to_ttk_styles(self, style):
-        """Apply fonts to ttkbootstrap styles."""
+    def apply_to_styles(self):
+        """Apply fonts to UI styles (legacy GUI only)."""
         pass
 ```
 
@@ -517,16 +523,24 @@ class ResultsManager:
 
 #### **Refactored Core Modules** ✅
 
-#### `gui.py` (REFACTORED)
+#### `gui.py` (REFACTORED - Flet Implementation)
 
 ```python
-class TranscriberApp(ttk.Window):
-    """Main GUI application window"""
+import flet as ft
+from pogadane.results_manager import ResultsManager
+
+def main(page: ft.Page):
+    """Main Flet application entry point."""
     
-    def __init__(self):
-        # Initialize ttkbootstrap window
-        # Setup font management system
-        # Create tabbed interface
+    # Initialize page
+    page.title = "Pogadane"
+    page.theme_mode = ft.ThemeMode.DARK
+    
+    # Initialize managers
+    results_manager = ResultsManager()
+    
+    # Build UI components
+    # ... (See gui.py for full implementation)
         # Initialize configuration editor
     
     def run_batch_script(self):
@@ -653,82 +667,108 @@ spec.loader.exec_module(config_module)
 
 ## GUI Architecture
 
+### Current Implementation: Flet (Material Design 3)
+
+The GUI is built using **Flet**, a Flutter-based framework that provides:
+- Modern Material Design 3 components
+- Cross-platform compatibility (Desktop, Web, Mobile)
+- Reactive UI updates
+- Built-in theme system with dark/light mode
+- Audio playback controls
+- Drag-and-drop file support
+
+**Note:** Legacy GUIs (ttkbootstrap, customtkinter) are available via:
+```bash
+pip install pogadane[legacy-gui]
+```
+But are no longer actively maintained.
+
 ### Window Structure
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  Pogadane GUI v0.1.8         [A+] [A-]          │
+│  Pogadane GUI v0.1.8         Theme: [🌙/☀️]    │
 ├─────────────────────────────────────────────────┤
-│  Input Field (Multi-line Text)                  │
-│  [➕ Dodaj Pliki Audio]                         │
+│  📁 Input Tab                                    │
+│  ┌────────────────────────────────────────────┐ │
+│  │ Drag files here or browse...               │ │
+│  │ [📂 Select Files]                          │ │
+│  └────────────────────────────────────────────┘ │
+│  [🚀 Start Processing]                          │
 ├─────────────────────────────────────────────────┤
-│  [🚀 Rozpocznij Przetwarzanie Wsadowe]          │
+│  📊 Results Tab                                  │
+│  ┌────────────────────────────────────────────┐ │
+│  │ File: example.mp3                          │ │
+│  │ ┌──────────────────────────────────────┐   │ │
+│  │ │ 🎵 Audio Player                      │   │ │
+│  │ │ ▶️ [====-----] 2:34 / 5:12           │   │ │
+│  │ └──────────────────────────────────────┘   │ │
+│  │ [Transcription] [Summary]                  │ │
+│  │ ┌──────────────────────────────────────┐   │ │
+│  │ │ Transcription text...                │   │ │
+│  │ └──────────────────────────────────────┘   │ │
+│  └────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────┤
-│  Kolejka Przetwarzania (Treeview)               │
-│  ┌──────────────────────┬────────────────────┐  │
-│  │ Plik / URL           │ Status             │  │
-│  ├──────────────────────┼────────────────────┤  │
-│  │ example.mp3          │ ✅ Ukończono       │  │
-│  └──────────────────────┴────────────────────┘  │
-│  [Progress: 1/3] ████████░░░░░░░░░░░░░░ 33%    │
-├─────────────────────────────────────────────────┤
-│  ┌──────────────────────────────────────────┐  │
-│  │ [🖥️ Konsola] [📊 Wyniki] [⚙️ Konfiguracja]│  │
-│  ├──────────────────────────────────────────┤  │
-│  │                                           │  │
-│  │  Tab Content (Dynamic)                    │  │
-│  │                                           │  │
-│  └──────────────────────────────────────────┘  │
+│  ⚙️ Settings Tab                                │
+│  └ Configuration editor, prompts, providers    │
 └─────────────────────────────────────────────────┘
 ```
 
 ### State Management
 
 **Application State:**
-- `processed_results_data`: Dict mapping source → {transcription, summary}
-- `batch_processing_thread`: Worker thread reference
-- `output_queue`: Thread-safe queue for subprocess communication
-- `font_settings`: Dict of font objects for dynamic sizing
+- `results_manager`: ResultsManager singleton for processed data
+- `processing_state`: Current processing status
+- `selected_file`: Currently selected result file
+- `theme_mode`: Light/dark theme preference (persisted)
+- `audio_player`: Lazy-initialized audio control
 
-**Queue States:**
+**Processing States:**
 - ⏳ Pending: Awaiting processing
 - ⚙️ Processing: Currently active
 - ✅ Completed: Successfully finished
 - ❌ Error: Failed with error
 
-### Thread Communication
+### Async/Event-Driven Architecture
+
+Flet uses an event-driven model with async support:
 
 ```python
-# GUI Thread (Main)
-self.output_queue = queue.Queue()
-self.batch_processing_thread = threading.Thread(
-    target=self._execute_batch_processing_logic,
-    args=(sources,),
-    daemon=True
-)
-self.batch_processing_thread.start()
-self._poll_output_queue_for_batch()
+import flet as ft
 
-# Worker Thread
-for source in sources:
-    # Process each source
-    self.output_queue.put(("update_status", idx, status))
-    self.output_queue.put(("log", message, source))
-    self.output_queue.put(("result", source, trans, summ))
+def main(page: ft.Page):
+    # Page configuration
+    page.title = "Pogadane"
+    page.theme_mode = ft.ThemeMode.DARK
+    
+    # Event handlers
+    async def on_file_picked(e: ft.FilePickerResultEvent):
+        if e.files:
+            await process_files(e.files)
+    
+    async def on_process_click(e):
+        page.update()  # Reactive UI update
+    
+    # Build UI
+    file_picker = ft.FilePicker(on_result=on_file_picked)
+    page.add(file_picker)
 
-# Polling Loop (Main Thread)
-def _poll_output_queue_for_batch(self):
-    try:
-        while True:
-            msg_type, data1, data2 = self.output_queue.get_nowait()
-            # Update GUI based on message type
-    except queue.Empty:
-        self.after(100, self._poll_output_queue_for_batch)
+ft.app(target=main)
 ```
 
-### ScrolledText Widget Handling
+### Legacy GUI Notes
 
-**Important Implementation Detail:**
+The original ttkbootstrap implementation used:
+- Threading for background processing
+- Queue-based communication
+- ScrolledText widget handling
+- Manual theme management
+
+These patterns are documented below for reference but are superseded by Flet's reactive model.
+
+#### Legacy ScrolledText Widget Handling
+
+**Important Implementation Detail (ttkbootstrap only):**
 
 ttkbootstrap's `ScrolledText` is a wrapper widget. Direct text operations must access the inner `.text` property:
 
@@ -802,9 +842,21 @@ This allows the GUI to extract structured data from subprocess stdout.
 
 | Library | Purpose | Import |
 |---------|---------|--------|
-| `ttkbootstrap` | Modern themed Tkinter widgets | `import ttkbootstrap as ttk` |
+| `flet` | Modern Flutter-based Material Design 3 UI | `import flet as ft` |
 | `google-generativeai` | Google Gemini API client | `import google.generativeai` |
+| `transformers` (optional) | Hugging Face transformers for local LLM | `import transformers` |
+| `torch` (optional) | PyTorch backend for transformers | `import torch` |
+| `openai-whisper` (optional) | OpenAI Whisper Python package | `import whisper` |
+| `ttkbootstrap` (legacy) | Bootstrap-themed Tkinter (legacy GUI) | `import ttkbootstrap as ttk` |
+| `customtkinter` (legacy) | Modern Tkinter widgets (legacy GUI) | `import customtkinter` |
 | Standard Library | subprocess, threading, queue, argparse, importlib, pathlib, re, shutil, time, os, sys | Various |
+
+**Installation:**
+- Core: `pip install pogadane`
+- With Whisper: `pip install pogadane[whisper]`
+- With Transformers: `pip install pogadane[transformers]`
+- Legacy GUI: `pip install pogadane[legacy-gui]`
+- All extras: `pip install pogadane[all]`
 
 ### External Binaries
 
@@ -1143,9 +1195,10 @@ command = [exe_path, str(input_file), "--language", lang]
    - Confirm file path resolution
 
 3. **GUI Not Starting**:
-   - Verify `ttkbootstrap` installation
-   - Check for Tkinter availability (OS-dependent)
-   - Review console for stack traces
+   - Verify `flet` installation: `pip install flet>=0.24.0`
+   - Check console for error messages
+   - For legacy GUI: `pip install pogadane[legacy-gui]`
+   - Review stack traces for dependency issues
 
 4. **Subprocess Failures**:
    - Test binaries directly in terminal

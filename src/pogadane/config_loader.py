@@ -6,6 +6,7 @@ following the Factory pattern for creating configuration objects.
 """
 
 import sys
+import json
 import importlib.util
 from pathlib import Path
 from typing import Any, Dict
@@ -121,11 +122,15 @@ class ConfigManager:
         
         self._config_path = config_path
         self._config = ConfigLoader.load_config(config_path)
+        
+        # Load runtime settings (theme, etc.)
+        self.load_runtime_settings()
     
     def reload(self):
         """Reload configuration from file."""
         if self._config_path:
             self._config = ConfigLoader.load_config(self._config_path)
+            self.load_runtime_settings()
     
     def get(self, key: str, default: Any = None) -> Any:
         """
@@ -153,6 +158,65 @@ class ConfigManager:
         if self._config is None:
             self.initialize()
         setattr(self._config, key, value)
+    
+    def save_config_to_file(self, config_obj=None):
+        """
+        Save runtime configuration preferences to a separate settings file.
+        
+        This saves UI preferences (like theme mode) to .config/settings.json
+        without modifying the main config.py file, preserving user comments.
+        
+        Args:
+            config_obj: Configuration object to save (uses self._config if None)
+        """
+        if config_obj is None:
+            config_obj = self._config
+        
+        if config_obj is None or self._config_path is None:
+            return
+        
+        # Settings file path (next to config.py)
+        settings_file = self._config_path.parent / "settings.json"
+        
+        # Extract runtime preferences to save
+        runtime_settings = {}
+        
+        # Save theme mode if it exists
+        if hasattr(config_obj, 'THEME_MODE'):
+            runtime_settings['THEME_MODE'] = config_obj.THEME_MODE
+        
+        # Save other runtime preferences here as needed
+        
+        try:
+            with open(settings_file, 'w', encoding='utf-8') as f:
+                json.dump(runtime_settings, f, indent=2)
+        except Exception as e:
+            # Silent fail - don't break the app if we can't save settings
+            print(f"Warning: Could not save settings to {settings_file}: {e}", file=sys.stderr)
+    
+    def load_runtime_settings(self):
+        """
+        Load runtime settings from .config/settings.json and apply to config.
+        
+        This is called during initialization to restore UI preferences.
+        """
+        if self._config_path is None:
+            return
+        
+        settings_file = self._config_path.parent / "settings.json"
+        
+        if not settings_file.exists():
+            return
+        
+        try:
+            with open(settings_file, 'r', encoding='utf-8') as f:
+                settings = json.load(f)
+            
+            # Apply runtime settings to config object
+            for key, value in settings.items():
+                setattr(self._config, key, value)
+        except Exception as e:
+            print(f"Warning: Could not load settings from {settings_file}: {e}", file=sys.stderr)
     
     @property
     def config(self):

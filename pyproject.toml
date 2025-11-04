@@ -83,6 +83,11 @@ transformers = [
     "torch>=2.0.0",
 ]
 
+# OpenAI Whisper transcription support
+whisper = [
+    "openai-whisper>=20231117",
+]
+
 # Legacy GUI support (for backward compatibility)
 legacy-gui = [
     "ttkbootstrap>=1.10.0",
@@ -91,7 +96,7 @@ legacy-gui = [
 
 # All optional dependencies combined
 all = [
-    "pogadane[dev,test,transformers,legacy-gui]"
+    "pogadane[dev,test,transformers,whisper,legacy-gui]"
 ]
 
 [project.urls]

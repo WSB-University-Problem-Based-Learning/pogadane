@@ -195,7 +195,7 @@ def install_lightweight():
     print_success("Lightweight installation complete!")
     print("\n" + "="*70)
     print(f"{Colors.BOLD}Next steps:{Colors.END}")
-    print("  1. Run the app: python -m pogadane.gui")
+    print("  1. Run the app: python run_gui_flet.py")
     print("  2. Transcription will use Python Whisper")
     print("  3. AI will use Transformers (English only)")
     print("  4. Edit .config/config.py to customize")
@@ -250,10 +250,10 @@ def install_full():
     print_success("Full installation complete!")
     print("\n" + "="*70)
     print(f"{Colors.BOLD}Next steps:{Colors.END}")
-    print("  1. Run the app: python -m pogadane.gui")
+    print("  1. Run the app: python run_gui_flet.py")
     print("  2. Edit .config/config.py to configure paths")
     if not IS_WINDOWS:
-        print("  3. Install Ollama for local AI (see above)")
+        print("  3. Install Faster-Whisper and Ollama manually (see above)")
     print("="*70 + "\n")
 
 
@@ -366,15 +366,15 @@ def install_pogadane_package():
         
         if success:
             print_success("Pogadane package installed")
-            print_info("You can now run: python -m pogadane.gui")
+            print_info("You can now run: python run_gui_flet.py")
             return True
         else:
             print_warning("Package installation failed, but you can still run from source")
-            print_info("Use: python -m pogadane.gui")
+            print_info("Use: python run_gui_flet.py")
             return True
     else:
         print_info("No setup.py found, skipping package installation")
-        print_info("You can run from source: python -m pogadane.gui")
+        print_info("You can run from source: python run_gui_flet.py")
         return True
 
 

@@ -5,8 +5,9 @@
 # For testing: pip install -r requirements-test.txt
 
 # GUI Framework
-ttkbootstrap>=1.10.0  # Legacy GUI
-customtkinter>=5.2.0  # Material Design GUI
+ttkbootstrap>=1.10.0  # Legacy GUI (Bootstrap style)
+customtkinter>=5.2.0  # Material Design GUI (CustomTkinter)
+flet>=0.24.0  # Material 3 Expressive GUI (Flutter-based)
 
 # Google Gemini API client (optional - only needed if using Google instead of Ollama)
 google-generativeai>=0.3.0

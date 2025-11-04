@@ -59,9 +59,10 @@ User settings are in `.config/config.py`.
 
 ### Core Capabilities
 
-✅ **Dual Interface**
-- 🎨 **Material Design GUI** (`gui_material.py`) - Modern Material Design 3 with dark/light themes
-- 🖥️ **Legacy GUI** (`gui.py`) - Stable Bootstrap-style interface
+✅ **Triple Interface Choice**
+- � **Material 3 Expressive GUI** (`gui_flet.py`) - Latest Flutter-based Material Design 3 with animations ⭐ RECOMMENDED
+- �🎨 **Material Design GUI** (`gui_material.py`) - Modern Material Design with dark/light themes
+- 🖥️ **Legacy Bootstrap GUI** (`gui.py`) - Stable, battle-tested interface
 - ⌨️ **Command-line** - For automation and advanced users
 
 ✅ **Multiple Input Sources**
@@ -90,15 +91,17 @@ User settings are in `.config/config.py`.
 
 ### User Experience
 
-- 🎨 **Two Modern GUIs** - Choose Material Design or Legacy Bootstrap
-  - 🌙 Material Design with dark/light theme toggle
-  - 🎯 Clean, rounded corners and card layouts
-  - See [GUI Comparison](doc/GUI_COMPARISON.md) for details
-- 📊 Real-time progress tracking
+- 🎨 **Three Beautiful GUIs** - Choose the perfect interface for you
+  - 🌟 **Material 3 Expressive** (Flet) - 60fps animations, true Material Design 3 ⭐ NEW
+  - � **Material Design** (CustomTkinter) - Modern look with dark/light themes
+  - 🖥️ **Legacy Bootstrap** (ttkbootstrap) - Stable and familiar
+  - See [GUI Comparison](doc/GUI_COMPARISON_ALL.md) for details
+- 📊 Real-time progress tracking with smooth animations
 - 📋 Results manager with per-file views
 - 🔤 Adjustable font sizes for accessibility
-- 💾 Easy result export
+- 💾 Easy result export with native dialogs
 - 🩺 Automated setup with doctor script
+- 🌐 Web version available (Material 3 Expressive only)
 
 ---
 
@@ -473,10 +476,28 @@ Przykładowa zawartość pliku `.config/config.py` znajduje się w repozytorium 
 
 ### Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)
 
-Pogadane oferuje **dwa interfejsy graficzne** do wyboru:
+Pogadane oferuje **trzy interfejsy graficzne** do wyboru:
 
-#### 🎨 Material Design GUI (NOWY - Zalecany)
-Nowoczesny interfejs z Material Design 3, wsparciem dla trybu ciemnego i zaokrąglonymi rogami.
+#### � Material 3 Expressive GUI (NAJNOWSZY - Zalecany)
+Najnowocześniejszy interfejs z prawdziwym Material Design 3, płynnymi animacjami 60fps i renderowaniem Flutter.
+
+```powershell
+python run_gui_flet.py
+```
+
+**Funkcje:**
+- 💫 Płynne animacje 60fps (Flutter)
+- 🌓 Automatyczne wykrywanie motywu systemowego
+- 🎨 Prawdziwy Material Design 3 (nie tylko inspirowany!)
+- 📱 Wersja webowa dostępna (`flet run --web`)
+- 🔔 Natywne powiadomienia (snackbars)
+- 📂 Natywne okna dialogowe systemu
+- 🚀 Potencjał mobilny (Android/iOS w przyszłości)
+
+**Dokumentacja:** [GUI_MATERIAL_3_EXPRESSIVE.md](doc/GUI_MATERIAL_3_EXPRESSIVE.md)
+
+#### 🎨 Material Design GUI (CustomTkinter)
+Nowoczesny interfejs z Material Design, wsparciem dla trybu ciemnego i zaokrąglonymi rogami.
 
 ```powershell
 python run_gui_material.py
@@ -484,23 +505,27 @@ python run_gui_material.py
 
 **Funkcje:**
 - 🌙 Przełącznik trybu ciemnego/jasnego
-- 🎯 Nowoczesny wygląd Material Design
+- 🎯 Nowoczesny wygląd Material Design 2
 - 📱 Zaokrąglone rogi i karty
-- 🎨 Lepsza hierarchia wizualna
-- Wszystkie funkcje GUI Legacy
+- ⚡ Szybkie uruchamianie
 
 **Dokumentacja:** [GUI_MATERIAL_DESIGN.md](doc/GUI_MATERIAL_DESIGN.md)
 
-#### 🖥️ Legacy GUI (Bootstrap)
+#### 🖥️ Legacy Bootstrap GUI
 Stabilny, sprawdzony interfejs w stylu Bootstrap.
 
 ```powershell
 python -m pogadane.gui
 ```
 
-**Zobacz również:** [Porównanie GUI](doc/GUI_COMPARISON.md) aby wybrać najlepszą opcję dla siebie.
+**Funkcje:**
+- 🏆 Maksymalna stabilność
+- ⚡ Najlżejszy (najmniej pamięci)
+- 🔧 Sprawdzony w boju
 
-#### Korzystanie z GUI (obie wersje):
+**Zobacz również:** [Porównanie GUI](doc/GUI_COMPARISON_ALL.md) aby wybrać najlepszą opcję dla siebie.
+
+#### Korzystanie z GUI (wszystkie wersje):
 
 1.  **Otwórz Terminal:** Otwórz terminal PowerShell.
 2.  **Przejdź do Katalogu Projektu:** Użyj polecenia `cd`, aby przejść do katalogu, w którym umieściłeś pliki.

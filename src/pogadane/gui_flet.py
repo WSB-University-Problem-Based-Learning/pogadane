@@ -168,6 +168,78 @@ class PogadaneApp:
             "warning": "#FBBF24",            # Warning states
         }
         
+        # Material 3 Expressive Design Tokens
+        # Based on Google's M3 guidelines for spacing, elevation, and motion
+        self.design_tokens = {
+            # Spacing Scale (8px base unit - M3 standard)
+            "spacing": {
+                "xs": 4,      # Extra small - tight spacing
+                "sm": 8,      # Small - compact layouts
+                "md": 16,     # Medium - default spacing
+                "lg": 24,     # Large - generous spacing
+                "xl": 32,     # Extra large - section separation
+                "xxl": 48,    # Double extra large - major sections
+            },
+            
+            # Border Radius (M3 Expressive - more pronounced curves)
+            "radius": {
+                "none": 0,
+                "sm": 8,      # Small components
+                "md": 12,     # Standard components
+                "lg": 16,     # Cards, containers
+                "xl": 20,     # Large cards
+                "xxl": 28,    # Hero elements
+                "full": 9999, # Pills, circular
+            },
+            
+            # Elevation (shadows for depth)
+            "elevation": {
+                "0": "none",
+                "1": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+                "2": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+                "3": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+                "4": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+                "5": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+            },
+            
+            # Typography Scale (M3 Expressive typography)
+            "typography": {
+                "display_large": {"size": 57, "weight": ft.FontWeight.W_400, "line_height": 64},
+                "display_medium": {"size": 45, "weight": ft.FontWeight.W_400, "line_height": 52},
+                "display_small": {"size": 36, "weight": ft.FontWeight.W_400, "line_height": 44},
+                "headline_large": {"size": 32, "weight": ft.FontWeight.W_400, "line_height": 40},
+                "headline_medium": {"size": 28, "weight": ft.FontWeight.W_400, "line_height": 36},
+                "headline_small": {"size": 24, "weight": ft.FontWeight.W_400, "line_height": 32},
+                "title_large": {"size": 22, "weight": ft.FontWeight.W_400, "line_height": 28},
+                "title_medium": {"size": 16, "weight": ft.FontWeight.W_500, "line_height": 24},
+                "title_small": {"size": 14, "weight": ft.FontWeight.W_500, "line_height": 20},
+                "body_large": {"size": 16, "weight": ft.FontWeight.W_400, "line_height": 24},
+                "body_medium": {"size": 14, "weight": ft.FontWeight.W_400, "line_height": 20},
+                "body_small": {"size": 12, "weight": ft.FontWeight.W_400, "line_height": 16},
+                "label_large": {"size": 14, "weight": ft.FontWeight.W_500, "line_height": 20},
+                "label_medium": {"size": 12, "weight": ft.FontWeight.W_500, "line_height": 16},
+                "label_small": {"size": 11, "weight": ft.FontWeight.W_500, "line_height": 16},
+            },
+            
+            # Animation durations (M3 motion system)
+            "motion": {
+                "instant": 0,
+                "fast": 100,
+                "medium": 200,
+                "slow": 300,
+                "slower": 500,
+            },
+            
+            # Icon sizes
+            "icon_size": {
+                "sm": 16,
+                "md": 20,
+                "lg": 24,
+                "xl": 32,
+                "xxl": 48,
+            },
+        }
+        
         # Initialize configuration
         self.config_manager = ConfigManager()
         self.config_manager.initialize()
@@ -233,109 +305,135 @@ class PogadaneApp:
         )
     
     def create_app_bar(self):
-        """Create Material 3 App Bar with Expressive design"""
+        """Create Material 3 Expressive App Bar with enhanced visual hierarchy"""
         
         # Prepare logo path
         icon_path = Path(__file__).parent.parent.parent / "res" / "assets" / "pogadane-icon.ico"
         
+        # Helper method to create text with design tokens
+        def get_text(text, style_key, **kwargs):
+            style = self.design_tokens["typography"][style_key]
+            return ft.Text(
+                text,
+                size=style["size"],
+                weight=style["weight"],
+                **kwargs
+            )
+        
         return ft.Container(
             content=ft.Row(
                 [
-                    # App Logo and Title
+                    # App Logo and Title - Enhanced with M3 spacing
                     ft.Row(
                         [
-                            # Icon
-                            ft.Image(
-                                src=str(icon_path),
-                                width=48,
-                                height=48,
-                                fit=ft.ImageFit.CONTAIN,
-                            ) if icon_path.exists() else ft.Icon(
-                                ft.Icons.HEADSET_ROUNDED,
-                                size=48,
-                                color="#2563EB",
+                            # Icon with subtle scale animation
+                            ft.Container(
+                                content=ft.Image(
+                                    src=str(icon_path),
+                                    width=self.design_tokens["icon_size"]["xxl"],
+                                    height=self.design_tokens["icon_size"]["xxl"],
+                                    fit=ft.ImageFit.CONTAIN,
+                                ) if icon_path.exists() else ft.Icon(
+                                    ft.Icons.HEADSET_ROUNDED,
+                                    size=self.design_tokens["icon_size"]["xxl"],
+                                    color="#2563EB",
+                                ),
+                                animate_scale=self.design_tokens["motion"]["medium"],
                             ),
-                            # Title and version
+                            # Title and version with M3 typography
                             ft.Column(
                                 [
-                                    ft.Text(
+                                    get_text(
                                         "Pogadane",
-                                        size=28,
-                                        weight=ft.FontWeight.BOLD,
+                                        "headline_medium",
                                         color="#2563EB",
                                     ),
-                                    ft.Text(
+                                    get_text(
                                         f"v{APP_VERSION}",
-                                        size=12,
+                                        "label_small",
                                         color="#6B7280",
                                     ),
                                 ],
-                                spacing=0,
+                                spacing=self.design_tokens["spacing"]["xs"],
                             ),
                         ],
-                        spacing=12,
+                        spacing=self.design_tokens["spacing"]["md"],
                     ),
                     
                     # Spacer
                     ft.Container(expand=True),
                     
-                    # Settings Button
-                    ft.IconButton(
-                        icon=ft.Icons.SETTINGS_ROUNDED,
-                        icon_size=24,
-                        tooltip="Ustawienia",
-                        on_click=self.open_settings_dialog,
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=12),
+                    # Settings Button - M3 Expressive with hover state
+                    ft.Container(
+                        content=ft.IconButton(
+                            icon=ft.Icons.SETTINGS_ROUNDED,
+                            icon_size=self.design_tokens["icon_size"]["lg"],
+                            tooltip="Ustawienia",
+                            on_click=self.open_settings_dialog,
+                            style=ft.ButtonStyle(
+                                shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["md"]),
+                                animation_duration=self.design_tokens["motion"]["fast"],
+                            ),
                         ),
+                        animate_scale=self.design_tokens["motion"]["fast"],
                     ),
                     
-                    # Theme Toggle
-                    ft.IconButton(
-                        ref=lambda ref: setattr(self, 'theme_toggle_button', ref),
-                        icon=ft.Icons.DARK_MODE_ROUNDED,
-                        icon_size=24,
-                        tooltip="Przełącz na tryb ciemny",
-                        on_click=self.toggle_theme,
-                        style=ft.ButtonStyle(
-                            shape=ft.RoundedRectangleBorder(radius=12),
-                            animation_duration=300,
+                    # Theme Toggle - Enhanced with M3 state layers
+                    ft.Container(
+                        content=ft.IconButton(
+                            ref=lambda ref: setattr(self, 'theme_toggle_button', ref),
+                            icon=ft.Icons.DARK_MODE_ROUNDED,
+                            icon_size=self.design_tokens["icon_size"]["lg"],
+                            tooltip="Przełącz na tryb ciemny",
+                            on_click=self.toggle_theme,
+                            style=ft.ButtonStyle(
+                                shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["md"]),
+                                animation_duration=self.design_tokens["motion"]["medium"],
+                            ),
                         ),
+                        animate_scale=self.design_tokens["motion"]["fast"],
                     ),
                     
-                    # Font Size Controls
+                    # Font Size Controls - Grouped with M3 spacing
                     ft.Container(
                         content=ft.Row(
                             [
                                 ft.IconButton(
                                     icon=ft.Icons.TEXT_DECREASE_ROUNDED,
-                                    icon_size=20,
+                                    icon_size=self.design_tokens["icon_size"]["md"],
                                     tooltip="Zmniejsz czcionkę (A-)",
                                     on_click=lambda _: self.change_font_size(-1),
                                     style=ft.ButtonStyle(
-                                        shape=ft.RoundedRectangleBorder(radius=12),
+                                        shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["sm"]),
                                     ),
                                 ),
                                 ft.IconButton(
                                     icon=ft.Icons.TEXT_INCREASE_ROUNDED,
-                                    icon_size=20,
+                                    icon_size=self.design_tokens["icon_size"]["md"],
                                     tooltip="Zwiększ czcionkę (A+)",
                                     on_click=lambda _: self.change_font_size(1),
                                     style=ft.ButtonStyle(
-                                        shape=ft.RoundedRectangleBorder(radius=12),
+                                        shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["sm"]),
                                     ),
                                 ),
                             ],
-                            spacing=4,
+                            spacing=self.design_tokens["spacing"]["xs"],
                         ),
-                        border_radius=12,
-                        padding=4,
+                        border_radius=self.design_tokens["radius"]["md"],
+                        padding=self.design_tokens["spacing"]["xs"],
+                        bgcolor="#F3F4F6" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#374151",
+                        animate=self.design_tokens["motion"]["medium"],
                     ),
                 ],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=ft.padding.symmetric(horizontal=24, vertical=16),
-            animate=250,  # Animation duration in ms
+            padding=ft.padding.symmetric(
+                horizontal=self.design_tokens["spacing"]["lg"],
+                vertical=self.design_tokens["spacing"]["md"],
+            ),
+            bgcolor=ft.Colors.SURFACE,
+            animate=self.design_tokens["motion"]["medium"],
         )
     
     def create_main_content(self):

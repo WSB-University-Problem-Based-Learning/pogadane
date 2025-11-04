@@ -266,8 +266,9 @@ class PogadaneApp:
         self.is_playing = False
         
         # UI Components
-        self.input_field = None
         self.queue_list = None
+        self.queue_items: List[Dict[str, object]] = []
+        self.queue_placeholder = None
         self.progress_bar = None
         self.progress_text = None
         self.console_output = None
@@ -275,8 +276,16 @@ class PogadaneApp:
         self.summary_output = None
         self.file_selector = None
         self.status_bar = None
+        self.status_message_text = None
+        self.status_icon = None
+        self.file_count_text = None
         self.tabs = None
         self.theme_toggle_button = None  # Reference to theme toggle button
+
+        # Queue processing state
+        self.total_items = 0
+        self.completed_items = 0
+        self.error_items = 0
         
         # Build UI
         self.build_ui()
@@ -442,86 +451,89 @@ class PogadaneApp:
     
     def create_main_content(self):
         """Create main content area with tabs"""
-        # Input Section
-        input_section = self.create_input_section()
-        
         # Tabs
         self.tabs = ft.Tabs(
             selected_index=0,
             animation_duration=300,
             tabs=[
                 ft.Tab(
+                    text="Kolejka",
+                    icon=ft.Icons.LIST_ALT_ROUNDED,
+                    content=self.create_queue_tab(),
+                ),
+                ft.Tab(
+                    text="Przeglądarka Wyników",
+                    icon=ft.Icons.ANALYTICS_ROUNDED,
+                    content=self.create_results_viewer_tab(),
+                ),
+                ft.Tab(
                     text="Konsola",
                     icon=ft.Icons.TERMINAL_ROUNDED,
                     content=self.create_console_tab(),
-                ),
-                ft.Tab(
-                    text="Wyniki",
-                    icon=ft.Icons.ASSESSMENT_ROUNDED,
-                    content=self.create_results_tab(),
-                ),
-                ft.Tab(
-                    text="Wizualizacja",
-                    icon=ft.Icons.GRAPHIC_EQ_ROUNDED,
-                    content=self.create_visualization_tab(),
                 ),
             ],
             expand=True,
         )
         
         return ft.Container(
-            content=ft.Column(
-                [
-                    input_section,
-                    ft.Divider(height=1),
-                    self.tabs,
-                ],
-                spacing=0,
-                expand=True,
-            ),
+            content=self.tabs,
             expand=True,
         )
     
-    def create_input_section(self):
-        """Create Material 3 input section with cards"""
-        
-        # File input field
-        self.input_field = ft.TextField(
-            label="Pliki audio / URL-e YouTube",
-            hint_text="Wklej ścieżki do plików lub URL-e YouTube, każdą w nowej linii...",
-            multiline=True,
-            min_lines=3,
-            max_lines=5,
-            border_radius=16,
-            filled=True,
-            text_size=13,
-            helper_text="Obsługiwane formaty: MP3, WAV, M4A, OGG, FLAC oraz YouTube",
+    def create_queue_tab(self):
+        """Create Material 3 queue management tab"""
+
+        queue_intro = ft.Column(
+            [
+                ft.Text(
+                    "Kolejka zadań",
+                    size=18,
+                    weight=ft.FontWeight.W_700,
+                ),
+                ft.Text(
+                    "Dodaj pliki audio lub adresy URL, aby przygotować partię do przetworzenia.",
+                    size=13,
+                    color="#6B7280",
+                ),
+            ],
+            spacing=4,
         )
-        
-        # Buttons row
-        buttons_row = ft.Row(
+
+        queue_actions = ft.Row(
             [
                 ft.FilledButton(
-                    "Dodaj Pliki",
+                    "Dodaj plik(i)",
                     icon=ft.Icons.FOLDER_OPEN_ROUNDED,
                     on_click=self.browse_files,
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=12),
                         padding=16,
-                        bgcolor="#7C3AED",  # Brand Purple for secondary actions
+                        bgcolor="#7C3AED",
                         color="#FFFFFF",
+                        animation_duration=200,
+                    ),
+                ),
+                ft.OutlinedButton(
+                    "Dodaj URL",
+                    icon=ft.Icons.LINK_ROUNDED,
+                    on_click=self.open_add_url_dialog,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=12),
+                        padding=16,
+                        side=ft.BorderSide(1, "#7C3AED"),
+                        color="#7C3AED",
                         animation_duration=200,
                     ),
                 ),
                 ft.Container(expand=True),
                 ft.FilledButton(
-                    "Rozpocznij Przetwarzanie",
+                    "Rozpocznij przetwarzanie",
                     icon=ft.Icons.PLAY_ARROW_ROUNDED,
                     on_click=self.start_batch_processing,
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=12),
                         padding=ft.padding.symmetric(horizontal=24, vertical=16),
-                        bgcolor="#34D399",  # Brand Green for key CTAs
+                        bgcolor="#34D399",
                         color="#FFFFFF",
                         animation_duration=200,
                     ),
@@ -529,80 +541,325 @@ class PogadaneApp:
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
-        
-        # Queue section
+
         queue_header = ft.Row(
             [
-                ft.Icon(ft.Icons.QUEUE_MUSIC_ROUNDED, size=20, color="#7C3AED"),  # Brand Purple
+                ft.Icon(ft.Icons.QUEUE_MUSIC_ROUNDED, size=20, color="#7C3AED"),
                 ft.Text(
-                    "Kolejka Przetwarzania", 
-                    size=16, 
+                    "Elementy w kolejce",
+                    size=16,
                     weight=ft.FontWeight.W_600,
                 ),
             ],
             spacing=8,
         )
-        
-        # Queue list
-        self.queue_list = ft.ListView(
-            spacing=4,
-            height=150,
+
+        self.queue_placeholder = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(ft.Icons.INBOX_ROUNDED, size=48, color="#9CA3AF"),
+                    ft.Text(
+                        "Kolejka jest pusta. Dodaj pierwszy element, aby rozpocząć.",
+                        size=13,
+                        color="#6B7280",
+                        text_align=ft.TextAlign.CENTER,
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=8,
+            ),
+            padding=40,
+            bgcolor="#F9FAFB" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
+            border_radius=12,
         )
-        
+
+        self.queue_list = ft.ListView(
+            spacing=8,
+            expand=True,
+            auto_scroll=False,
+            controls=[self.queue_placeholder],
+        )
+
         queue_container = ft.Container(
             content=ft.Column(
                 [
                     queue_header,
                     ft.Divider(height=1),
-                    self.queue_list,
+                    ft.Container(
+                        content=self.queue_list,
+                        expand=True,
+                    ),
                 ],
                 spacing=12,
+                expand=True,
             ),
             border=ft.border.all(1),
             border_radius=16,
             padding=16,
-            animate=300,  # Animation duration in ms
+            expand=True,
         )
-        
-        # Progress bar with animation support
-        self.progress_text = ft.Text("Postęp: 0/0", size=13, color="#374151")
-        self.progress_bar = ft.ProgressBar(
-            value=0,
-            height=8,
-            border_radius=4,
-            color="#34D399",  # Brand Green for progress
-            bgcolor="#E5E7EB",
-            tooltip="Postęp przetwarzania",
-        )
-        
-        # Store progress container reference for animations
-        self.progress_container = ft.Container(
-            content=ft.Column(
-                [
-                    self.progress_text,
-                    self.progress_bar,
-                ],
-                spacing=8,
-            ),
-            border_radius=12,
-            padding=12,
-            animate=300,  # Simple animation duration in ms
-        )
-        
-        # Main input card
+
         return ft.Container(
             content=ft.Column(
                 [
-                    self.input_field,
-                    buttons_row,
+                    queue_intro,
+                    queue_actions,
                     queue_container,
-                    self.progress_container,
                 ],
                 spacing=16,
+                expand=True,
             ),
             padding=24,
-            animate=300,  # Animation duration in ms
+            expand=True,
         )
+
+    def open_add_url_dialog(self, e):
+        """Prompt user for a URL and add it to the processing queue"""
+
+        url_field = ft.TextField(
+            label="Adres URL",
+            hint_text="Wklej adres URL źródła audio...",
+            autofocus=True,
+            border_radius=12,
+            filled=True,
+        )
+
+        def close_dialog(_=None):
+            dialog.open = False
+            self.page.update()
+            if dialog in self.page.overlay:
+                self.page.overlay.remove(dialog)
+
+        def confirm_add(_=None):
+            url_value = (url_field.value or "").strip()
+            if url_value:
+                added = self.add_queue_entries([url_value])
+                if added:
+                    self.update_status("Dodano URL do kolejki")
+                    self.show_snackbar("🔗 Dodano URL do kolejki", success=True)
+                else:
+                    self.show_snackbar("ℹ️ URL znajduje się już w kolejce", warning=True)
+            close_dialog()
+
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Dodaj URL", size=20, weight=ft.FontWeight.BOLD),
+            content=url_field,
+            actions=[
+                ft.TextButton("Anuluj", on_click=close_dialog),
+                ft.FilledButton(
+                    "Dodaj",
+                    icon=ft.Icons.ADD_LINK_ROUNDED,
+                    on_click=confirm_add,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=12),
+                        bgcolor="#2563EB",
+                        color="#FFFFFF",
+                    ),
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        self.page.overlay.append(dialog)
+        dialog.open = True
+        self.page.update()
+
+    def add_queue_entries(self, entries: List[str]) -> int:
+        """Add new items to the processing queue"""
+
+        if not entries or not self.queue_list:
+            return 0
+
+        added = 0
+        existing_values = {item["value"] for item in self.queue_items}
+
+        for entry in entries:
+            normalized = entry.strip()
+            if not normalized or normalized in existing_values:
+                continue
+
+            queue_item = self._create_queue_item(normalized)
+            self.queue_items.append(queue_item)
+            self.queue_list.controls.append(queue_item["container"])
+            existing_values.add(normalized)
+            added += 1
+
+        if added == 0:
+            return 0
+
+        if self.queue_placeholder and self.queue_placeholder in self.queue_list.controls:
+            self.queue_list.controls.remove(self.queue_placeholder)
+
+        self.queue_list.update()
+        self.update_queue_count()
+
+        return added
+
+    def remove_queue_item(self, entry_value: str):
+        """Remove a queue entry by its value"""
+
+        target = None
+        for item in self.queue_items:
+            if item["value"] == entry_value:
+                target = item
+                break
+
+        if not target:
+            return
+
+        if target["container"] in self.queue_list.controls:
+            self.queue_list.controls.remove(target["container"])
+
+        self.queue_items.remove(target)
+
+        if not self.queue_items and self.queue_placeholder:
+            self.queue_list.controls.append(self.queue_placeholder)
+
+        self.queue_list.update()
+        self.update_queue_count()
+
+    def update_queue_count(self):
+        """Update queue counter in status bar"""
+
+        if self.file_count_text:
+            self.file_count_text.value = f"Kolejka: {len(self.queue_items)}"
+            self.file_count_text.update()
+
+    def _create_queue_item(self, entry: str) -> Dict[str, object]:
+        """Create UI representation for a queue entry"""
+
+        is_url = entry.lower().startswith("http")
+        icon_name = ft.Icons.LINK_ROUNDED if is_url else ft.Icons.AUDIO_FILE_ROUNDED
+        display_name = entry if is_url else os.path.basename(entry) or entry
+
+        status_text = ft.Text("Oczekuje", size=12, weight=ft.FontWeight.W_600, color="#6B7280")
+        status_chip = ft.Container(
+            content=status_text,
+            padding=ft.padding.symmetric(horizontal=12, vertical=6),
+            border_radius=999,
+            bgcolor="#E5E7EB",
+        )
+
+        remove_button = ft.IconButton(
+            icon=ft.Icons.CLOSE_ROUNDED,
+            tooltip="Usuń z kolejki",
+            icon_size=18,
+            on_click=lambda _, value=entry: self.remove_queue_item(value),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=self.design_tokens["radius"]["full"]),
+                padding=8,
+            ),
+        )
+
+        content = ft.Row(
+            [
+                ft.Icon(icon_name, size=22, color="#2563EB" if not is_url else "#7C3AED"),
+                ft.Column(
+                    [
+                        ft.Text(display_name, size=14, weight=ft.FontWeight.W_600),
+                        ft.Text(entry, size=12, color="#6B7280"),
+                    ],
+                    spacing=4,
+                    expand=True,
+                ),
+                status_chip,
+                remove_button,
+            ],
+            spacing=12,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        container = ft.Container(
+            content=content,
+            border_radius=12,
+            padding=16,
+            border=ft.border.all(1, "#E5E7EB"),
+            bgcolor="#FFFFFF" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#111827",
+        )
+
+        return {
+            "value": entry,
+            "status": FILE_STATUS_PENDING,
+            "status_text": status_text,
+            "status_chip": status_chip,
+            "container": container,
+        }
+
+    def _set_queue_item_status(self, index: int, status: str):
+        """Update visual status for a queue entry"""
+
+        if index < 0 or index >= len(self.queue_items):
+            return
+
+        item = self.queue_items[index]
+        status_text: ft.Text = item["status_text"]
+        status_chip: ft.Container = item["status_chip"]
+
+        if status == FILE_STATUS_PROCESSING:
+            status_text.value = "Przetwarzanie"
+            status_text.color = "#2563EB"
+            status_chip.bgcolor = "#DBEAFE"
+        elif status == FILE_STATUS_COMPLETED:
+            status_text.value = "Zakończono"
+            status_text.color = "#047857"
+            status_chip.bgcolor = "#D1FAE5"
+        elif status == FILE_STATUS_ERROR:
+            status_text.value = "Błąd"
+            status_text.color = "#991B1B"
+            status_chip.bgcolor = "#FEE2E2"
+        else:
+            status_text.value = "Oczekuje"
+            status_text.color = "#6B7280"
+            status_chip.bgcolor = "#E5E7EB"
+
+        item["status"] = status
+        status_chip.update()
+        status_text.update()
+
+    def _update_progress(self, processed: int, message: Optional[str] = None):
+        """Update global progress bar and text"""
+
+        if self.progress_bar:
+            progress_value = (processed / self.total_items) if self.total_items else 0
+            self.progress_bar.value = min(max(progress_value, 0), 1)
+            self.progress_bar.update()
+
+        if self.progress_text:
+            if message:
+                self.progress_text.value = message
+            else:
+                if self.total_items:
+                    self.progress_text.value = f"Postęp: {processed}/{self.total_items}"
+                else:
+                    self.progress_text.value = "Postęp: 0/0"
+            self.progress_text.update()
+
+    def refresh_theme_sensitive_elements(self):
+        """Update UI elements that depend on the active theme"""
+
+        is_light = self.page.theme_mode == ft.ThemeMode.LIGHT
+        queue_card_bg = "#FFFFFF" if is_light else "#111827"
+        queue_border_color = "#E5E7EB" if is_light else "#374151"
+        queue_placeholder_bg = "#F9FAFB" if is_light else "#1F2937"
+
+        if self.queue_placeholder:
+            self.queue_placeholder.bgcolor = queue_placeholder_bg
+            self.queue_placeholder.update()
+
+        for item in self.queue_items:
+            container: ft.Container = item["container"]
+            container.bgcolor = queue_card_bg
+            container.border = ft.border.all(1, queue_border_color)
+            container.update()
+
+        if hasattr(self, "waveform_canvas") and self.waveform_canvas:
+            self.waveform_canvas.bgcolor = "#F9FAFB" if is_light else "#1F2937"
+            self.waveform_canvas.update()
+
+        if hasattr(self, "topic_timeline") and self.topic_timeline:
+            self.topic_timeline.bgcolor = "#F9FAFB" if is_light else "#1F2937"
+            self.topic_timeline.update()
     
     def create_console_tab(self):
         """Create console output tab with Material 3 design"""
@@ -660,67 +917,88 @@ class PogadaneApp:
             padding=24,
         )
     
-    def create_results_tab(self):
-        """Create results display tab with split view"""
-        
+    def create_results_viewer_tab(self):
+        """Create merged results and visualization workspace"""
+
         # File selector
         self.file_selector = ft.Dropdown(
-            label="Plik",
+            label="Wynik",
             hint_text="Wybierz przetworzony plik z listy...",
             on_change=self.display_selected_result,
             border_radius=12,
             filled=True,
         )
-        
+
+        visualization_section = self.create_visualization_section()
+
         # Transcription output
         self.transcription_output = ft.TextField(
-            label="📝 Transkrypcja",
+            label="Transkrypcja",
             multiline=True,
             read_only=True,
             border_radius=16,
             filled=True,
             text_size=12,
-            min_lines=15,
+            min_lines=12,
             expand=True,
         )
-        
+
         # Summary output
         self.summary_output = ft.TextField(
-            label="📌 Streszczenie",
+            label="Streszczenie",
             multiline=True,
             read_only=True,
             border_radius=16,
             filled=True,
             text_size=12,
-            min_lines=15,
+            min_lines=12,
             expand=True,
         )
-        
-        # Split view
-        split_view = ft.Row(
-            [
-                ft.Container(content=self.transcription_output, expand=True),
-                ft.Container(content=self.summary_output, expand=True),
+
+        text_outputs = ft.Tabs(
+            animation_duration=300,
+            tabs=[
+                ft.Tab(
+                    text="Transkrypcja",
+                    icon=ft.Icons.SPEAKER_NOTES_ROUNDED,
+                    content=ft.Container(
+                        content=self.transcription_output,
+                        padding=ft.padding.only(top=12),
+                        expand=True,
+                    ),
+                ),
+                ft.Tab(
+                    text="Streszczenie",
+                    icon=ft.Icons.DESCRIPTION_ROUNDED,
+                    content=ft.Container(
+                        content=self.summary_output,
+                        padding=ft.padding.only(top=12),
+                        expand=True,
+                    ),
+                ),
             ],
-            spacing=16,
             expand=True,
         )
-        
+
         return ft.Container(
             content=ft.Column(
                 [
                     self.file_selector,
-                    split_view,
+                    ft.Container(height=16),
+                    visualization_section,
+                    ft.Container(height=16),
+                    text_outputs,
                 ],
-                spacing=16,
+                spacing=0,
                 expand=True,
             ),
             padding=24,
+            expand=True,
         )
-    
-    def create_visualization_tab(self):
-        """Create audio visualization tab with waveform and topic timeline"""
-        
+
+    def create_visualization_section(self):
+        """Create audio visualization section with waveform and timeline"""
+
         # Audio file info
         self.viz_file_info = ft.Text(
             "Nie wybrano pliku audio",
@@ -728,7 +1006,7 @@ class PogadaneApp:
             color="#6B7280",
             weight=ft.FontWeight.W_500,
         )
-        
+
         # Waveform visualization
         self.waveform_canvas = ft.Container(
             content=ft.Column(
@@ -750,7 +1028,7 @@ class PogadaneApp:
             border=ft.border.all(1, "#E5E7EB"),
             bgcolor="#F9FAFB" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
         )
-        
+
         # Topic timeline
         self.topic_timeline = ft.Container(
             content=ft.Column(
@@ -772,7 +1050,7 @@ class PogadaneApp:
             border=ft.border.all(1, "#E5E7EB"),
             bgcolor="#F9FAFB" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
         )
-        
+
         # Control buttons
         control_buttons = ft.Row(
             controls=[
@@ -797,7 +1075,7 @@ class PogadaneApp:
             ],
             spacing=12,
         )
-        
+
         return ft.Container(
             content=ft.Column(
                 controls=[
@@ -813,7 +1091,10 @@ class PogadaneApp:
                 scroll=ft.ScrollMode.AUTO,
                 expand=True,
             ),
+            border_radius=16,
+            border=ft.border.all(1, "#E5E7EB"),
             padding=24,
+            expand=True,
         )
     
     def create_waveform_placeholder(self):
@@ -1112,21 +1393,25 @@ class PogadaneApp:
     
     def generate_visualization(self, e):
         """Generate audio waveform and topic timeline from actual audio file"""
-        # Check if we have an audio file selected
-        input_text = self.input_field.value if self.input_field else ""
-        if not input_text or not input_text.strip():
-            self.show_snackbar("⚠️ Proszę dodać plik audio do przetworzenia", error=True)
+        # Determine audio source
+        audio_source: Optional[str] = None
+
+        if self.file_selector and self.file_selector.value:
+            audio_source = self.file_selector.value
+        else:
+            for item in self.queue_items:
+                candidate = item["value"]
+                if not candidate.lower().startswith("http"):
+                    audio_source = candidate
+                    break
+
+        if not audio_source:
+            self.show_snackbar("⚠️ Proszę wybrać plik audio z wyników lub kolejki", error=True)
             return
-        
-        # Get first line as audio file path
-        lines = input_text.strip().split('\n')
-        audio_file = lines[0].strip()
-        
-        # Validate file exists
-        from pathlib import Path
-        audio_path = Path(audio_file)
+
+        audio_path = Path(audio_source)
         if not audio_path.exists():
-            self.show_snackbar(f"⚠️ Plik nie istnieje: {audio_file}", error=True)
+            self.show_snackbar(f"⚠️ Plik nie istnieje: {audio_source}", error=True)
             return
         
         # Show loading animation
@@ -1571,21 +1856,54 @@ class PogadaneApp:
     def create_status_bar(self):
         """Create status bar at bottom"""
         
-        self.status_bar = ft.Row(
+        self.status_icon = ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color="#34D399")
+        self.status_message_text = ft.Text("Gotowy", size=13)
+        status_message = ft.Row(
             [
-                ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color="#34D399"),  # Brand Green for success
-                ft.Text("Gotowy", size=13),
-                ft.Container(expand=True),
-                ft.Text("Plików: 0", size=13),
+                self.status_icon,
+                self.status_message_text,
             ],
             spacing=8,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+        self.progress_text = ft.Text("Postęp: 0/0", size=12, color="#6B7280")
+        self.progress_bar = ft.ProgressBar(
+            value=0,
+            height=6,
+            border_radius=3,
+            color="#34D399",
+            bgcolor="#E5E7EB",
+        )
+
+        progress_column = ft.Column(
+            [
+                self.progress_text,
+                ft.Container(content=self.progress_bar, expand=True),
+            ],
+            spacing=6,
+            expand=True,
+        )
+
+        self.file_count_text = ft.Text("Kolejka: 0", size=13)
+
+        self.status_bar = ft.Row(
+            [
+                status_message,
+                ft.Container(width=16),
+                progress_column,
+                ft.Container(width=16),
+                self.file_count_text,
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
         
         return ft.Container(
             content=self.status_bar,
             padding=ft.padding.symmetric(horizontal=24, vertical=12),
             border=ft.border.only(top=ft.BorderSide(1)),
-            animate=200,  # Animation duration in ms
+            animate=200,
         )
     
     # Event Handlers
@@ -1778,6 +2096,7 @@ class PogadaneApp:
         
         # Animate the transition
         self.page.update()
+        self.refresh_theme_sensitive_elements()
         self.update_status(f"Motyw zmieniony na {theme_name}")
         self.show_snackbar(f"✨ Motyw {theme_name} aktywny", success=True)
     
@@ -1799,10 +2118,6 @@ class PogadaneApp:
         if self.summary_output:
             self.summary_output.text_size = int(12 * self.current_font_scale)
             self.summary_output.update()
-        
-        if self.input_field:
-            self.input_field.text_size = int(13 * self.current_font_scale)
-            self.input_field.update()
         
         scale_percent = int(self.current_font_scale * 100)
         self.update_status(f"Rozmiar czcionki: {scale_percent}%")
@@ -1835,24 +2150,18 @@ class PogadaneApp:
             loading_snackbar.open = True
             self.page.update()
             
-            # Add files to input
-            current_text = self.input_field.value or ""
-            new_files = "\n".join([f.path for f in e.files])
-            
-            if current_text.strip():
-                self.input_field.value = f"{current_text}\n{new_files}"
-            else:
-                self.input_field.value = new_files
-            
-            # Animate the input field update
-            self.input_field.update()
+            new_files = [f.path for f in e.files if f.path]
+            added = self.add_queue_entries(new_files)
             
             # Close loading and show success
             loading_snackbar.open = False
             self.page.update()
             
-            self.update_status(f"✅ Dodano {len(e.files)} plik(ów)")
-            self.show_snackbar(f"📁 Dodano {len(e.files)} plik(ów)", success=True)
+            if added:
+                self.update_status(f"Dodano {added} plik(ów) do kolejki")
+                self.show_snackbar(f"📁 Dodano {added} plik(ów)", success=True)
+            else:
+                self.show_snackbar("ℹ️ Wszystkie pliki są już w kolejce", warning=True)
     
     def browse_file(self, text_field: ft.TextField):
         """Browse for a single file"""
@@ -1875,29 +2184,22 @@ class PogadaneApp:
     
     def start_batch_processing(self, e):
         """Start real batch processing with backend integration"""
-        input_text = self.input_field.value
-        if not input_text or not input_text.strip():
-            self.show_snackbar("⚠️ Proszę wprowadzić pliki lub URL-e", error=True)
+        if not self.queue_items:
+            self.show_snackbar("⚠️ Kolejka jest pusta", error=True)
             return
         
-        # Parse input sources (split by newlines)
-        input_sources = [line.strip() for line in input_text.strip().split('\n') if line.strip()]
+        input_sources = [item["value"] for item in self.queue_items]
+        self.total_items = len(input_sources)
+        self.completed_items = 0
+        self.error_items = 0
+        self._update_progress(0)
+
+        for idx in range(self.total_items):
+            self._set_queue_item_status(idx, FILE_STATUS_PENDING)
         
-        if not input_sources:
-            self.show_snackbar("⚠️ Brak poprawnych źródeł do przetworzenia", error=True)
-            return
-        
-        # Reset progress
-        self.progress_bar.value = 0
-        self.progress_text.value = "Postęp: Przygotowywanie..."
-        
-        # Add visual feedback to progress container
-        if hasattr(self, 'progress_container'):
-            self.progress_container.bgcolor = ft.Colors.BLUE_50 if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.Colors.BLUE_900
-            self.progress_container.update()
-        
-        self.progress_bar.update()
-        self.progress_text.update()
+        if self.status_icon:
+            self.status_icon.color = "#2563EB"
+            self.status_icon.update()
         
         self.update_status("🚀 Rozpoczynam przetwarzanie...")
         self.show_snackbar("🚀 Rozpoczęto przetwarzanie", success=True)
@@ -1993,17 +2295,29 @@ class PogadaneApp:
                     
                 elif msg_type == "update_status":
                     # Update queue item status
-                    item_id = msg[1]
+                    item_index = int(msg[1])
                     status = msg[2]
-                    # TODO: Update DataTable row status when DataTable is implemented
-                    # For now, just update progress text
+
+                    self._set_queue_item_status(item_index, status)
+
                     if status == FILE_STATUS_PROCESSING:
-                        self.progress_text.value = f"Postęp: Przetwarzanie pliku {int(item_id)+1}..."
+                        self._update_progress(
+                            self.completed_items,
+                            f"Postęp: Przetwarzanie {item_index + 1}/{self.total_items}",
+                        )
                     elif status == FILE_STATUS_COMPLETED:
-                        self.progress_text.value = f"Postęp: Zakończono plik {int(item_id)+1}"
+                        self.completed_items += 1
+                        self._update_progress(self.completed_items)
                     elif status == FILE_STATUS_ERROR:
-                        self.progress_text.value = f"Postęp: Błąd w pliku {int(item_id)+1}"
-                    self.progress_text.update()
+                        self.error_items += 1
+                        self.completed_items += 1
+                        self._update_progress(
+                            self.completed_items,
+                            f"Postęp: Błąd w pliku {item_index + 1}",
+                        )
+                        if self.status_icon:
+                            self.status_icon.color = "#DC2626"
+                            self.status_icon.update()
                     
                 elif msg_type == "result":
                     # Add result to results manager
@@ -2023,19 +2337,18 @@ class PogadaneApp:
                     
                 elif msg_type == "finished_all":
                     # All processing complete
-                    self.progress_bar.value = 1.0
-                    self.progress_text.value = "Postęp: Zakończono wszystkie pliki"
+                    self._update_progress(self.total_items, "Postęp: Zakończono wszystkie pliki")
                     
-                    # Reset progress container background
-                    if hasattr(self, 'progress_container'):
-                        self.progress_container.bgcolor = None
-                        self.progress_container.update()
+                    if self.status_icon:
+                        self.status_icon.color = "#34D399" if self.error_items == 0 else "#FBBF24"
+                        self.status_icon.update()
                     
-                    self.progress_bar.update()
-                    self.progress_text.update()
-                    
-                    self.update_status("✅ Przetwarzanie zakończone!")
-                    self.show_snackbar("✅ Przetwarzanie zakończone!", success=True)
+                    if self.error_items:
+                        self.update_status(f"⚠️ Zakończono z błędami ({self.error_items})")
+                        self.show_snackbar("⚠️ Przetwarzanie zakończone z błędami", warning=True)
+                    else:
+                        self.update_status("✅ Przetwarzanie zakończone!")
+                        self.show_snackbar("✅ Przetwarzanie zakończone!", success=True)
                     
                     # Exit polling loop
                     break
@@ -2154,9 +2467,9 @@ class PogadaneApp:
     
     def update_status(self, message: str):
         """Update status bar message"""
-        if self.status_bar:
-            self.status_bar.controls[1].value = message
-            self.status_bar.update()
+        if self.status_message_text:
+            self.status_message_text.value = message
+            self.status_message_text.update()
     
     def show_snackbar(self, message: str, error: bool = False, warning: bool = False, success: bool = False):
         """Show Material 3 snackbar notification with brand colors and animation"""

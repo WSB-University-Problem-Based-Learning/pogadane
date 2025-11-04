@@ -1,21 +1,20 @@
 # Pogadane - Production Dependencies
 # Install with: pip install -r requirements.txt
 #
+# This file installs the package with its core dependencies defined in pyproject.toml
+# to maintain a single source of truth.
+#
 # For development: pip install -r requirements-dev.txt
 # For testing: pip install -r requirements-test.txt
+# For all features: pip install -e .[all]
 
-# GUI Framework
-ttkbootstrap>=1.10.0  # Legacy GUI (Bootstrap style)
-customtkinter>=5.2.0  # Material Design GUI (CustomTkinter)
-flet>=0.24.0  # Material 3 Expressive GUI (Flutter-based)
+# Install package with core dependencies
+-e .
 
-# Google Gemini API client (optional - only needed if using Google instead of Ollama)
-google-generativeai>=0.3.0
+# Optional: Legacy GUI support (if needed)
+# Uncomment to enable ttkbootstrap and customtkinter GUIs:
+# -e .[legacy-gui]
 
-# Archive extraction (for automatic installation of Faster-Whisper)
-py7zr>=0.20.0
-
-# Transformers for local AI without Ollama (optional)
+# Optional: Transformers backend for local AI
 # Uncomment to use SUMMARY_PROVIDER="transformers"
-# transformers>=4.30.0
-# torch>=2.0.0
+# -e .[transformers]

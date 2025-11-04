@@ -1,0 +1,197 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pogadane"
+version = "0.1.8"
+description = "Transform audio recordings and YouTube videos into transcripts and AI-powered summaries"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "WSB University - Problem Based Learning"}
+]
+keywords = [
+    "transcription",
+    "summarization",
+    "ai",
+    "whisper",
+    "youtube",
+    "audio",
+    "speech-to-text",
+    "ollama",
+    "gemini"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: Microsoft :: Windows",
+]
+
+# Core dependencies
+dependencies = [
+    "flet>=0.24.0",
+    "google-generativeai>=0.3.0",
+    "py7zr>=0.20.0",
+    "yt-dlp>=2023.0.0",
+]
+
+# Optional dependencies for different use cases
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "pylint>=2.17.0",
+    "mypy>=1.0.0",
+    "types-setuptools",
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "build>=0.10.0",
+    "twine>=4.0.0",
+    "wheel>=0.40.0",
+    "bump2version>=1.0.1",
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "coverage>=7.2.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-html>=3.2.0",
+    "pytest-parameterized>=0.1.0",
+]
+
+# Optional AI backends
+transformers = [
+    "transformers>=4.30.0",
+    "torch>=2.0.0",
+]
+
+# Legacy GUI support (for backward compatibility)
+legacy-gui = [
+    "ttkbootstrap>=1.10.0",
+    "customtkinter>=5.2.0",
+]
+
+# All optional dependencies combined
+all = [
+    "pogadane[dev,test,transformers,legacy-gui]"
+]
+
+[project.urls]
+Homepage = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
+Documentation = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/blob/main/README.md"
+Repository = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
+"Bug Tracker" = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues"
+Changelog = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/blob/main/CHANGELOG.md"
+
+[project.scripts]
+pogadane-gui = "pogadane.gui:main"
+pogadane-cli = "pogadane.transcribe_summarize_working:main"
+pogadane-doctor = "pogadane.doctor:main"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pogadane = [
+    "gui_utils/*.py",
+    ".config/config.py",
+    "doc/*.md",
+    "doc/cli_help/*.txt",
+]
+
+# Black code formatter configuration
+[tool.black]
+line-length = 100
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | dep
+)/
+'''
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers --cov=pogadane --cov-report=term-missing --cov-report=html"
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src/pogadane"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# MyPy type checker configuration
+[tool.mypy]
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+# Pylint configuration
+[tool.pylint.messages_control]
+disable = [
+    "C0111",  # missing-docstring
+    "C0103",  # invalid-name
+    "R0913",  # too-many-arguments
+    "R0914",  # too-many-locals
+]
+
+[tool.pylint.format]
+max-line-length = 100

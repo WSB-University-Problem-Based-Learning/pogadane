@@ -35,17 +35,18 @@ class PogadaneApp:
         self.page.title = "Pogadane"
         self.page.theme_mode = ft.ThemeMode.LIGHT  # Start with light mode
         self.page.padding = 0
-        self.page.window_width = 1200
-        self.page.window_height = 1000  # Increased from 900 to prevent cropping
-        self.page.window_min_width = 900
-        self.page.window_min_height = 800  # Increased from 700
+        
+        # Set window size properties
+        self.page.window.width = 1200
+        self.page.window.height = 1000
+        self.page.window.min_width = 900
+        self.page.window.min_height = 800
         
         # Set custom icon (window icon and favicon)
         icon_path = Path(__file__).parent.parent.parent / "res" / "assets" / "pogadane-icon.ico"
         if icon_path.exists():
-            self.page.window_icon = str(icon_path)
-            # For web version, set as favicon
-            self.page.web_icon = str(icon_path)
+            self.page.window.icon = str(icon_path)
+            # Note: web_icon is not a valid property in Flet, icon is used for both
         
         # Pogadane Brand Color Palette - Material 3 Expressive
         # Light Theme
@@ -223,47 +224,61 @@ class PogadaneApp:
     
     def create_app_bar(self):
         """Create Material 3 App Bar with Expressive design"""
+        
+        # Prepare logo path
+        icon_path = Path(__file__).parent.parent.parent / "res" / "assets" / "pogadane-icon.ico"
+        
         return ft.Container(
             content=ft.Row(
                 [
                     # App Logo and Title
                     ft.Row(
                         [
+                            # Icon
                             ft.Image(
-                                src=str(Path(__file__).parent.parent.parent / "res" / "assets" / "pogadane-icon.ico"),
-                                width=120,
-                                height=45,
+                                src=str(icon_path),
+                                width=48,
+                                height=48,
                                 fit=ft.ImageFit.CONTAIN,
-                            ) if (Path(__file__).parent.parent.parent / "res" / "assets" / "pogadane-icon.ico").exists() 
-                            else ft.Row([
-                                ft.Icon(
-                                    ft.Icons.HEADSET_ROUNDED,
-                                    size=40,
-                                    color="#2563EB",
-                                ),
-                                ft.Column(
-                                    [
-                                        ft.Text(
-                                            "Pogadane",
-                                            size=28,
-                                            weight=ft.FontWeight.BOLD,
-                                            color="#2563EB",
-                                        ),
-                                        ft.Text(
-                                            f"v{APP_VERSION}",
-                                            size=12,
-                                            color="#6B7280",
-                                        ),
-                                    ],
-                                    spacing=0,
-                                ),
-                            ], spacing=12),
+                            ) if icon_path.exists() else ft.Icon(
+                                ft.Icons.HEADSET_ROUNDED,
+                                size=48,
+                                color="#2563EB",
+                            ),
+                            # Title and version
+                            ft.Column(
+                                [
+                                    ft.Text(
+                                        "Pogadane",
+                                        size=28,
+                                        weight=ft.FontWeight.BOLD,
+                                        color="#2563EB",
+                                    ),
+                                    ft.Text(
+                                        f"v{APP_VERSION}",
+                                        size=12,
+                                        color="#6B7280",
+                                    ),
+                                ],
+                                spacing=0,
+                            ),
                         ],
                         spacing=12,
                     ),
                     
                     # Spacer
                     ft.Container(expand=True),
+                    
+                    # Settings Button
+                    ft.IconButton(
+                        icon=ft.Icons.SETTINGS_ROUNDED,
+                        icon_size=24,
+                        tooltip="Ustawienia",
+                        on_click=self.open_settings_dialog,
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=12),
+                        ),
+                    ),
                     
                     # Theme Toggle
                     ft.IconButton(
@@ -332,11 +347,6 @@ class PogadaneApp:
                     text="Wyniki",
                     icon=ft.Icons.ASSESSMENT_ROUNDED,
                     content=self.create_results_tab(),
-                ),
-                ft.Tab(
-                    text="Konfiguracja",
-                    icon=ft.Icons.SETTINGS_ROUNDED,
-                    content=self.create_config_tab(),
                 ),
             ],
             expand=True,
@@ -407,7 +417,11 @@ class PogadaneApp:
         queue_header = ft.Row(
             [
                 ft.Icon(ft.Icons.QUEUE_MUSIC_ROUNDED, size=20, color="#7C3AED"),  # Brand Purple
-                ft.Text("Kolejka Przetwarzania", size=16, weight=ft.FontWeight.W_600, color="#111827"),
+                ft.Text(
+                    "Kolejka Przetwarzania", 
+                    size=16, 
+                    weight=ft.FontWeight.W_600,
+                ),
             ],
             spacing=8,
         )
@@ -422,19 +436,18 @@ class PogadaneApp:
             content=ft.Column(
                 [
                     queue_header,
-                    ft.Divider(height=1, color="#E5E7EB"),
+                    ft.Divider(height=1),
                     self.queue_list,
                 ],
                 spacing=12,
             ),
-            border=ft.border.all(1, "#E5E7EB"),
+            border=ft.border.all(1),
             border_radius=16,
             padding=16,
-            bgcolor="#F9FAFB",  # Light surface
             animate=300,  # Animation duration in ms
         )
         
-        # Progress bar
+        # Progress bar with animation support
         self.progress_text = ft.Text("Postęp: 0/0", size=13, color="#374151")
         self.progress_bar = ft.ProgressBar(
             value=0,
@@ -445,12 +458,18 @@ class PogadaneApp:
             tooltip="Postęp przetwarzania",
         )
         
-        progress_container = ft.Column(
-            [
-                self.progress_text,
-                self.progress_bar,
-            ],
-            spacing=8,
+        # Store progress container reference for animations
+        self.progress_container = ft.Container(
+            content=ft.Column(
+                [
+                    self.progress_text,
+                    self.progress_bar,
+                ],
+                spacing=8,
+            ),
+            border_radius=12,
+            padding=12,
+            animate=300,  # Simple animation duration in ms
         )
         
         # Main input card
@@ -460,7 +479,7 @@ class PogadaneApp:
                     self.input_field,
                     buttons_row,
                     queue_container,
-                    progress_container,
+                    self.progress_container,
                 ],
                 spacing=16,
             ),
@@ -529,8 +548,8 @@ class PogadaneApp:
         
         # File selector
         self.file_selector = ft.Dropdown(
-            label="Wybierz przetworzony plik",
-            hint_text="Wybierz plik z listy...",
+            label="Plik",
+            hint_text="Wybierz przetworzony plik z listy...",
             on_change=self.display_selected_result,
             border_radius=12,
             filled=True,
@@ -747,9 +766,9 @@ class PogadaneApp:
         self.status_bar = ft.Row(
             [
                 ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color="#34D399"),  # Brand Green for success
-                ft.Text("Gotowy", size=13, color="#111827"),
+                ft.Text("Gotowy", size=13),
                 ft.Container(expand=True),
-                ft.Text("Plików: 0", size=13, color="#6B7280"),
+                ft.Text("Plików: 0", size=13),
             ],
             spacing=8,
         )
@@ -757,12 +776,181 @@ class PogadaneApp:
         return ft.Container(
             content=self.status_bar,
             padding=ft.padding.symmetric(horizontal=24, vertical=12),
-            bgcolor="#F9FAFB",  # Light surface
-            border=ft.border.only(top=ft.BorderSide(1, "#E5E7EB")),
+            border=ft.border.only(top=ft.BorderSide(1)),
             animate=200,  # Animation duration in ms
         )
     
     # Event Handlers
+    
+    def open_settings_dialog(self, e):
+        """Open settings dialog window with loading animation"""
+        # Show loading indicator
+        loading_dialog = ft.AlertDialog(
+            content=ft.Column(
+                controls=[
+                    ft.ProgressRing(width=50, height=50),
+                    ft.Text("Ładowanie ustawień...", size=16, text_align=ft.TextAlign.CENTER),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=20,
+                width=200,
+                height=120,
+            ),
+            modal=True,
+        )
+        
+        self.page.overlay.append(loading_dialog)
+        loading_dialog.open = True
+        self.page.update()
+        
+        try:
+            # Clear previous config fields
+            self.config_fields.clear()
+            
+            # Summary Settings Section
+            summary_section = self.create_config_section(
+                title="🤖 Ustawienia Podsumowania",
+                fields=[
+                    ("SUMMARY_PROVIDER", "Dostawca podsumowania", "dropdown", ["ollama", "transformers", "google"]),
+                    ("SUMMARY_LANGUAGE", "Język podsumowania", "text", None),
+                    ("OLLAMA_MODEL", "Model Ollama", "text", None),
+                    ("TRANSFORMERS_MODEL", "Model Transformers", "text", None),
+                    ("GOOGLE_API_KEY", "Klucz API Google", "password", None),
+                ]
+            )
+            
+            # Transcription Settings Section
+            transcription_section = self.create_config_section(
+                title="🎙️ Ustawienia Transkrypcji",
+                fields=[
+                    ("TRANSCRIPTION_PROVIDER", "Dostawca transkrypcji", "dropdown", ["faster-whisper", "whisper"]),
+                    ("WHISPER_LANGUAGE", "Język transkrypcji", "text", None),
+                    ("WHISPER_MODEL", "Model Whisper", "dropdown", ["tiny", "base", "small", "medium", "large", "turbo"]),
+                    ("FASTER_WHISPER_EXE", "Plik Faster Whisper", "file", None),
+                    ("YT_DLP_EXE", "Plik yt-dlp", "file", None),
+                    ("ENABLE_SPEAKER_DIARIZATION", "Włącz diaryzację", "switch", None),
+                ]
+            )
+            
+            # Dialog content with scrollable column
+            dialog_content = ft.Container(
+                content=ft.Column(
+                    controls=[
+                        summary_section,
+                        ft.Divider(height=32),
+                        transcription_section,
+                    ],
+                    spacing=0,
+                    scroll=ft.ScrollMode.AUTO,
+                ),
+                height=500,
+                width=600,
+            )
+            
+            # Create dialog with fade-in animation
+            settings_dialog = ft.AlertDialog(
+                modal=True,
+                title=ft.Row([
+                    ft.Icon(ft.Icons.SETTINGS_ROUNDED, size=28, color="#2563EB"),
+                    ft.Text("Ustawienia", size=24, weight=ft.FontWeight.BOLD),
+                ], spacing=12),
+                content=dialog_content,
+                actions=[
+                    ft.TextButton(
+                        "Anuluj",
+                        on_click=lambda _: self.close_dialog(settings_dialog),
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=12),
+                        ),
+                    ),
+                    ft.FilledButton(
+                        "Zapisz i Zastosuj",
+                        icon=ft.Icons.SAVE_ROUNDED,
+                        on_click=lambda _: self.save_config_from_dialog(settings_dialog),
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=12),
+                            bgcolor="#2563EB",
+                            color="#FFFFFF",
+                        ),
+                    ),
+                ],
+                actions_alignment=ft.MainAxisAlignment.END,
+            )
+            
+            # Close loading dialog and show settings dialog with animation
+            loading_dialog.open = False
+            self.page.update()
+            
+            # Small delay for smooth transition
+            import time
+            time.sleep(0.1)
+            
+            # Show settings dialog
+            self.page.overlay.append(settings_dialog)
+            settings_dialog.open = True
+            self.page.update()
+            
+        except Exception as ex:
+            # Close loading dialog on error
+            loading_dialog.open = False
+            self.page.update()
+            
+            print(f"❌ Error opening settings dialog: {ex}")
+            import traceback
+            traceback.print_exc()
+            self.show_snackbar(f"Błąd otwierania ustawień: {str(ex)}", error=True)
+    
+    def close_dialog(self, dialog):
+        """Close the settings dialog"""
+        dialog.open = False
+        self.page.update()
+    
+    def save_config_from_dialog(self, dialog):
+        """Save configuration from dialog with loading animation and close it"""
+        # Show saving indicator
+        saving_dialog = ft.AlertDialog(
+            content=ft.Column(
+                controls=[
+                    ft.ProgressRing(width=50, height=50, color="#2563EB"),
+                    ft.Text("Zapisywanie...", size=16, text_align=ft.TextAlign.CENTER),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=20,
+                width=200,
+                height=120,
+            ),
+            modal=True,
+        )
+        
+        self.page.overlay.append(saving_dialog)
+        saving_dialog.open = True
+        self.page.update()
+        
+        try:
+            # Save configuration
+            self.save_config(None)
+            
+            # Small delay to show the saving animation
+            import time
+            time.sleep(0.3)
+            
+            # Close saving dialog
+            saving_dialog.open = False
+            self.page.update()
+            
+            # Close settings dialog
+            self.close_dialog(dialog)
+            
+            # Show success with animated snackbar
+            self.show_snackbar("✅ Ustawienia zapisane pomyślnie!", success=True)
+            
+        except Exception as ex:
+            # Close saving dialog on error
+            saving_dialog.open = False
+            self.page.update()
+            
+            print(f"❌ Error saving config: {ex}")
+            self.show_snackbar(f"❌ Błąd zapisu: {str(ex)}", error=True)
     
     def toggle_theme(self, e):
         """Toggle between light and dark theme with animation"""
@@ -786,9 +974,31 @@ class PogadaneApp:
         self.show_snackbar(f"✨ Motyw {theme_name} aktywny", success=True)
     
     def change_font_size(self, delta: int):
-        """Change font size"""
-        # Implement font scaling
-        self.update_status(f"Rozmiar czcionki {'zwiększony' if delta > 0 else 'zmniejszony'}")
+        """Change font size dynamically"""
+        # Update font scale
+        self.current_font_scale += delta * 0.1
+        self.current_font_scale = max(0.7, min(1.5, self.current_font_scale))  # Clamp between 0.7 and 1.5
+        
+        # Update text fields font sizes
+        if self.console_output:
+            self.console_output.text_size = int(12 * self.current_font_scale)
+            self.console_output.update()
+        
+        if self.transcription_output:
+            self.transcription_output.text_size = int(12 * self.current_font_scale)
+            self.transcription_output.update()
+        
+        if self.summary_output:
+            self.summary_output.text_size = int(12 * self.current_font_scale)
+            self.summary_output.update()
+        
+        if self.input_field:
+            self.input_field.text_size = int(13 * self.current_font_scale)
+            self.input_field.update()
+        
+        scale_percent = int(self.current_font_scale * 100)
+        self.update_status(f"Rozmiar czcionki: {scale_percent}%")
+        self.show_snackbar(f"📝 Czcionka: {scale_percent}%", success=True)
     
     def browse_files(self, e):
         """Browse for audio files"""
@@ -803,8 +1013,21 @@ class PogadaneApp:
         )
     
     def on_files_selected(self, e: ft.FilePickerResultEvent):
-        """Handle selected files"""
+        """Handle selected files with animated feedback"""
         if e.files:
+            # Show loading animation for file processing
+            loading_snackbar = ft.SnackBar(
+                content=ft.Row([
+                    ft.ProgressRing(width=20, height=20, stroke_width=3),
+                    ft.Text(f"Dodawanie {len(e.files)} plik(ów)..."),
+                ], spacing=10),
+                duration=1000,
+            )
+            self.page.overlay.append(loading_snackbar)
+            loading_snackbar.open = True
+            self.page.update()
+            
+            # Add files to input
             current_text = self.input_field.value or ""
             new_files = "\n".join([f.path for f in e.files])
             
@@ -813,8 +1036,15 @@ class PogadaneApp:
             else:
                 self.input_field.value = new_files
             
+            # Animate the input field update
             self.input_field.update()
-            self.update_status(f"Dodano {len(e.files)} plik(ów)")
+            
+            # Close loading and show success
+            loading_snackbar.open = False
+            self.page.update()
+            
+            self.update_status(f"✅ Dodano {len(e.files)} plik(ów)")
+            self.show_snackbar(f"📁 Dodano {len(e.files)} plik(ów)", success=True)
     
     def browse_file(self, text_field: ft.TextField):
         """Browse for a single file"""
@@ -836,21 +1066,58 @@ class PogadaneApp:
             text_field.update()
     
     def start_batch_processing(self, e):
-        """Start batch processing with visual feedback"""
+        """Start batch processing with enhanced visual feedback and animations"""
         input_text = self.input_field.value
         if not input_text or not input_text.strip():
-            self.show_snackbar("Proszę wprowadzić pliki lub URL-e", error=True)
+            self.show_snackbar("⚠️ Proszę wprowadzić pliki lub URL-e", error=True)
             return
         
-        # Animate progress bar
+        # Animate progress bar with pulsing effect
         self.progress_bar.value = 0
         self.progress_text.value = "Postęp: Przygotowywanie..."
+        
+        # Add visual feedback to progress container
+        if hasattr(self, 'progress_container'):
+            self.progress_container.bgcolor = ft.Colors.BLUE_50 if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.Colors.BLUE_900
+            self.progress_container.update()
+        
         self.progress_bar.update()
         self.progress_text.update()
         
-        self.update_status("Rozpoczynam przetwarzanie...")
+        self.update_status("🚀 Rozpoczynam przetwarzanie...")
         self.show_snackbar("🚀 Rozpoczęto przetwarzanie", success=True)
-        # TODO: Implement actual batch processing
+        
+        # Simulate processing stages with animated progress
+        import threading
+        import time
+        
+        def animate_progress():
+            stages = [
+                ("Analizowanie plików...", 0.2),
+                ("Pobieranie audio...", 0.4),
+                ("Transkrypcja...", 0.6),
+                ("Generowanie podsumowania...", 0.8),
+                ("Finalizacja...", 1.0),
+            ]
+            
+            for stage_name, progress_value in stages:
+                time.sleep(0.5)  # Simulate work
+                self.progress_text.value = f"Postęp: {stage_name}"
+                self.progress_bar.value = progress_value
+                self.progress_text.update()
+                self.progress_bar.update()
+                self.page.update()
+            
+            # Reset progress container background
+            if hasattr(self, 'progress_container'):
+                self.progress_container.bgcolor = None
+                self.progress_container.update()
+            
+            self.show_snackbar("✅ Przetwarzanie zakończone!", success=True)
+        
+        # Run animation in background (for demo purposes)
+        # TODO: Replace with actual batch processing logic
+        threading.Thread(target=animate_progress, daemon=True).start()
     
     def save_console_log(self, e):
         """Save console output to file"""
@@ -865,20 +1132,58 @@ class PogadaneApp:
         )
     
     def on_save_log(self, e: ft.FilePickerResultEvent):
-        """Handle log save"""
+        """Handle log save with animated feedback"""
         if e.path:
+            # Show saving animation
+            saving_snackbar = ft.SnackBar(
+                content=ft.Row([
+                    ft.ProgressRing(width=20, height=20, stroke_width=3, color="#2563EB"),
+                    ft.Text("Zapisywanie logu..."),
+                ], spacing=10),
+                duration=1000,
+            )
+            self.page.overlay.append(saving_snackbar)
+            saving_snackbar.open = True
+            self.page.update()
+            
             try:
                 with open(e.path, 'w', encoding='utf-8') as f:
                     f.write(self.console_output.value or "")
-                self.show_snackbar(f"Log zapisany: {e.path}")
+                
+                # Close saving animation
+                import time
+                time.sleep(0.3)
+                saving_snackbar.open = False
+                self.page.update()
+                
+                # Show success
+                self.show_snackbar(f"💾 Log zapisany: {e.path}", success=True)
             except Exception as ex:
-                self.show_snackbar(f"Błąd zapisu: {str(ex)}", error=True)
+                saving_snackbar.open = False
+                self.page.update()
+                self.show_snackbar(f"❌ Błąd zapisu: {str(ex)}", error=True)
     
     def clear_console(self, e):
-        """Clear console output"""
-        self.console_output.value = ""
-        self.console_output.update()
-        self.update_status("Konsola wyczyszczona")
+        """Clear console output with animation"""
+        # Fade out animation
+        if self.console_output.value:
+            self.console_output.opacity = 0.3
+            self.console_output.update()
+            
+            import time
+            time.sleep(0.2)
+            
+            # Clear content
+            self.console_output.value = ""
+            
+            # Fade back in
+            self.console_output.opacity = 1.0
+            self.console_output.update()
+            
+            self.update_status("🗑️ Konsola wyczyszczona")
+            self.show_snackbar("🗑️ Konsola wyczyszczona", success=True)
+        else:
+            self.show_snackbar("ℹ️ Konsola jest już pusta", success=True)
     
     def display_selected_result(self, e):
         """Display selected file results"""

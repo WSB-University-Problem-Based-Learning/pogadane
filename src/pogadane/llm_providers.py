@@ -467,6 +467,11 @@ class LLMProviderFactory:
             transformers_device = getattr(config, 'TRANSFORMERS_DEVICE', 'auto')
             use_debug = getattr(config, 'DEBUG_MODE', False) if not debug_mode else debug_mode
         
+        # Ensure provider_type is a string
+        if not isinstance(provider_type, str):
+            print(f"❌ Error: SUMMARY_PROVIDER must be a string, got {type(provider_type).__name__}", file=sys.stderr)
+            provider_type = 'ollama'  # Fallback to default
+        
         provider_type = provider_type.lower().strip()
         
         if provider_type == "ollama":

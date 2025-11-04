@@ -41,6 +41,9 @@ class PogadaneApp:
         self.page.theme_mode = ft.ThemeMode.LIGHT  # Start with light mode
         self.page.padding = 0
         
+        # Set base path for locating scripts
+        self.base_path = Path(__file__).parent
+        
         # Set window size properties
         self.page.window.width = 1200
         self.page.window.height = 1000
@@ -1276,6 +1279,7 @@ class PogadaneApp:
         """Analyze audio file and extract waveform data"""
         try:
             # Try using wave library first (built-in, no dependencies)
+            # Note: wave library only supports WAV files
             import wave
             
             with wave.open(str(file_path), 'rb') as wav_file:
@@ -1316,9 +1320,13 @@ class PogadaneApp:
                     'waveform': waveform if waveform else [50] * 100,
                 }
         except ImportError:
-            print("⚠️ wave library not available, using placeholder data")
+            # wave library not available
+            pass
         except Exception as e:
-            print(f"⚠️ Could not analyze audio: {e}")
+            # Silently handle non-WAV files (MP3, etc.) - wave library only supports WAV
+            # Only show warning for actual WAV files that fail
+            if str(file_path).lower().endswith('.wav'):
+                print(f"⚠️ Could not analyze WAV file: {e}")
         
         # Return placeholder data if analysis fails
         return {
@@ -2219,42 +2227,56 @@ class PogadaneApp:
     
     def _execute_batch_processing_logic(self, input_sources):
         """Execute batch processing for all input sources (real backend logic)"""
-        script_path = self.base_path / "transcribe_summarize_working.py"
         
         for i, input_src in enumerate(input_sources):
             # Update queue status to PROCESSING
             self.output_queue.put(("update_status", str(i), FILE_STATUS_PROCESSING))
             
-            # Build command
-            cmd = [sys.executable, "-u", str(script_path), input_src]
+            # Build command - run as module to handle relative imports
+            cmd = [sys.executable, "-u", "-m", "pogadane.transcribe_summarize_working", input_src]
             
             # Add config file if selected
             if hasattr(self, 'config_path') and self.config_path:
                 cmd.extend(["--config", str(self.config_path)])
             
+            # Set environment variables to ensure UTF-8 encoding on Windows
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            env['PYTHONUTF8'] = '1'  # Force UTF-8 mode (Python 3.7+)
+            env['TQDM_DISABLE'] = '1'  # Disable tqdm progress bars
+            env['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'  # Disable HuggingFace progress bars
+            
             try:
-                # Start subprocess
+                # Start subprocess with UTF-8 encoding
                 proc = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
+                    encoding='utf-8',
+                    errors='replace',  # Replace undecodable bytes instead of crashing
                     bufsize=1,
                     universal_newlines=True,
+                    env=env,  # Pass UTF-8 environment
                 )
                 
-                # Read output line by line
+                # Collect all output
+                full_log = []
                 for line in proc.stdout:
                     clean_line = strip_ansi(line)
+                    full_log.append(clean_line)
                     self.output_queue.put(("log", clean_line, "", ""))
                 
                 # Wait for completion
                 proc.wait()
                 
+                # Combine full log for extraction
+                full_log_text = "".join(full_log)
+                
                 # Check return code
                 if proc.returncode == 0:
-                    # Try to extract transcription and summary from results
-                    trans, summ = extract_transcription_and_summary(input_src, self.base_path)
+                    # Try to extract transcription and summary from collected output
+                    trans, summ = extract_transcription_and_summary(full_log_text)
                     
                     if trans or summ:
                         self.output_queue.put(("result", input_src, trans, summ))

@@ -28,7 +28,7 @@ FILES_TO_DOWNLOAD_OR_UPDATE = [
 
 # Zależności pip dla projektu "pogadane"
 REQUIRED_PIP_PACKAGES = [
-    {"name": "ttkbootstrap", "import_name": "ttkbootstrap"},
+    {"name": "flet", "import_name": "flet"},
     {"name": "google-generativeai", "import_name": "google.generativeai"}
     # Jeśli projekt "pogadane" zacząłby używać 'requests', dodaj go tutaj:
     # {"name": "requests", "import_name": "requests"},

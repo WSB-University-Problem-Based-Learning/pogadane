@@ -11,10 +11,6 @@
 # Install package with core dependencies
 -e .
 
-# Optional: Legacy GUI support (if needed)
-# Uncomment to enable ttkbootstrap and customtkinter GUIs:
-# -e .[legacy-gui]
-
 # Optional: Transformers backend for local AI
 # Uncomment to use SUMMARY_PROVIDER="transformers"
 # -e .[transformers]

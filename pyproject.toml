@@ -88,15 +88,9 @@ whisper = [
     "openai-whisper>=20231117",
 ]
 
-# Legacy GUI support (for backward compatibility)
-legacy-gui = [
-    "ttkbootstrap>=1.10.0",
-    "customtkinter>=5.2.0",
-]
-
 # All optional dependencies combined
 all = [
-    "pogadane[dev,test,transformers,whisper,legacy-gui]"
+    "pogadane[dev,test,transformers,whisper]"
 ]
 
 [project.urls]
@@ -106,7 +100,7 @@ Repository = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
 "Bug Tracker" = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues"
 
 [project.scripts]
-pogadane-gui = "pogadane.gui:main"
+pogadane-gui = "pogadane.gui_flet:main"
 pogadane-cli = "pogadane.transcribe_summarize_working:main"
 
 [tool.setuptools]

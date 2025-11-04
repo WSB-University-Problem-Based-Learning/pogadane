@@ -156,7 +156,7 @@ def install_core_packages():
     )
     
     core_packages = [
-        "ttkbootstrap>=1.10.0",
+        "flet>=0.24.0",
         "google-generativeai>=0.3.0"
     ]
     

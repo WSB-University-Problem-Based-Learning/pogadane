@@ -18,5 +18,5 @@ import flet as ft
 from pogadane.gui_flet import main
 
 if __name__ == "__main__":
-    print("🎧 Launching Pogadane - Material 3 Expressive GUI...")
+    print("Launching Pogadane - Material 3 Expressive GUI...")
     ft.app(target=main)

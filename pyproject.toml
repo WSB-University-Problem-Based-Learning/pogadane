@@ -104,12 +104,10 @@ Homepage = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
 Documentation = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/blob/main/README.md"
 Repository = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
 "Bug Tracker" = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues"
-Changelog = "https://github.com/WSB-University-Problem-Based-Learning/pogadane/blob/main/CHANGELOG.md"
 
 [project.scripts]
 pogadane-gui = "pogadane.gui:main"
 pogadane-cli = "pogadane.transcribe_summarize_working:main"
-pogadane-doctor = "pogadane.doctor:main"
 
 [tool.setuptools]
 zip-safe = false
@@ -120,9 +118,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 pogadane = [
     "gui_utils/*.py",
-    ".config/config.py",
-    "doc/*.md",
-    "doc/cli_help/*.txt",
 ]
 
 # Black code formatter configuration

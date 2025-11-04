@@ -6,408 +6,147 @@
 
 <p align="center">
   <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
-</p>
+## Pogadane
 
-<p align="center">
-  <a href="#quick-links">Quick Links</a> •
-  <a href="#features">Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#documentation">Documentation</a> •
-  <a href="#license">License</a>
-</p>
+Pogadane turns long-form audio recordings and YouTube videos into searchable transcripts and AI-assisted summaries that stay on your machine. The project ships with a modern Material 3 GUI and a CLI workflow.
 
 ---
 
-<!-- English quick start note -->
-**Uwaga (EN):** Sekcja szybkiego startu w języku angielskim znajduje się dalej w tym pliku — zobacz "Quick Start (English)".
+## Highlights
 
-
-## Overview
-
-**Pogadane** is a privacy-focused application for generating transcripts and summaries from audio recordings (e.g., Teams meetings, podcasts) or YouTube videos. It runs locally (offline for transcription and Ollama summaries, except YouTube downloads), ensuring data security. Get the most important information from long materials quickly.
-
-Version **v0.1.8** includes:
-- 🎯 LLM prompt template selection
-- 📦 Batch processing in CLI and GUI
-- 📊 Results manager in GUI
-- 🔤 Font size adjustment
-- 🩺 `pogadane_doctor.py` setup tool
-
-The project includes:
-- **CLI**: `src/pogadane/transcribe_summarize_working.py`
-- **GUI**: `src/pogadane/gui.py` (recommended)
-- **Setup Tool**: `tools/pogadane_doctor.py`
-
-User settings are in `.config/config.py`.
+- 🎙️ Batch transcription for local audio files and YouTube URLs
+- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
+- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer
+- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
+- 🧰 Cross-platform installer (`install.py`) that prepares dependencies in one pass
 
 ---
 
-## Quick Links
+## Quick Start
 
-| 📚 For Everyone | 👨‍💻 For Developers |
-|----------------|---------------------|
-| [🚀 **GUI Installer (NEW!)**](INSTALL.md) | [🏗️ Technical Architecture](doc/ARCHITECTURE.md) |
-| [� **Command-Line Installer**](INSTALL.md) | [📖 API Documentation](#cli-architecture) |
-| [⚙️ Manual Installation](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy) | [� Contributing Guidelines](#development-guidelines) |
-| [🎬 How to Use](#uruchomienie-aplikacji-wersja-alpha-v018) | [🧪 Testing Guide](test/README.md) |
-| [❓ Troubleshooting](#troubleshooting) | [🔐 Security Considerations](doc/ARCHITECTURE.md#security-considerations) |
-| [📄 License Information](doc/NOTICES.md) | [� Package Structure](dep/STRUCTURE.md) |
+```bash
+# 1. Clone and enter the project
+git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
+cd pogadane
+
+# 2. Create a virtual environment (optional but recommended)
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1  # PowerShell on Windows
+
+# 3. Install project requirements and run the guided setup
+pip install -r requirements.txt
+python install.py --lightweight
+
+# 4. Launch the GUI
+python -m pogadane.gui
+```
+
+Re-run the installer with `--full` for yt-dlp/Faster-Whisper helpers or `--dev` when you need pytest and linters.
 
 ---
 
-## Features
+## Installation Options
 
-### Core Capabilities
+### Option A — Guided Installer (Recommended)
 
-✅ **Triple Interface Choice**
-- � **Material 3 Expressive GUI** (`gui_flet.py`) - Latest Flutter-based Material Design 3 with animations ⭐ RECOMMENDED
-- �🎨 **Material Design GUI** (`gui_material.py`) - Modern Material Design with dark/light themes
-- 🖥️ **Legacy Bootstrap GUI** (`gui.py`) - Stable, battle-tested interface
-- ⌨️ **Command-line** - For automation and advanced users
+```bash
+python install.py            # interactive wizard
+python install.py --full     # all features + external binaries
+python install.py --lightweight  # pure Python toolchain
+python install.py --dev      # adds developer tooling
+```
 
-✅ **Multiple Input Sources**
-- 📁 Local audio files (MP3, WAV, M4A, OGG, FLAC)
-- 🎬 YouTube videos (automatic audio extraction)
-- 📦 Batch processing of multiple files/URLs
+The script validates Python, installs project dependencies, downloads helper binaries when needed, and writes `.config/config.py` with sensible defaults.
 
-✅ **Powerful Transcription**
-- 🎙️ **Faster-Whisper** (default): GPU acceleration, speaker diarization
-- ⚡ **Whisper (Python)**: Lightweight, pure Python, no external executables
-- 🌍 Multi-language support
-- 👥 Speaker diarization (Faster-Whisper only)
-- 🎯 Multiple model sizes (tiny to large)
+### Option B — Manual Setup
 
-✅ **Flexible AI Summarization**
-- 🏠 **Local (Ollama)**: Complete privacy, offline operation after setup
-- ⚡ **Local (Transformers)**: Lightweight Python-based, no Ollama needed
-- ☁️ **Cloud (Google Gemini)**: API-based, requires internet connection
-- 📝 Customizable prompt templates
-- 🌐 Multi-language summaries
-
-✅ **Privacy & Security**
-- 🔒 Local processing option (no data leaves your computer)
-- 🔓 Open source (inspect the code yourself)
-- 🚫 No accounts or registrations required
-
-### User Experience
-
-- 🎨 **Three Beautiful GUIs** - Choose the perfect interface for you
-  - 🌟 **Material 3 Expressive** (Flet) - 60fps animations, true Material Design 3 ⭐ NEW
-  - � **Material Design** (CustomTkinter) - Modern look with dark/light themes
-  - 🖥️ **Legacy Bootstrap** (ttkbootstrap) - Stable and familiar
-  - See [GUI Comparison](doc/GUI_COMPARISON_ALL.md) for details
-- 📊 Real-time progress tracking with smooth animations
-- 📋 Results manager with per-file views
-- 🔤 Adjustable font sizes for accessibility
-- 💾 Easy result export with native dialogs
-- 🩺 Automated setup with doctor script
-- 🌐 Web version available (Material 3 Expressive only)
+1. Install Python 3.9+ and ensure `python`/`pip` are on PATH.
+2. Install core dependencies:
+   ```bash
+   pip install -r requirements.txt
+   pip install -r requirements-transformers.txt   # optional local summaries
+   pip install -r requirements-whisper.txt        # optional Whisper backend
+   ```
+3. Download helper binaries if required:
+   - `yt-dlp` for YouTube downloads — <https://github.com/yt-dlp/yt-dlp/releases>
+   - `faster-whisper-xxl.exe` for high-quality transcription — <https://github.com/Purfview/whisper-standalone-win>
+4. Point to the binaries via the GUI settings dialog or by editing `.config/config.py` (`YT_DLP_EXE`, `FASTER_WHISPER_EXE`).
 
 ---
 
-**Spis Treści (Table of Contents)**
-1.  [Struktura Katalogów](#struktura-katalogów)
-2.  [Architektura Systemu](#architektura-systemu)
-3.  [Wymagania Wstępne](#wymagania-wstępne)
-4.  [Instalacja i Konfiguracja (zalecane użycie `pogadane_doctor.py`)](#instalacja-i-konfiguracja-zalecane-użycie-pogadane_doctorpy)
-    * [Użycie `pogadane_doctor.py`](#użycie-pogadane_doctorpy)
-    * [Ręczna Instalacja Komponentów](#ręczna-instalacja-komponentów)
-        * [Krok 1: Instalacja środowiska Python](#krok-1-instalacja-środowiska-python)
-        * [Krok 2: Instalacja Faster-Whisper Standalone](#krok-2-instalacja-faster-whisper-standalone)
-        * [Krok 3: Pobranie yt-dlp](#krok-3-pobranie-yt-dlp-do-obsługi-youtube)
-        * [Krok 4: Instalacja Systemu Podsumowań](#krok-4-instalacja-systemu-podsumowań)
-        * [Krok 5: Instalacja bibliotek Python dla GUI i Google API](#krok-5-instalacja-bibliotek-python-dla-gui-i-google-api)
-5.  [Konfiguracja Pliku `.config/config.py`](#konfiguracja-pliku-configconfigpy)
-6.  [Uruchomienie Aplikacji (Wersja Alpha v0.1.8+)](#uruchomienie-aplikacji-wersja-alpha-v018)
-    * [Uruchomienie Interfejsu Graficznego (GUI) (Zalecane)](#uruchomienie-interfejsu-graficznego-gui-zalecane)
-    * [Uruchomienie Skryptu z Linii Komend (CLI)](#uruchomienie-skryptu-z-linii-komend-cli)
-7.  [Poprzednie Wersje](#poprzednie-wersje)
+## Running Pogadane
 
----
-## Struktura Katalogów
+### GUI (Material 3 Expressive)
 
-```
-.
-├── .build/
-├── .config/
-│   └── config.py
-├── .github/
-├── dep/
-├── doc/
-│   ├── cli_help/
-│   ├── NOTICES.md
-│   └── README.md
-├── res/
-├── samples/
-├── src/
-│   └── pogadane/
-│       ├── __init__.py
-│       ├── gui.py
-│       └── transcribe_summarize_working.py
-├── test/
-├── tools/
-│   └── pogadane_doctor.py
-└── README.md
+```bash
+python -m pogadane.gui
 ```
 
-Folder `src/` zawiera kod źródłowy aplikacji, `.config/` przechowuje konfigurację lokalną, a katalog `doc/` gromadzi dokumentację oraz informacje licencyjne. Pozostałe katalogi są przygotowane do przechowywania zależności, wyników budowania lub zasobów zgodnie z wytycznymi struktury projektu.
+- Queue files and URLs on the **Kolejka** tab
+- Track progress in the persistent status bar
+- Review waveform, topic timeline, transcription, and summary inside **Przeglądarka Wyników**
+- Inspect runtime logs on the **Konsola** tab
 
-## Architektura Systemu
+### CLI Workflow
 
-Poniższy diagram przedstawia ogólną architekturę aplikacji "pogadane":
-
-```mermaid
-flowchart TD
- subgraph pogadane_app["Aplikacja Pogadane"]
-    direction LR
-        gui_app["GUI (z obsługą wsadową)"]
-        cli_script["Skrypt Główny (CLI / Logika)"]
-  end
- subgraph summarization_choice["Wybór Systemu Streszczeń"]
-    direction LR
-        ollama_sum{{"Ollama (LLM Lokalny)"}}
-        google_gemini_sum{{"Google Gemini API (LLM Online)"}}
-  end
- subgraph processing_pipeline["Pipeline Przetwarzania (dla każdego źródła)"]
-    direction LR
-        yt_dlp{{"yt-dlp"}}
-        downloaded_audio[("Pobrane Audio")]
-        faster_whisper{{"Faster-Whisper"}}
-        transcription_text["Tekst Transkrypcji"]
-        summarization_choice
-  end
-    user["Użytkownik"] --> input_source["Dostarcza Wejście (Plik(i) Audio / URL(e) YouTube)"]
-    input_source -- Poprzez pole tekstowe (wiele linii) --> gui_app
-    user -. Uruchamia CLI (opcjonalnie) .-> cli_script
-    input_source -. Argumenty / Plik wsadowy .-> cli_script
-    
-    config_file[".config/config.py"] <-. Konfiguruje .-> gui_app
-    config_file -. Odczytuje konfigurację .-> cli_script
-    
-    gui_app -- Wywołuje logikę (sekwencyjnie dla każdego źródła) --> cli_script
-    
-    cli_script -. "1.Pobierz (jeśli URL)" .-> yt_dlp
-    yt_dlp --> downloaded_audio
-    cli_script -- 2.Transkrybuj Audio --> faster_whisper
-    downloaded_audio -.-> faster_whisper
-    faster_whisper --> transcription_text
-    cli_script -- "3.Streszczaj<br>(na podst. config:<br>PROVIDER, PROMPT_TEMPLATE, LANG)" --> summarization_choice
-    transcription_text -- Tekst transkrypcji --> summarization_choice
-    summarization_choice -- Wybór: ollama --> ollama_sum
-    summarization_choice -- Wybór: google --> google_gemini_sum
-    ollama_sum -- Tekst streszczenia --> cli_script
-    google_gemini_sum -- Tekst streszczenia --> cli_script
-    
-    cli_script -- Generuje wynik (dla każdego źródła) --> individual_results["Indywidualne Wyniki"]
-    individual_results -- Prezentowane w GUI (menedżer wyników) / Zapisywane (CLI) --> final_output["Wynik Końcowy (Streszczenie, Transkrypcja)"]
-    gui_app -. Prezentuje / Umożliwia Zapis .-> final_output
-
-
-    style gui_app fill:#C8E6C9,stroke:#333,stroke-width:2px
-    style cli_script fill:#B3E5FC,stroke:#333,stroke-width:2px
-    style ollama_sum fill:#FFCDD2,stroke:#333,stroke-width:2px
-    style google_gemini_sum fill:#FFDDAA,stroke:#333,stroke-width:2px 
-    style yt_dlp fill:#FFCCBC,stroke:#333,stroke-width:2px
-    style downloaded_audio fill:#FFCCBC,stroke:#333,stroke-width:2px
-    style faster_whisper fill:#D1C4E9,stroke:#333,stroke-width:2px
-    style transcription_text fill:#E1BEE7,stroke:#333,stroke-width:2px
-    style summarization_choice fill:#F0F4C3,stroke:#333,stroke-width:1px
-    style input_source fill:#E3F2FD,stroke:#333,stroke-width:2px
-    style final_output fill:#A5D6A7,stroke:#333,stroke-width:2px
-    style processing_pipeline fill:#F5F5F5,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5
-    style individual_results fill:#FFF9C4,stroke:#333,stroke-width:1px
+```bash
+python -m pogadane.transcribe_summarize_working <audio_or_url> [more_sources]
 ```
 
-**Opis komponentów:**
+Common flags:
 
-  * **Użytkownik**: Osoba inicjująca proces transkrypcji i streszczenia.
-  * **Wejście (Plik(i) Audio / URL(e) YouTube)** (`input_source`): Plik(i) audio dostarczone przez użytkownika lub adres(y) URL do materiału(ów) na YouTube. GUI pozwala na wprowadzenie wielu źródeł w polu tekstowym (każde w nowej linii). CLI akceptuje wiele źródeł jako argumenty lub z pliku wsadowego.
-    * **.config/config.py** (`config_file`): Plik konfiguracyjny aplikacji, zawierający ustawienia takie jak ścieżki do narzędzi, wybór modeli, parametry transkrypcji, dostawcę podsumowań, szablony promptów LLM oraz prompt niestandardowy.
-  * **Aplikacja Pogadane** (`pogadane_app`):
-    * **Interfejs Graficzny (GUI)** (`gui_app`): Zalecany sposób interakcji. Umożliwia wprowadzenie wielu źródeł, zarządzanie konfiguracją (`.config/config.py`), śledzenie postępu w kolejce, przeglądanie indywidualnych wyników dla każdego przetworzonego pliku w menedżerze wyników oraz dostosowanie rozmiaru czcionki. Wywołuje Skrypt Główny sekwencyjnie dla każdego źródła.
-      * **Skrypt Główny (CLI / Logika)** (`cli_script`): Plik `transcribe_summarize_working.py`. Rdzeń logiki: pobieranie audio, transkrypcja, generowanie streszczenia. Może być uruchamiany bezpośrednio z linii komend (z obsługą wsadową) lub być wywoływany przez GUI (dla pojedynczych zadań z listy wsadowej GUI).
-  * **Pipeline Przetwarzania (dla każdego źródła)** (`processing_pipeline`): Sekwencja operacji wykonywana dla każdego pliku/URL-a z listy:
-      * **yt-dlp** (`yt_dlp`): Narzędzie do pobierania audio z URL.
-      * **Pobrane Audio** (`downloaded_audio`): Tymczasowy plik audio.
-      * **Faster-Whisper** (`faster_whisper`): Narzędzie do transkrypcji audio na tekst.
-      * **Tekst Transkrypcji** (`transcription_text`): Wynik działania `Faster-Whisper`.
-    * **Wybór Systemu Streszczeń** (`summarization_choice`): Logika w skrypcie decydująca na podstawie `.config/config.py` (`SUMMARY_PROVIDER`), który system LLM zostanie użyty. Prompt jest konstruowany na podstawie wybranego szablonu (`LLM_PROMPT_TEMPLATE_NAME`) lub promptu niestandardowego (`LLM_PROMPT`) oraz języka podsumowania (`SUMMARY_LANGUAGE`).
-          * **Ollama (LLM Lokalny)** (`ollama_sum`): Platforma uruchamiająca lokalnie duże modele językowe.
-          * **Google Gemini API (LLM Online)** (`google_gemini_sum`): Usługa Google Cloud AI.
-  * **Indywidualne Wyniki** (`individual_results`): Transkrypcja i streszczenie generowane dla każdego przetworzonego źródła.
-  * **Wynik Końcowy** (`final_output`):
-      * **W GUI:** Wyniki dla poszczególnych plików są dostępne do przeglądania w dedykowanej zakładce "Wyniki" poprzez wybór z listy. Logi z całego procesu są dostępne w zakładce "Konsola".
-      * **W CLI:** Streszczenia są drukowane do konsoli lub zapisywane do plików (do katalogu, jeśli przetwarzano wiele źródeł i podano opcję `-o`).
+- `--config path/to/config.py`
+- `--output-dir path/to/results`
+- `--summary-provider {ollama,transformers,google}`
 
------
-
-## Wymagania Wstępne
-
-  * System operacyjny Windows.
-  * Python (zalecany 3.7+).
-  * Połączenie z Internetem (do pobrania oprogramowania, materiałów z YouTube oraz opcjonalnie do korzystania z Google Gemini API).
-  * Uprawnienia administratora mogą być wymagane do instalacji niektórych programów.
-  * Narzędzie do dekompresji archiwów `.7z` (np. [7-Zip](https://www.7-zip.org/)).
-
------
-
-## Instalacja i Konfiguracja
-
-### ⚡ Instalacja Automatyczna (ZALECANE - NOWE!)
-
-**Opcja 1: Instalator GUI (Najprostszy!)**
-
-**NOWY! Przyjazny instalator graficzny z krokami:**
-
-```powershell
-python tools/install_gui.py
-```
-
-Instalator GUI oferuje:
-- ✅ Wizualny kreator krok po kroku
-- ✅ Opcje wyboru komponentów (checkboxy)
-- ✅ Śledzenie postępu w czasie rzeczywistym
-- ✅ Szczegółowe logi instalacji
-- ✅ Automatyczna konfiguracja
-- ✅ Przycisk uruchomienia po zakończeniu
-
-**Opcja 2: Instalator Konsolowy**
-
-**Jedna komenda instaluje wszystko:**
-
-```powershell
-python tools/install.py
-```
-
-To najłatwiejszy sposób! Instalator automatycznie:
-- ✅ Sprawdza Python i pip
-- ✅ Instaluje wszystkie pakiety Python
-- ✅ Pobiera yt-dlp.exe i faster-whisper-xxl.exe do folderu `dep/`
-- ✅ Konfiguruje ścieżki w `.config/config.py`
-- ✅ Opcjonalnie instaluje Ollama
-- ✅ Weryfikuje instalację
-
-**Szczegółowa instrukcja:** [INSTALL.md](INSTALL.md)
-
-**Opcje instalacji:**
-```powershell
-python tools/install.py              # Pełna instalacja z Ollama
-python tools/install.py --no-ollama  # Bez Ollama (użyj Google Gemini)
-python tools/install.py --dev        # Z narzędziami deweloperskimi
-```
+Run with `--help` to see the full command list.
 
 ---
 
-### 📝 Instalacja Ręczna (Zaawansowana)
+## Configuration
 
-Jeśli automatyczna instalacja zawiedzie lub preferujesz kontrolę, użyj `pogadane_doctor.py`.
+Runtime options live in `.config/config.py`. Edit the file directly or use the Settings dialog (gear icon) in the GUI—both paths keep the same configuration file up to date.
 
-### Użycie `pogadane_doctor.py`
+Key settings:
 
-`pogadane_doctor.py` to narzędzie, które pomoże Ci:
+- `TRANSCRIPTION_PROVIDER` — `faster-whisper` or `whisper`
+- `SUMMARY_PROVIDER` — `ollama`, `transformers`, or `google`
+- Model names (`WHISPER_MODEL`, `TRANSFORMERS_MODEL`, `OLLAMA_MODEL`)
+- External tool paths (`YT_DLP_EXE`, `FASTER_WHISPER_EXE`)
 
-1.  Sprawdzić wersję Pythona i dostępność `pip`.
-2.  Zainstalować wymagane biblioteki Python (`ttkbootstrap`, `google-generativeai`).
-3.  Pobrać (lub zaktualizować) najnowsze wersje kluczowych plików projektu "pogadane" (`src/pogadane/transcribe_summarize_working.py`, `src/pogadane/gui.py`, `.config/config.py`, `README.md`, `LICENSE`, `doc/NOTICES.md`, pliki z `doc/cli_help/`) bezpośrednio z repozytorium GitHub.
-4.  Automatycznie utworzyć kopię zapasową istniejącego pliku `.config/config.py` przed jego nadpisaniem.
+---
 
-**Jak uruchomić `pogadane_doctor.py`:**
+## Development Workflow
 
-1.  **Pobierz `pogadane_doctor.py`:** Pobierz plik `tools/pogadane_doctor.py` z repozytorium GitHub projektu "pogadane" do pustego katalogu na swoim komputerze, gdzie chcesz przechowywać projekt.
-2.  **Uruchom skrypt:** Otwórz terminal (np. PowerShell, CMD) w katalogu, do którego pobrałeś `pogadane_doctor.py`, i wykonaj polecenie:
-    ```bash
-    python tools/pogadane_doctor.py
-    ```
-    *(Jeśli uruchamiasz skrypt znajdując się bezpośrednio w katalogu z plikiem, użyj `python pogadane_doctor.py`.)*
-3.  **Postępuj zgodnie z instrukcjami:** Skrypt wyświetli informacje o wykonywanych krokach. Po jego zakończeniu powinieneś mieć gotowe środowisko i najnowsze pliki projektu.
-4.  **Przejdź do konfiguracji narzędzi:** Po uruchomieniu `pogadane_doctor.py`, upewnij się, że masz pobrane i skonfigurowane narzędzia `yt-dlp.exe` i `faster-whisper-xxl.exe` oraz system Ollama (z modelem) zgodnie z opisem w sekcjach poniżej ([Ręczna Instalacja Komponentów](https://www.google.com/search?q=%23r%C4%99czna-instalacja-komponent%C3%B3w)). Skrypt `pogadane_doctor.py` na razie nie instaluje tych zewnętrznych programów, a jedynie pliki projektu i zależności Python.
-
-### Ręczna Instalacja Komponentów
-
-Jeśli nie chcesz używać `pogadane_doctor.py` lub napotkasz problemy, możesz przeprowadzić instalację ręcznie:
-
-#### Krok 1: Instalacja środowiska Python
-
-1.  **Pobierz Instalator Python:** Przejdź na oficjalną stronę Python ([https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)) i pobierz najnowszy stabilny instalator dla systemu Windows (np. "Windows installer (64-bit)").
-2.  **Uruchom Instalator:** Otwórz pobrany plik `.exe`.
-3.  **Konfiguracja Instalacji:** **Bardzo ważne:** W pierwszym oknie instalatora zaznacz opcję **"Add Python X.Y to PATH"** (gdzie X.Y to numer wersji). Następnie kliknij "Install Now".
-4.  **Weryfikacja Instalacji:** Po zakończeniu instalacji otwórz terminal PowerShell (możesz go znaleźć, wpisując "PowerShell" w menu Start) i wpisz polecenie:
-    ```powershell
-    python --version
-    ```
-    Jeśli instalacja przebiegła poprawnie, wyświetlona zostanie zainstalowana wersja Pythona.
-
-#### Krok 2: Instalacja Faster-Whisper Standalone
-
-1.  **Pobierz Faster-Whisper:** Przejdź do repozytorium GitHub Purfview/whisper-standalone-win w sekcji Releases ([Release Faster-Whisper-XXL r245.4 · Purfview/whisper-standalone-win](https://www.google.com/search?q=https://github.com/Purfview/whisper-standalone-win/releases/tag/Faster-Whisper-XXL)). Znajdź wersję `Faster-Whisper-XXL r245.4` (lub nowszą, która wspiera diaryzację) i pobierz archiwum dla Windows: `Faster-Whisper-XXL_r245.4_windows.7z`.
-2.  **Rozpakuj Archiwum:** Użyj narzędzia typu 7-Zip, aby wypakować zawartość pobranego archiwum do wybranej przez siebie lokalizacji (np. `C:\pogadane_narzedzia`). W wyniku powstanie folder, np. `C:\pogadane_narzedzia\Faster-Whisper-XXL_r245.4_windows`.
-3.  **Zlokalizuj Katalog Główny Faster-Whisper:** Wewnątrz rozpakowanego folderu znajduje się podkatalog `\Faster-Whisper-XXL` zawierający plik wykonywalny `faster-whisper-xxl.exe`. Skonfiguruj ścieżkę do tego pliku w `.config/config.py` (lub w GUI) albo umieść go w katalogu projektu.
-
-#### Krok 3: Pobranie yt-dlp
-
-1.  **Pobierz yt-dlp:** Przejdź na stronę najnowszych wydań projektu yt-dlp na GitHub: [https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest](https://www.google.com/search?q=https://github.com/yt-dlp/yt-dlp/releases/latest).
-2.  **Pobierz Plik:** Znajdź i pobierz plik `yt-dlp.exe`.
-3.  **Umieść Plik:** Skopiuj pobrany plik `yt-dlp.exe` do katalogu, w którym znajdują się skrypty `src/pogadane/gui.py` i `src/pogadane/transcribe_summarize_working.py`, lub skonfiguruj ścieżkę w `.config/config.py` (lub w GUI).
-
-#### Krok 4: Instalacja Systemu Podsumowań
-
-Masz trzy opcje generowania podsumowań: lokalnie za pomocą Ollama, lokalnie przez Transformers (bez Ollama), lub online przez Google Gemini API.
-
-##### Opcja A: Instalacja Ollama i Pobranie Modelu Językowego (Lokalnie - Pełna Funkcjonalność)
-
-1.  **Pobierz Ollama:** Przejdź na oficjalną stronę Ollama ([https://ollama.com/](https://ollama.com/)) i pobierz wersję dla Windows.
-
-2.  **Zainstaluj Ollama:** Uruchom instalator.
-
-3.  **Pobierz Model Językowy:** Otwórz terminal PowerShell i wykonaj polecenie, aby pobrać model zdefiniowany w `.config/config.py` (domyślnie `OLLAMA_MODEL="gemma3:4b"`):
-
-    ```powershell
-    ollama pull gemma3:4b
-    ```
-
-    (Jeśli zmieniłeś `OLLAMA_MODEL` w konfiguracji, użyj tutaj odpowiedniej nazwy modelu).
-    **Uwaga:** Jeśli korzystasz z modeli Gemma, zapoznaj się z warunkami ich licencjonowania w pliku `NOTICES.md`.
-
-4.  **Sprawdź Działanie Ollama:** Upewnij się, że Ollama działa w tle (`ollama list`).
-
-5.  **Konfiguracja w `pogadane`:** W pliku `.config/config.py` (lub przez GUI) ustaw `SUMMARY_PROVIDER = "ollama"`.
-
-##### Opcja B: Instalacja Transformers (Lokalnie - Lekka Opcja bez Ollama)
-
-Jeśli nie chcesz instalować Ollama, możesz użyć Transformers - lekkiej opcji lokalnego AI opartej wyłącznie na bibliotekach Python.
-
-1.  **Zainstaluj biblioteki Transformers:**
-    Otwórz terminal PowerShell i wykonaj:
-    ```powershell
-    pip install -r requirements-transformers.txt
-    ```
-    
-    Lub ręcznie:
-    ```powershell
-    pip install transformers torch
-    ```
-
-2.  **Konfiguracja w `pogadane`:**
-    * Otwórz plik `.config/config.py` (lub użyj GUI).
-    * Ustaw `SUMMARY_PROVIDER = "transformers"`.
-    * Opcjonalnie dostosuj `TRANSFORMERS_MODEL` (domyślnie "facebook/bart-large-cnn", ~1.6GB).
-    * Mniejsze alternatywy:
-        * `"google/flan-t5-small"` (~300MB, najszybszy)
-        * `"sshleifer/distilbart-cnn-12-6"` (~500MB)
-        * `"google/flan-t5-base"` (~900MB)
-
-**Uwaga:** Większość modeli Transformers generuje podsumowania tylko po angielsku. Jeśli potrzebujesz podsumowań w języku polskim, użyj Ollama lub Google Gemini.
-
-**Przyspieszenie GPU (Opcjonalne):**
-Jeśli masz kartę graficzną NVIDIA z CUDA:
-```powershell
-pip install torch --index-url https://download.pytorch.org/whl/cu118
+```bash
+pip install -r requirements-dev.txt
+pytest
 ```
 
-##### Opcja C: Konfiguracja Google Gemini API (Online)
+Handy scripts:
 
-Jeśli chcesz używać Google Gemini API do generowania podsumowań (wymaga połączenia z internetem i klucza API):
+- `python tools/dependency_manager.py --verify-only` — confirm external binaries (Windows)
+- `python tools/pogadane_doctor.py` — legacy diagnostics when the new installer is unavailable
 
+Before opening a PR, run tests (`pytest`) and your preferred linters/formatters.
+
+---
+
+## Troubleshooting
+
+- Re-run `python install.py --full` to repair a broken environment
+- Confirm binary paths in `.config/config.py`
+- Use the **Konsola** tab to inspect runtime logs
+- File issues at <https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues>
+
+---
+
+## License & Notices
+
+- Project license: [MIT](LICENSE)
+- Third-party licenses: [NOTICES.md](NOTICES.md)
+
+Pogadane is maintained by WSB University Problem-Based Learning. Contributions and bug reports are always welcome!
 1.  **Uzyskaj Klucz API Google Gemini:**
       * Przejdź do Google AI Studio ([https://aistudio.google.com/](https://aistudio.google.com/)).
       * Zaloguj się kontem Google.

@@ -19,14 +19,11 @@ BASE_RAW_URL = f"https://raw.githubusercontent.com/{GITHUB_USERNAME}/{GITHUB_REP
 
 FILES_TO_DOWNLOAD_OR_UPDATE = [
     ("LICENSE", "LICENSE"),
-    ("doc/NOTICES.md", "doc/NOTICES.md"),
+    ("NOTICES.md", "NOTICES.md"),
     ("README.md", "README.md"),
     (".config/config.py", ".config/config.py"),
     ("src/pogadane/gui.py", "src/pogadane/gui.py"),
     ("src/pogadane/transcribe_summarize_working.py", "src/pogadane/transcribe_summarize_working.py"),
-    ("doc/cli_help/faster-whisper-xxl_help.txt", "doc/cli_help/faster-whisper-xxl_help.txt"),
-    ("doc/cli_help/ollama_help.txt", "doc/cli_help/ollama_help.txt"),
-    ("doc/cli_help/yt-dlp_help.txt", "doc/cli_help/yt-dlp_help.txt")
 ]
 
 # Zależności pip dla projektu "pogadane"

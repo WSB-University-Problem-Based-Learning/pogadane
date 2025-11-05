@@ -1,14 +1,17 @@
 """
-Pogadane Backend - GUI-focused processing module
+Pogadane Backend - Native Python processing module
 
 This module provides library functions for transcription and summarization
-designed to be called directly from the GUI without subprocess overhead.
+with proper logging and progress callbacks - no console parsing.
 """
 
 import sys
 import os
+import logging
 from pathlib import Path
-from typing import Optional, Tuple, Callable
+from typing import Optional, Tuple, Callable, Dict, Any
+from dataclasses import dataclass
+from enum import Enum
 import shutil
 import uuid
 
@@ -18,10 +21,6 @@ from .text_utils import is_valid_url
 from .file_utils import get_unique_filename, get_input_name_stem, safe_delete_file
 from .constants import (
     DEFAULT_CONFIG,
-    TRANSCRIPTION_START_MARKER,
-    TRANSCRIPTION_END_MARKER,
-    SUMMARY_START_MARKER,
-    SUMMARY_END_MARKER,
     TEMP_AUDIO_FOLDER_NAME,
     PROJECT_ROOT
 )
@@ -29,18 +28,114 @@ from .llm_providers import LLMProviderFactory
 from .transcription_providers import TranscriptionProviderFactory
 
 
-class ProgressCallback:
-    """Simple progress callback handler"""
-    def __init__(self):
-        self.current_step = ""
-        self.progress = 0.0
+# Configure logging
+logger = logging.getLogger(__name__)
+
+
+class ProcessingStage(Enum):
+    """Processing stages for progress tracking"""
+    INITIALIZING = "initializing"
+    DOWNLOADING = "downloading"
+    COPYING = "copying"
+    TRANSCRIBING = "transcribing"
+    SUMMARIZING = "summarizing"
+    CLEANING = "cleaning"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+
+@dataclass
+class ProgressUpdate:
+    """Progress update data structure"""
+    stage: ProcessingStage
+    message: str
+    progress: float  # 0.0 to 1.0
+    details: Optional[Dict[str, Any]] = None
     
-    def update(self, message: str, progress: float = None):
-        """Update progress"""
-        self.current_step = message
-        if progress is not None:
-            self.progress = progress
-        print(message)
+    def __str__(self):
+        return f"[{self.progress:.0%}] {self.stage.value}: {self.message}"
+
+
+class ProgressCallback:
+    """
+    Native Python progress callback handler.
+    
+    Provides structured progress updates without print statements.
+    """
+    
+    def __init__(self, callback: Optional[Callable[[ProgressUpdate], None]] = None):
+        """
+        Initialize progress callback.
+        
+        Args:
+            callback: Optional callback function that receives ProgressUpdate objects
+        """
+        self.callback = callback
+        self.current_stage = ProcessingStage.INITIALIZING
+        self.current_progress = 0.0
+        self.history = []
+    
+    def update(
+        self, 
+        stage: ProcessingStage, 
+        message: str, 
+        progress: float,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Send progress update.
+        
+        Args:
+            stage: Current processing stage
+            message: Human-readable message
+            progress: Progress value (0.0 to 1.0)
+            details: Optional additional details
+        """
+        self.current_stage = stage
+        self.current_progress = progress
+        
+        update = ProgressUpdate(
+            stage=stage,
+            message=message,
+            progress=progress,
+            details=details or {}
+        )
+        
+        self.history.append(update)
+        
+        # Log the update
+        logger.info(str(update))
+        
+        # Call the callback if provided
+        if self.callback:
+            try:
+                self.callback(update)
+            except Exception as e:
+                logger.error(f"Error in progress callback: {e}")
+    
+    def log(self, message: str, level: str = "info"):
+        """
+        Send a log message without changing progress.
+        
+        Args:
+            message: Log message
+            level: Log level (info, warning, error)
+        """
+        log_func = getattr(logger, level, logger.info)
+        log_func(message)
+        
+        # Also send as progress update if callback exists
+        if self.callback:
+            update = ProgressUpdate(
+                stage=self.current_stage,
+                message=message,
+                progress=self.current_progress,
+                details={"log_level": level}
+            )
+            try:
+                self.callback(update)
+            except Exception as e:
+                logger.error(f"Error in progress callback: {e}")
 
 
 class PogadaneBackend:
@@ -76,61 +171,124 @@ class PogadaneBackend:
     def process_file(
         self, 
         input_source: str,
-        progress_callback: Optional[Callable[[str, float], None]] = None
+        progress_callback: Optional[Callable[[ProgressUpdate], None]] = None
     ) -> Tuple[Optional[str], Optional[str]]:
         """
-        Process a single file or URL.
+        Process a single file or URL with native progress tracking.
         
         Args:
             input_source: File path or YouTube URL
-            progress_callback: Optional callback for progress updates
+            progress_callback: Optional callback that receives ProgressUpdate objects
             
         Returns:
             Tuple of (transcription, summary) or (None, None) on error
         """
-        if progress_callback is None:
-            progress_callback = lambda msg, prog=None: print(msg)
+        # Create progress tracker
+        progress = ProgressCallback(progress_callback)
         
-        progress_callback(f"📂 Processing: {input_source}", 0.0)
-        
-        # Get source name
-        source_name = get_input_name_stem(input_source)
-        
-        # Handle YouTube URLs
-        if is_valid_url(input_source):
-            progress_callback(f"📥 Downloading from YouTube...", 0.1)
-            audio_file = self._download_youtube_audio(input_source)
-            if not audio_file:
+        try:
+            progress.update(
+                ProcessingStage.INITIALIZING,
+                f"Processing: {input_source}",
+                0.0,
+                {"source": input_source}
+            )
+            
+            # Get source name
+            source_name = get_input_name_stem(input_source)
+            
+            # Handle YouTube URLs
+            if is_valid_url(input_source):
+                progress.update(
+                    ProcessingStage.DOWNLOADING,
+                    "Downloading from YouTube...",
+                    0.1,
+                    {"url": input_source}
+                )
+                audio_file = self._download_youtube_audio(input_source, progress)
+                if not audio_file:
+                    progress.update(
+                        ProcessingStage.ERROR,
+                        "Download failed",
+                        1.0
+                    )
+                    return None, None
+            else:
+                # Local file - copy to temp
+                progress.update(
+                    ProcessingStage.COPYING,
+                    "Copying local file...",
+                    0.1,
+                    {"file": input_source}
+                )
+                audio_file = self._copy_to_temp(Path(input_source), progress)
+                if not audio_file:
+                    progress.update(
+                        ProcessingStage.ERROR,
+                        "File copy failed",
+                        1.0
+                    )
+                    return None, None
+            
+            # Transcribe
+            progress.update(
+                ProcessingStage.TRANSCRIBING,
+                "Transcribing audio...",
+                0.3,
+                {"audio_file": str(audio_file)}
+            )
+            transcription = self._transcribe_audio(audio_file, source_name, progress)
+            
+            if not transcription:
+                progress.update(
+                    ProcessingStage.ERROR,
+                    "Transcription failed",
+                    1.0
+                )
+                self._cleanup_temp_files(audio_file, progress)
                 return None, None
-        else:
-            # Local file - copy to temp
-            progress_callback(f"📄 Copying local file...", 0.1)
-            audio_file = self._copy_to_temp(Path(input_source))
-            if not audio_file:
-                return None, None
-        
-        # Transcribe
-        progress_callback(f"🎤 Transcribing audio...", 0.3)
-        transcription = self._transcribe_audio(audio_file, source_name, progress_callback)
-        
-        if not transcription:
-            progress_callback(f"❌ Transcription failed", 1.0)
-            self._cleanup_temp_files(audio_file)
+            
+            # Summarize
+            progress.update(
+                ProcessingStage.SUMMARIZING,
+                "Generating summary...",
+                0.7,
+                {"transcription_length": len(transcription)}
+            )
+            summary = self._summarize_text(transcription, source_name, progress)
+            
+            # Cleanup
+            progress.update(
+                ProcessingStage.CLEANING,
+                "Cleaning up...",
+                0.9
+            )
+            self._cleanup_temp_files(audio_file, progress)
+            
+            progress.update(
+                ProcessingStage.COMPLETED,
+                "Processing complete!",
+                1.0,
+                {
+                    "transcription_length": len(transcription) if transcription else 0,
+                    "summary_length": len(summary) if summary else 0
+                }
+            )
+            
+            return transcription, summary
+            
+        except Exception as e:
+            logger.error(f"Error processing {input_source}: {e}", exc_info=True)
+            progress.update(
+                ProcessingStage.ERROR,
+                f"Processing error: {str(e)}",
+                1.0,
+                {"error": str(e)}
+            )
             return None, None
-        
-        # Summarize
-        progress_callback(f"🤖 Generating summary...", 0.7)
-        summary = self._summarize_text(transcription, source_name, progress_callback)
-        
-        # Cleanup
-        progress_callback(f"🧹 Cleaning up...", 0.9)
-        self._cleanup_temp_files(audio_file)
-        
-        progress_callback(f"✅ Processing complete!", 1.0)
-        return transcription, summary
     
-    def _download_youtube_audio(self, url: str) -> Optional[Path]:
-        """Download YouTube audio to temp directory"""
+    def _download_youtube_audio(self, url: str, progress: ProgressCallback) -> Optional[Path]:
+        """Download YouTube audio to temp directory using native logging"""
         try:
             import subprocess
             
@@ -144,8 +302,8 @@ class PogadaneBackend:
             temp_filename = f"youtube_{uuid.uuid4().hex[:8]}.mp3"
             output_path = self.temp_audio_dir / temp_filename
             
-            print(f"🔄 Downloading: {url}")
-            print(f"   Output: {output_path}")
+            progress.log(f"Downloading: {url}")
+            progress.log(f"Output: {output_path}")
             
             cmd = [
                 yt_dlp_path,
@@ -164,21 +322,21 @@ class PogadaneBackend:
             )
             
             if result.returncode == 0 and output_path.exists():
-                print(f"✅ Downloaded: {output_path}")
+                progress.log(f"Downloaded: {output_path}")
                 return output_path
             else:
-                print(f"❌ Download failed: {result.stderr}", file=sys.stderr)
+                progress.log(f"Download failed: {result.stderr}", "error")
                 return None
                 
         except Exception as e:
-            print(f"❌ Download error: {e}", file=sys.stderr)
+            progress.log(f"Download error: {e}", "error")
             return None
     
-    def _copy_to_temp(self, source_path: Path) -> Optional[Path]:
-        """Copy local file to temp directory"""
+    def _copy_to_temp(self, source_path: Path, progress: ProgressCallback) -> Optional[Path]:
+        """Copy local file to temp directory using native logging"""
         try:
             if not source_path.exists():
-                print(f"❌ File not found: {source_path}", file=sys.stderr)
+                progress.log(f"File not found: {source_path}", "error")
                 return None
             
             # Generate unique temp filename
@@ -189,29 +347,29 @@ class PogadaneBackend:
             )
             temp_path = self.temp_audio_dir / unique_name
             
-            print(f"✅ Local file: {source_path}")
-            print(f"   Copied to temp: {temp_path}")
+            progress.log(f"Local file: {source_path}")
+            progress.log(f"Copied to temp: {temp_path}")
             
             shutil.copy2(source_path, temp_path)
             return temp_path
             
         except Exception as e:
-            print(f"❌ Copy error: {e}", file=sys.stderr)
+            progress.log(f"Copy error: {e}", "error")
             return None
     
     def _transcribe_audio(
         self,
         audio_path: Path,
         source_name: str,
-        progress_callback: Callable
+        progress: ProgressCallback
     ) -> Optional[str]:
-        """Transcribe audio file"""
+        """Transcribe audio file using native logging"""
         try:
             # Get transcription provider
             provider = TranscriptionProviderFactory.create_provider(self.config)
             
             if not provider:
-                print(f"❌ No transcription provider available", file=sys.stderr)
+                progress.log("No transcription provider available", "error")
                 return None
             
             # Get settings
@@ -227,7 +385,8 @@ class PogadaneBackend:
             )
             
             # Transcribe - provider expects (audio_path, output_dir, original_stem, language, model)
-            print(f"{TRANSCRIPTION_START_MARKER}")
+            progress.log(f"Starting transcription for '{source_name}' (model: {model}, language: {language})")
+            
             transcription_file = provider.transcribe(
                 audio_path=audio_path,
                 output_dir=self.temp_audio_dir,
@@ -239,8 +398,7 @@ class PogadaneBackend:
             if transcription_file and transcription_file.exists():
                 # Read transcription from file
                 transcription = transcription_file.read_text(encoding='utf-8')
-                print(f"✅ Transcript OK for '{source_name}'.")
-                print(transcription)
+                progress.log(f"Transcription complete for '{source_name}' ({len(transcription)} chars)")
                 
                 # Clean up transcription file
                 try:
@@ -248,31 +406,29 @@ class PogadaneBackend:
                 except:
                     pass
             else:
-                print(f"❌ Transcription failed for '{source_name}'.", file=sys.stderr)
+                progress.log(f"Transcription failed for '{source_name}'", "error")
                 transcription = None
             
-            print(f"{TRANSCRIPTION_END_MARKER}")
             return transcription
             
         except Exception as e:
-            print(f"❌ Transcription error: {e}", file=sys.stderr)
-            import traceback
-            traceback.print_exc()
+            progress.log(f"Transcription error: {e}", "error")
+            logger.exception("Transcription exception")
             return None
     
     def _summarize_text(
         self,
         text: str,
         source_name: str,
-        progress_callback: Callable
+        progress: ProgressCallback
     ) -> Optional[str]:
-        """Summarize transcribed text"""
+        """Summarize transcribed text using native logging"""
         try:
             # Get LLM provider
             provider = LLMProviderFactory.create_provider(self.config)
             
             if not provider:
-                print(f"❌ No LLM provider available", file=sys.stderr)
+                progress.log("No LLM provider available", "error")
                 return None
             
             # Get settings
@@ -301,8 +457,9 @@ class PogadaneBackend:
                 DEFAULT_CONFIG['SUMMARY_LANGUAGE']
             )
             
-            print(f"ℹ️ Using template '{tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'}' for '{source_name}'.")
-            print(f"{SUMMARY_START_MARKER}")
+            template_info = tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'
+            progress.log(f"Using template '{template_info}' for '{source_name}'")
+            progress.log(f"Starting summarization (text length: {len(text)} chars)")
             
             # Generate summary
             summary = provider.summarize(
@@ -313,32 +470,31 @@ class PogadaneBackend:
             )
             
             if summary:
-                print(f"✅ Summary OK for '{source_name}'.")
-                print(summary)
+                progress.log(f"Summary complete for '{source_name}' ({len(summary)} chars)")
             else:
-                print(f"❌ Summary generation failed for '{source_name}'.", file=sys.stderr)
+                progress.log(f"Summary generation failed for '{source_name}'", "error")
             
-            print(f"{SUMMARY_END_MARKER}")
             return summary
             
         except Exception as e:
-            print(f"❌ Summarization error: {e}", file=sys.stderr)
+            progress.log(f"Summarization error: {e}", "error")
+            logger.exception("Summarization exception")
             return None
     
-    def _cleanup_temp_files(self, audio_path: Optional[Path]):
-        """Clean up temporary files"""
+    def _cleanup_temp_files(self, audio_path: Optional[Path], progress: ProgressCallback):
+        """Clean up temporary files using native logging"""
         if audio_path and audio_path.exists():
             try:
-                print(f"🧹 Cleaning up: {audio_path.name}")
+                progress.log(f"Cleaning up: {audio_path.name}")
                 audio_path.unlink()
-                print(f"✅ Deleted {audio_path.name}")
+                progress.log(f"Deleted {audio_path.name}")
             except Exception as e:
-                print(f"⚠️ Cleanup warning: {e}", file=sys.stderr)
+                progress.log(f"Cleanup warning: {e}", "warning")
         
         # Clean up empty temp directory
         try:
             if self.temp_audio_dir.exists() and not any(self.temp_audio_dir.iterdir()):
-                print(f"ℹ️ Cleaned empty temp dir: {self.temp_audio_dir}")
+                progress.log(f"Cleaned empty temp dir: {self.temp_audio_dir}")
         except:
             pass
 
@@ -347,21 +503,47 @@ class PogadaneBackend:
 def main():
     """
     Legacy CLI entry point for backwards compatibility.
-    New code should use PogadaneBackend class directly.
+    New code should use PogadaneBackend class directly with progress callbacks.
     """
     import argparse
     
-    parser = argparse.ArgumentParser(description="Pogadane Audio Processing (Legacy CLI)")
+    # Configure basic logging for CLI
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    
+    parser = argparse.ArgumentParser(description="Pogadane Audio Processing")
     parser.add_argument("input", help="Audio file or YouTube URL")
     parser.add_argument("--config", help="Path to config file")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
     
     args = parser.parse_args()
+    
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
     
     # Initialize backend
     backend = PogadaneBackend(Path(args.config) if args.config else None)
     
+    # Define simple progress callback that prints to console
+    def progress_callback(update: ProgressUpdate):
+        """Print progress updates to console"""
+        icon_map = {
+            ProcessingStage.INITIALIZING: "🔧",
+            ProcessingStage.DOWNLOADING: "📥",
+            ProcessingStage.COPYING: "📄",
+            ProcessingStage.TRANSCRIBING: "🎤",
+            ProcessingStage.SUMMARIZING: "🤖",
+            ProcessingStage.CLEANING: "🧹",
+            ProcessingStage.COMPLETED: "✅",
+            ProcessingStage.ERROR: "❌"
+        }
+        icon = icon_map.get(update.stage, "ℹ️")
+        print(f"{icon} [{update.progress:.0%}] {update.message}")
+    
     # Process
-    transcription, summary = backend.process_file(args.input)
+    transcription, summary = backend.process_file(args.input, progress_callback)
     
     # Exit with appropriate code
     sys.exit(0 if (transcription or summary) else 1)

@@ -23,6 +23,11 @@ import sys
 import subprocess
 import shlex
 import os
+import logging
+
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class TranscriptionProvider(ABC):
@@ -605,16 +610,30 @@ class TranscriptionProviderFactory:
                 'FASTER_WHISPER_COMPUTE_TYPE',
                 DEFAULT_CONFIG.get('FASTER_WHISPER_COMPUTE_TYPE', 'auto')
             )
-            batch_size = getattr(
+            batch_size_raw = getattr(
                 config,
                 'FASTER_WHISPER_BATCH_SIZE',
                 DEFAULT_CONFIG.get('FASTER_WHISPER_BATCH_SIZE', 0)
             )
-            vad_filter = getattr(
+            # Convert batch_size to int (config files store as string)
+            try:
+                batch_size = int(batch_size_raw)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid batch_size value '{batch_size_raw}', using 0")
+                batch_size = 0
+            
+            vad_filter_raw = getattr(
                 config,
                 'FASTER_WHISPER_VAD_FILTER',
                 DEFAULT_CONFIG.get('FASTER_WHISPER_VAD_FILTER', False)
             )
+            # Convert vad_filter to bool
+            if isinstance(vad_filter_raw, bool):
+                vad_filter = vad_filter_raw
+            elif isinstance(vad_filter_raw, str):
+                vad_filter = vad_filter_raw.lower() in ('true', '1', 'yes', 'on')
+            else:
+                vad_filter = bool(vad_filter_raw)
             
             provider = FasterWhisperLibraryProvider(
                 debug_mode=debug_mode,

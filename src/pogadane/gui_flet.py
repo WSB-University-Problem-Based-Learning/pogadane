@@ -1,7 +1,7 @@
 """
 Pogadane GUI - Material 3 Expressive
 Beautiful Material Design 3 interface using Flet (Flutter-based)
-100% GUI-based - no CLI dependencies
+100% GUI-based - no CLI dependencies, native Python logging
 """
 
 import flet as ft
@@ -9,9 +9,9 @@ import threading
 import queue
 import sys
 import os
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from io import StringIO
 
 # Import utility modules
 from .constants import (
@@ -26,7 +26,11 @@ from .constants import (
 from .text_utils import strip_ansi, extract_transcription_and_summary
 from .config_loader import ConfigManager
 from .gui_utils import ResultsManager
-from .backend import PogadaneBackend
+from .backend import PogadaneBackend, ProgressUpdate, ProcessingStage
+
+
+# Configure GUI logger
+logger = logging.getLogger(__name__)
 
 
 class PogadaneApp:
@@ -793,6 +797,8 @@ class PogadaneApp:
             "status_chip": status_chip,
             "status_spinner": status_spinner,
             "container": container,
+            "icon": icon_name,
+            "display_name": display_name,
         }
 
     def _set_queue_item_status(self, index: int, status: str):
@@ -805,6 +811,7 @@ class PogadaneApp:
         status_text: ft.Text = item["status_text"]
         status_chip: ft.Container = item["status_chip"]
         status_spinner: ft.ProgressRing = item.get("status_spinner")
+        container: ft.Container = item["container"]
 
         if status == FILE_STATUS_PROCESSING:
             status_text.value = "Przetwarzanie"
@@ -812,30 +819,61 @@ class PogadaneApp:
             status_chip.bgcolor = "#DBEAFE"
             if status_spinner:
                 status_spinner.visible = True
+            # Remove click handler during processing
+            container.on_click = None
+            container.ink = False
         elif status == FILE_STATUS_COMPLETED:
-            status_text.value = "Zakończono"
+            status_text.value = "Zakończono → Zobacz wyniki"
             status_text.color = "#047857"
             status_chip.bgcolor = "#D1FAE5"
             if status_spinner:
                 status_spinner.visible = False
+            # Add click handler for completed items
+            source_value = item["value"]
+            container.on_click = lambda _, src=source_value: self.view_result_from_queue(src)
+            container.ink = True
+            container.tooltip = "Kliknij aby zobaczyć wyniki"
         elif status == FILE_STATUS_ERROR:
             status_text.value = "Błąd"
             status_text.color = "#991B1B"
             status_chip.bgcolor = "#FEE2E2"
             if status_spinner:
                 status_spinner.visible = False
+            # Remove click handler on error
+            container.on_click = None
+            container.ink = False
         else:
             status_text.value = "Oczekuje"
             status_text.color = "#6B7280"
             status_chip.bgcolor = "#E5E7EB"
             if status_spinner:
                 status_spinner.visible = False
+            # Remove click handler while pending
+            container.on_click = None
+            container.ink = False
 
         item["status"] = status
         status_chip.update()
         status_text.update()
         if status_spinner:
             status_spinner.update()
+        container.update()
+
+    def view_result_from_queue(self, source: str):
+        """Navigate to results tab and display the selected file"""
+        # Switch to Results tab (index 1)
+        self.tabs.selected_index = 1
+        self.tabs.update()
+        
+        # Select the file in the dropdown
+        self.file_selector.value = source
+        self.file_selector.update()
+        
+        # Display the results
+        self.display_selected_result(None)
+        
+        # Show success message
+        self.show_snackbar(f"📄 Wyświetlanie: {os.path.basename(source)}", success=True)
 
     def _update_progress(self, processed: int, message: Optional[str] = None):
         """Update global progress bar and text"""
@@ -1168,7 +1206,7 @@ class PogadaneApp:
                     "WHISPER_MODEL": "base",
                     "FASTER_WHISPER_DEVICE": "auto",
                     "FASTER_WHISPER_COMPUTE_TYPE": "int8",
-                    "FASTER_WHISPER_BATCH_SIZE": "16",
+                    "FASTER_WHISPER_BATCH_SIZE": 16,
                     "SUMMARY_PROVIDER": "transformers",
                     "TRANSFORMERS_MODEL": "google/flan-t5-small",
                 }
@@ -1183,7 +1221,7 @@ class PogadaneApp:
                     "WHISPER_MODEL": "turbo",
                     "FASTER_WHISPER_DEVICE": "auto",
                     "FASTER_WHISPER_COMPUTE_TYPE": "auto",
-                    "FASTER_WHISPER_BATCH_SIZE": "0",
+                    "FASTER_WHISPER_BATCH_SIZE": 0,
                     "SUMMARY_PROVIDER": "transformers",
                     "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
                 }
@@ -1198,7 +1236,7 @@ class PogadaneApp:
                     "WHISPER_MODEL": "large-v3",
                     "FASTER_WHISPER_DEVICE": "auto",
                     "FASTER_WHISPER_COMPUTE_TYPE": "float16",
-                    "FASTER_WHISPER_BATCH_SIZE": "0",
+                    "FASTER_WHISPER_BATCH_SIZE": 0,
                     "SUMMARY_PROVIDER": "transformers",
                     "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
                 }
@@ -2031,7 +2069,7 @@ class PogadaneApp:
         ).start()
     
     def _execute_batch_processing_logic(self, input_sources):
-        """Execute batch processing for all input sources using direct backend calls"""
+        """Execute batch processing using native progress callbacks - no stdout capture"""
         
         # Initialize backend (will use the same ConfigManager singleton as GUI)
         backend = PogadaneBackend()
@@ -2045,30 +2083,33 @@ class PogadaneApp:
             self.output_queue.put(("update_status", str(i), FILE_STATUS_PROCESSING))
             
             try:
-                # Capture stdout to collect processing output
-                old_stdout = sys.stdout
-                old_stderr = sys.stderr
-                captured_output = StringIO()
-                sys.stdout = captured_output
-                sys.stderr = captured_output
+                # Define progress callback for this file
+                def progress_callback(update: ProgressUpdate):
+                    """Handle progress updates from backend"""
+                    # Map stages to icons
+                    icon_map = {
+                        ProcessingStage.INITIALIZING: "🔧",
+                        ProcessingStage.DOWNLOADING: "📥",
+                        ProcessingStage.COPYING: "📄",
+                        ProcessingStage.TRANSCRIBING: "🎤",
+                        ProcessingStage.SUMMARIZING: "🤖",
+                        ProcessingStage.CLEANING: "🧹",
+                        ProcessingStage.COMPLETED: "✅",
+                        ProcessingStage.ERROR: "❌"
+                    }
+                    icon = icon_map.get(update.stage, "ℹ️")
+                    
+                    # Format message with icon and progress
+                    log_message = f"{icon} [{update.progress:.0%}] {update.message}\n"
+                    
+                    # Send to console
+                    self.output_queue.put(("log", log_message, "", ""))
                 
-                # Process file using backend
+                # Process file using backend with native callbacks
                 transcription, summary = backend.process_file(
                     input_src,
-                    progress_callback=lambda msg, prog=None: self.output_queue.put(("log", msg + "\n", "", ""))
+                    progress_callback=progress_callback
                 )
-                
-                # Restore stdout/stderr
-                sys.stdout = old_stdout
-                sys.stderr = old_stderr
-                
-                # Get captured output
-                full_log_text = captured_output.getvalue()
-                
-                # Send log output to console
-                for line in full_log_text.splitlines(keepends=True):
-                    clean_line = strip_ansi(line)
-                    self.output_queue.put(("log", clean_line, "", ""))
                 
                 # Check results
                 if transcription or summary:
@@ -2079,10 +2120,7 @@ class PogadaneApp:
                     self.output_queue.put(("update_status", str(i), FILE_STATUS_ERROR))
                     
             except Exception as ex:
-                # Restore stdout/stderr in case of error
-                sys.stdout = old_stdout
-                sys.stderr = old_stderr
-                
+                logger.error(f"Error processing {input_src}: {ex}", exc_info=True)
                 self.output_queue.put(("error", f"❌ Błąd podczas przetwarzania {input_src}: {ex}", "", ""))
                 self.output_queue.put(("update_status", str(i), FILE_STATUS_ERROR))
         
@@ -2318,7 +2356,17 @@ class PogadaneApp:
                 if isinstance(field, ft.Switch):
                     updates[key] = field.value
                 elif hasattr(field, 'value'):
-                    updates[key] = field.value
+                    value = field.value
+                    
+                    # Special type conversions for known integer fields
+                    if key == "FASTER_WHISPER_BATCH_SIZE":
+                        try:
+                            value = int(value) if value else 0
+                        except (ValueError, TypeError):
+                            logger.warning(f"Invalid batch_size value '{value}', using 0")
+                            value = 0
+                    
+                    updates[key] = value
             
             # Update lines in place, preserving comments and structure
             new_lines = []
@@ -2423,7 +2471,18 @@ class PogadaneApp:
 
 
 def main(page: ft.Page):
-    """Main entry point for Flet app"""
+    """Main entry point for Flet app with native Python logging"""
+    # Configure logging for GUI
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('pogadane.log', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+    
+    logger.info("Starting Pogadane GUI")
     PogadaneApp(page)
 
 

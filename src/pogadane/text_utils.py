@@ -138,6 +138,6 @@ def is_valid_url(text: str) -> bool:
         text: Text to validate
         
     Returns:
-        True if text starts with http:// or https://
+        True if text starts with http:// or https:// (case-insensitive)
     """
-    return re.match(r'^https?://', text) is not None
+    return re.match(r'^https?://', text, re.IGNORECASE) is not None

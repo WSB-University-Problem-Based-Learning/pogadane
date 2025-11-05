@@ -12,7 +12,12 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import subprocess
 import sys
+import logging
 from pathlib import Path
+
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 class LLMProvider(ABC):
@@ -239,16 +244,51 @@ class TransformersProvider(LLMProvider):
         "google/flan-t5-base": {
             "max_length": 512,
             "min_length": 30,
-            "type": "text2text",
+            "type": "text2text-generation",
             "size": "900MB",
             "description": "FLAN-T5 Base - General purpose (~900MB)"
         },
         "google/flan-t5-small": {
             "max_length": 512,
             "min_length": 30,
-            "type": "text2text",
+            "type": "text2text-generation",
             "size": "300MB",
             "description": "FLAN-T5 Small - Very fast, basic quality (~300MB)"
+        },
+        "google-t5/t5-small": {
+            "max_length": 512,
+            "min_length": 30,
+            "type": "text2text-generation",
+            "size": "240MB",
+            "description": "T5 Small - Compact, fast (~240MB)"
+        },
+        "google-t5/t5-base": {
+            "max_length": 512,
+            "min_length": 30,
+            "type": "text2text-generation",
+            "size": "850MB",
+            "description": "T5 Base - Balanced performance (~850MB)"
+        },
+        "google-t5/t5-large": {
+            "max_length": 512,
+            "min_length": 30,
+            "type": "text2text-generation",
+            "size": "2.7GB",
+            "description": "T5 Large - High quality, slower (~2.7GB)"
+        },
+        "google/gemma-2-2b-it": {
+            "max_length": 2048,
+            "min_length": 50,
+            "type": "text-generation",
+            "size": "5GB",
+            "description": "Gemma 2 2B Instruct - Lightweight instruction-tuned (~5GB)"
+        },
+        "google/gemma-2-9b-it": {
+            "max_length": 2048,
+            "min_length": 50,
+            "type": "text-generation",
+            "size": "18GB",
+            "description": "Gemma 2 9B Instruct - Powerful instruction-tuned (~18GB)"
         }
     }
     
@@ -300,10 +340,21 @@ class TransformersProvider(LLMProvider):
                         working_text = text
                     
                     # Build input based on model type
-                    if model_type == "text2text":
-                        # For T5 models, include the instruction
-                        prompt_clean = prompt.replace("{text}", "").replace("{Text}", "").strip()
-                        input_text = f"Summarize in {language}: {prompt_clean}\n\n{working_text}"
+                    if model_type == "text2text-generation":
+                        # For T5 models, use a clearer prompt
+                        # T5 models work better with task-specific prefixes
+                        if language.lower() == "polish":
+                            # Try to get Polish output by being explicit
+                            input_text = f"summarize: {working_text}"
+                        else:
+                            input_text = f"summarize: {working_text}"
+                    elif model_type == "text-generation":
+                        # For Gemma and other instruction-tuned models
+                        # Use a conversational prompt format
+                        if language.lower() == "polish":
+                            input_text = f"Proszę podsumuj poniższy tekst w języku polskim:\n\n{working_text}\n\nPodsumowanie:"
+                        else:
+                            input_text = f"Please summarize the following text:\n\n{working_text}\n\nSummary:"
                     else:
                         # For BART models, just use the text
                         input_text = working_text
@@ -315,25 +366,43 @@ class TransformersProvider(LLMProvider):
                     max_length = model_config.get("max_length", 150)
                     min_length = model_config.get("min_length", 30)
                     
+                    # Use max_new_tokens instead of max_length to avoid warning
+                    # Calculate max_new_tokens (roughly 75% of max_length to account for input)
+                    max_new_tokens = int(max_length * 0.5)  # Generate up to half of max_length as new tokens
+                    
+                    # Prepare generation parameters based on model type
+                    gen_params = {
+                        "max_new_tokens": max_new_tokens,
+                        "do_sample": False,
+                        "truncation": True,
+                        "clean_up_tokenization_spaces": True,
+                        "repetition_penalty": 1.2,  # Prevent repetition
+                        "no_repeat_ngram_size": 3,  # Prevent repeating 3-grams
+                    }
+                    
+                    # For text-generation models, don't use min_length (not supported)
+                    if model_type != "text-generation":
+                        gen_params["min_length"] = min_length
+                    
                     # Use more conservative settings to avoid errors
-                    result = self._pipeline(
-                        input_text,
-                        max_length=max_length,
-                        min_length=min_length,
-                        do_sample=False,
-                        truncation=True,
-                        clean_up_tokenization_spaces=True
-                    )
+                    result = self._pipeline(input_text, **gen_params)
                     
                     if result and len(result) > 0:
                         summary = result[0]["summary_text"] if "summary_text" in result[0] else result[0].get("generated_text", "")
                         
                         if summary:
-                            print(f"✅ Summary OK for '{source_name}' (Transformers).")
+                            # Check for repetitive gibberish (common with multilingual issues)
+                            # If the same phrase appears more than 3 times, it's likely broken
+                            words = summary.split()
+                            if len(words) > 10:
+                                # Check for excessive repetition
+                                unique_ratio = len(set(words)) / len(words)
+                                if unique_ratio < 0.3:  # Less than 30% unique words = repetitive gibberish
+                                    print(f"⚠️  Detected repetitive output (unique ratio: {unique_ratio:.2f})")
+                                    print(f"   This usually means the model doesn't support {language} well.")
+                                    summary = f"[⚠️ Model limitation: FLAN-T5 doesn't support Polish well. Consider using Ollama with a Polish-capable model like 'gemma2' or 'llama3.1']\n\n[Original attempt - may be low quality]:\n{summary[:200]}..."
                             
-                            # Add language note if not in target language
-                            if language.lower() != "english":
-                                summary = f"[Note: Summary generated in English - model doesn't support {language}]\n\n{summary}"
+                            print(f"✅ Summary OK for '{source_name}' (Transformers).")
                             
                             return summary.strip()
                     

@@ -9,13 +9,13 @@ TRANSCRIPTION_PROVIDER = "faster-whisper" # Dostawca: "faster-whisper" (4x szybs
 
 # Ustawienia Faster-Whisper (pip install faster-whisper)
 FASTER_WHISPER_DEVICE = "auto" # "cuda", "cpu", lub "auto"
-FASTER_WHISPER_COMPUTE_TYPE = "int8" # "float16", "int8", "int8_float16", lub "auto"
-FASTER_WHISPER_BATCH_SIZE = "16" # 0 = bez batch, >0 dla przyspieszenia
+FASTER_WHISPER_COMPUTE_TYPE = "auto" # "float16", "int8", "int8_float16", lub "auto"
+FASTER_WHISPER_BATCH_SIZE = 0 # 0 = bez batch, >0 dla przyspieszenia
 FASTER_WHISPER_VAD_FILTER = False # Voice Activity Detection
 
 # Ustawienia Whisper (wspólne dla obu)
 WHISPER_LANGUAGE = "Polish" # Język transkrypcji (np. "Polish", "English")
-WHISPER_MODEL = "tiny" # Model: "tiny", "base", "small", "medium", "large", "turbo", "large-v3"
+WHISPER_MODEL = "turbo" # Model: "tiny", "base", "small", "medium", "large", "turbo", "large-v3"
 
 # Ustawienia dla openai-whisper (jeśli TRANSCRIPTION_PROVIDER="whisper")
 WHISPER_DEVICE = "auto"     # Urządzenie: "auto", "cpu", "cuda"
@@ -56,7 +56,7 @@ GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumo
 # Ustawienia Transformers (jeśli SUMMARY_PROVIDER="transformers")
 # Transformers to lekkie modele AI, które działają lokalnie bez Ollama
 # Wymagają instalacji: pip install transformers torch
-TRANSFORMERS_MODEL = "google/flan-t5-base" # Domyślny model (dobra jakość, ~1.6GB)
+TRANSFORMERS_MODEL = "facebook/bart-large-cnn" # Domyślny model (dobra jakość, ~1.6GB)
 # Alternatywy:
 #   "sshleifer/distilbart-cnn-12-6"  - Szybszy, mniejszy (~500MB)
 #   "google/flan-t5-base"            - Uniwersalny (~900MB)

@@ -2,32 +2,30 @@
 # Plik konfiguracyjny dla skryptu transcribe_summarize_working.py
 # oraz Pogadane GUI. Zmiany w GUI są zapisywane tutaj.
 
-# --- Configuration ---
+# --- Configuration (100% pip-based) ---
 
-# Ścieżki do plików wykonywalnych
-# Opcja 1: Załóż, że pliki wykonywalne są w bieżącym katalogu lub w PATH
-FASTER_WHISPER_EXE = "faster-whisper-xxl.exe"
-YT_DLP_EXE = "yt-dlp.exe"
-# Opcja 2: Podaj pełną ścieżkę, jeśli jest to potrzebne (użyj r"..." dla ścieżek Windows)
-# FASTER_WHISPER_EXE = r"C:\sciezka\do\twojego\faster-whisper-xxl.exe"
-# YT_DLP_EXE = r"C:\sciezka\do\twojego\yt-dlp.exe"
+# --- Ustawienia Transkrypcji (pip: faster-whisper lub openai-whisper) ---
+TRANSCRIPTION_PROVIDER = "faster-whisper" # Dostawca: "faster-whisper" (4x szybszy, GPU) lub "whisper" (oryginalny)
 
-# --- Ustawienia Transkrypcji ---
-TRANSCRIPTION_PROVIDER = "faster-whisper" # Dostawca transkrypcji: "faster-whisper" (zewnętrzny exe, lepsza jakość) lub "whisper" (Python, lekki)
-# Ustawienia Whisper
+# Ustawienia Faster-Whisper (pip install faster-whisper)
+FASTER_WHISPER_DEVICE = "auto"  # "cuda", "cpu", lub "auto"
+FASTER_WHISPER_COMPUTE_TYPE = "auto"  # "float16", "int8", "int8_float16", lub "auto"
+FASTER_WHISPER_BATCH_SIZE = 0  # 0 = bez batch, >0 dla przyspieszenia
+FASTER_WHISPER_VAD_FILTER = False  # Voice Activity Detection
+
+# Ustawienia Whisper (wspólne dla obu)
 WHISPER_LANGUAGE = "Polish"  # Język transkrypcji (np. "Polish", "English")
-WHISPER_MODEL = "turbo"     # Model Faster Whisper (np. "large-v3", "medium", "small", "base", "tiny", "turbo")
-# Model dla Whisper (Python): "tiny", "base", "small", "medium", "large" (jeśli TRANSCRIPTION_PROVIDER="whisper")
-WHISPER_DEVICE = "auto"     # Urządzenie dla Whisper (Python): "auto" (automatyczny wybór GPU/CPU), "cpu", "cuda"
+WHISPER_MODEL = "turbo"     # Model: "tiny", "base", "small", "medium", "large", "turbo", "large-v3"
 
-# --- Ustawienia Diaryzacji Mówców ---
-ENABLE_SPEAKER_DIARIZATION = False  # Ustaw na True, aby włączyć diaryzację mówców
-DIARIZE_METHOD = "pyannote_v3.1"    # Metoda diaryzacji (np. "pyannote_v3.0", "pyannote_v3.1")
-DIARIZE_SPEAKER_PREFIX = "MÓWCA"    # Prefiks dla mówców (np. "MÓWCA", "SPEAKER")
+# Ustawienia dla openai-whisper (jeśli TRANSCRIPTION_PROVIDER="whisper")
+WHISPER_DEVICE = "auto"     # Urządzenie: "auto", "cpu", "cuda"
+
+# YouTube Downloads (pip: yt-dlp)
+YT_DLP_PATH = "yt-dlp"  # Komenda lub pełna ścieżka
 
 # --- Ustawienia Podsumowania ---
-SUMMARY_PROVIDER = "ollama" # Dostawca podsumowania: "ollama" (lokalnie z Ollama), "google" (Google Gemini API), lub "transformers" (lokalnie bez Ollama)
-SUMMARY_LANGUAGE = "Polish" # Język, w którym ma być wygenerowane podsumowanie (np. "Polish", "English")
+SUMMARY_PROVIDER = "transformers" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
+SUMMARY_LANGUAGE = "English" # Język podsumowania (uwaga: większość modeli Transformers działa tylko po angielsku)
 
 # --- Szablony Promptów LLM ---
 # Klucze to nazwy wyświetlane w GUI. Wartości to rdzenie promptów.

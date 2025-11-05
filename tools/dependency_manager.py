@@ -1,13 +1,30 @@
 """
-Pogadane Dependency Manager
+Pogadane Dependency Manager - DEPRECATED
 
-This module handles downloading and managing external binary dependencies
+⚠️ WARNING: This module is DEPRECATED and will be removed in a future version.
+
+The Pogadane project has migrated to a 100% pip-based installation approach.
+All dependencies are now installed via pip:
+- faster-whisper (pip install faster-whisper)
+- openai-whisper (pip install openai-whisper)
+- yt-dlp (pip install yt-dlp)
+- ollama (install from ollama.com/download)
+
+Binary executables are no longer used or supported.
+
+See PIP_ONLY_INSTALLATION.md for current installation instructions.
+
+---
+
+LEGACY DOCUMENTATION (for historical reference only):
+
+This module handled downloading and managing external binary dependencies
 for Pogadane that cannot be installed via pip:
-- faster-whisper-xxl.exe (transcription engine)
-- yt-dlp.exe (YouTube downloader)
-- Ollama (optional, for local LLM)
+- faster-whisper-xxl.exe (transcription engine) - REPLACED by pip install faster-whisper
+- yt-dlp.exe (YouTube downloader) - REPLACED by pip install yt-dlp
+- Ollama (optional, for local LLM) - Install from ollama.com
 
-All binaries are downloaded to the dep/ folder to keep the repository clean.
+All binaries were downloaded to the dep/ folder to keep the repository clean.
 """
 
 import os

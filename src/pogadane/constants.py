@@ -40,8 +40,8 @@ DEFAULT_CONFIG = {
     "YT_DLP_PATH": "yt-dlp",  # Command name or full path
     
     # Summary settings
-    "SUMMARY_PROVIDER": "ollama",
-    "SUMMARY_LANGUAGE": "Polish",
+    "SUMMARY_PROVIDER": "transformers",
+    "SUMMARY_LANGUAGE": "English",
     "LLM_PROMPT_TEMPLATES": {
         "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
         "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",

@@ -1665,8 +1665,30 @@ class PogadaneApp:
     
     def display_selected_result(self, e):
         """Display selected file results"""
-        # TODO: Implement results display
-        pass
+        if not self.file_selector.value:
+            return
+        
+        # Get the selected file's source key
+        source = self.file_selector.value
+        
+        # Retrieve results from manager
+        result = self.results_manager.get_result(source)
+        
+        if result:
+            # Update transcription field
+            self.transcription_output.value = result.get("transcription", "Brak transkrypcji.")
+            self.transcription_output.update()
+            
+            # Update summary field
+            self.summary_output.value = result.get("summary", "Brak streszczenia.")
+            self.summary_output.update()
+            
+            self.update_status(f"📄 Wyświetlanie: {os.path.basename(source)}")
+        else:
+            self.transcription_output.value = "⚠️ Nie znaleziono wyników dla wybranego pliku."
+            self.summary_output.value = "⚠️ Nie znaleziono wyników dla wybranego pliku."
+            self.transcription_output.update()
+            self.summary_output.update()
     
     def save_config(self, e):
         """Save configuration to file"""

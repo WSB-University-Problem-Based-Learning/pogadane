@@ -170,14 +170,19 @@ def install_core_packages():
 def install_lightweight():
     """Install lightweight configuration (Python-only, no external binaries)."""
     print("\n" + "="*70)
-    print(f"{Colors.BOLD}{Colors.GREEN}📦 LIGHTWEIGHT INSTALLATION{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.GREEN}📦 LIGHTWEIGHT INSTALLATION (100% pip-based){Colors.END}")
     print("="*70)
     print("\nThis installs:")
-    print("  • Python Whisper (transcription)")
-    print("  • Transformers (AI summarization)")
+    print("  • openai-whisper (lightweight transcription)")
+    print("  • transformers (AI summarization)")
+    print("  • yt-dlp (YouTube support)")
     print("  • No external binaries required")
     print("  • Total download: ~500MB - 2GB")
     print()
+    
+    # Install yt-dlp
+    print_header("Installing yt-dlp (YouTube Support)")
+    install_package("yt-dlp", "YouTube video/audio downloader")
     
     # Install Whisper
     print_header("Installing Whisper (Python Transcription)")
@@ -198,54 +203,51 @@ def install_lightweight():
     print("  1. Run the app: python run_gui_flet.py")
     print("  2. Transcription will use Python Whisper")
     print("  3. AI will use Transformers (English only)")
-    print("  4. Edit .config/config.py to customize")
+    print("  4. For Ollama (Polish support): Install from ollama.com/download")
+    print("  5. For faster transcription: pip install faster-whisper")
+    print("  6. Edit .config/config.py to customize")
     print("="*70 + "\n")
 
 
 def install_full():
-    """Install full configuration (all features, larger download)."""
+    """Install full configuration (all features via pip)."""
     print("\n" + "="*70)
-    print(f"{Colors.BOLD}{Colors.GREEN}📦 FULL INSTALLATION{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.GREEN}📦 FULL INSTALLATION (100% pip-based){Colors.END}")
     print("="*70)
     print("\nThis installs:")
     print("  • yt-dlp (YouTube support)")
-    print("  • Python Whisper (fallback transcription)")
+    print("  • faster-whisper (4x faster transcription)")
+    print("  • openai-whisper (fallback transcription)")
     print("  • Transformers (AI summarization)")
-    print("  • Total download: ~500MB - 2GB")
+    print("  • Total download: ~1GB - 3GB")
     print()
-    print(f"{Colors.YELLOW}NOTE: Faster-Whisper and Ollama require manual installation{Colors.END}")
-    print("      on macOS and Linux. See documentation for details.")
+    print(f"{Colors.YELLOW}NOTE: Ollama (for Polish AI) requires separate installation from ollama.com{Colors.END}")
     print()
     
     # Install yt-dlp (cross-platform via pip)
     print_header("Installing yt-dlp (YouTube Support)")
     install_package("yt-dlp", "YouTube video/audio downloader")
     
-    # Install Whisper
-    print_header("Installing Whisper (Python Transcription)")
-    install_package("openai-whisper>=20230314", "Transcription engine")
+    # Install both Whisper engines
+    print_header("Installing Faster-Whisper (Recommended)")
+    install_package("faster-whisper>=1.0.0", "Fast transcription engine with GPU support")
+    
+    print_header("Installing OpenAI Whisper (Fallback)")
+    install_package("openai-whisper>=20230314", "Original Whisper transcription engine")
     
     # Install Transformers
     print_header("Installing Transformers (AI Summarization)")
     install_package("transformers>=4.30.0", "AI summarization")
     install_package("torch>=2.0.0", "PyTorch for AI")
     
-    # Platform-specific installations
-    if IS_WINDOWS:
-        install_windows_binaries()
-    else:
-        print_header("Platform-Specific Instructions")
-        print_info("For Faster-Whisper:")
-        if IS_MAC:
-            print("  brew install whisper")
-        elif IS_LINUX:
-            print("  See: https://github.com/SYSTRAN/faster-whisper")
-        
-        print_info("\nFor Ollama:")
-        if IS_MAC:
-            print("  brew install ollama")
-        elif IS_LINUX:
-            print("  curl https://ollama.ai/install.sh | sh")
+    print_success("Full installation complete!")
+    print("\n" + "="*70)
+    print(f"{Colors.BOLD}Next steps:{Colors.END}")
+    print("  1. Run the app: python run_gui_flet.py")
+    print("  2. Transcription will use faster-whisper (recommended)")
+    print("  3. For Polish AI: Install Ollama from ollama.com/download")
+    print("  4. Edit .config/config.py to customize")
+    print("="*70 + "\n")
     
     print_success("Full installation complete!")
     print("\n" + "="*70)
@@ -257,39 +259,36 @@ def install_full():
     print("="*70 + "\n")
 
 
-def install_windows_binaries():
-    """Install Windows-specific external binaries."""
-    if not IS_WINDOWS:
-        return
+def install_transcription_engines():
+    """Install transcription engines (faster-whisper or openai-whisper)."""
+    print_header("Installing Transcription Engines")
     
-    # Download yt-dlp.exe
-    print_header("Downloading yt-dlp.exe")
-    yt_dlp_dir = DEP_DIR / "yt-dlp"
-    yt_dlp_dir.mkdir(parents=True, exist_ok=True)
-    yt_dlp_path = yt_dlp_dir / "yt-dlp.exe"
+    print_info("Choose transcription engine:")
+    print("  1. faster-whisper (RECOMMENDED - 4x faster, GPU support)")
+    print("  2. openai-whisper (original, works everywhere)")
+    print("  3. Both (recommended for maximum compatibility)")
     
-    if not yt_dlp_path.exists():
-        try:
-            url = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe"
-            print_info(f"Downloading from {url}")
-            urllib.request.urlretrieve(url, yt_dlp_path)
-            print_success(f"Downloaded to {yt_dlp_path}")
-        except Exception as e:
-            print_error(f"Failed to download yt-dlp: {e}")
+    choice = input("\nEnter choice [1-3] (default: 1): ").strip() or "1"
+    
+    if choice in ["1", "3"]:
+        install_package("faster-whisper>=1.0.0", "Faster-Whisper transcription (RECOMMENDED)")
+    
+    if choice in ["2", "3"]:
+        install_package("openai-whisper>=20230314", "Original Whisper transcription")
+    
+    if choice == "1":
+        print_success("faster-whisper installed - set TRANSCRIPTION_PROVIDER='faster-whisper' in config")
+    elif choice == "2":
+        print_success("openai-whisper installed - set TRANSCRIPTION_PROVIDER='whisper' in config")
     else:
-        print_info("yt-dlp.exe already exists")
-    
-    # Instructions for Faster-Whisper
-    print_header("Faster-Whisper Instructions")
-    print_warning("Faster-Whisper requires manual download due to large size (1.5GB)")
-    print_info("Download from: https://github.com/Purfview/whisper-standalone-win/releases")
-    print_info("Extract to: dep/faster-whisper/")
-    print_info("Or use lightweight Python Whisper instead (already installed)")
-    
-    # Instructions for Ollama
-    print_header("Ollama Instructions")
-    print_info("Download from: https://ollama.com/download")
-    print_info("Or skip and use Transformers for AI (already installed)")
+        print_success("Both engines installed - configure your preferred one in config")
+
+
+def install_windows_binaries():
+    """DEPRECATED - Windows binaries are no longer used."""
+    # This function is kept for backwards compatibility but does nothing
+    # All dependencies are now installed via pip
+    pass
 
 
 def update_config_for_lightweight():
@@ -300,11 +299,19 @@ def update_config_for_lightweight():
         # Create default config
         config_content = """# Pogadane Configuration (Lightweight Mode)
 
-# Transcription Provider
+# Transcription Provider (pip-based)
 TRANSCRIPTION_PROVIDER = "whisper"  # Using Python Whisper (lightweight)
-WHISPER_MODEL = "base"  # Options: tiny, base, small, medium, large
+WHISPER_MODEL = "base"  # Options: tiny, base, small, medium, large, turbo
 WHISPER_LANGUAGE = "Polish"
 WHISPER_DEVICE = "auto"  # auto, cpu, or cuda
+
+# Alternative: faster-whisper (4x faster, GPU support)
+# TRANSCRIPTION_PROVIDER = "faster-whisper"
+# FASTER_WHISPER_DEVICE = "auto"  # cuda, cpu, or auto
+# FASTER_WHISPER_COMPUTE_TYPE = "auto"  # float16, int8, int8_float16, or auto
+
+# YouTube Downloads (pip-based)
+YT_DLP_PATH = "yt-dlp"  # Command or path
 
 # AI Summarization Provider
 SUMMARY_PROVIDER = "transformers"  # Using Transformers (lightweight)
@@ -318,10 +325,10 @@ SUMMARY_LANGUAGE = "English"  # Note: Most Transformers models only support Engl
 # Google Gemini (Alternative cloud AI)
 # SUMMARY_PROVIDER = "google"
 # GOOGLE_API_KEY = ""  # Add your API key here
-# GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest"
 
-# YouTube Support (if using yt-dlp from pip)
-YT_DLP_EXE = "yt-dlp"  # Will use system yt-dlp from pip
+# Ollama (Local AI - requires separate installation from ollama.com)
+# SUMMARY_PROVIDER = "ollama"
+# OLLAMA_MODEL = "gemma2:2b"  # or llama3.2:1b for Polish support
 
 # General Settings
 DEBUG_MODE = False

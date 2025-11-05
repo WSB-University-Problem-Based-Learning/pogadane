@@ -1,7 +1,24 @@
 """
-Manual Faster-Whisper Extraction Helper
+Manual Faster-Whisper Extraction Helper - DEPRECATED
 
-This script helps extract Faster-Whisper when automatic extraction fails
+⚠️ WARNING: This script is DEPRECATED and will be removed in a future version.
+
+The Pogadane project has migrated to a 100% pip-based installation.
+Instead of downloading faster-whisper-xxl.exe, use:
+
+    pip install faster-whisper
+
+Or for the original Whisper:
+
+    pip install openai-whisper
+
+See PIP_ONLY_INSTALLATION.md for current installation instructions.
+
+---
+
+LEGACY DOCUMENTATION (for historical reference only):
+
+This script helped extract Faster-Whisper when automatic extraction failed
 due to py7zr not supporting BCJ2 compression filter.
 
 Usage:

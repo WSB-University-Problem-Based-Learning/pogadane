@@ -170,12 +170,9 @@ def summarize_text(text_to_summarize, original_input_name_stem=""):
     prompt_core = templates.get(tpl_name) or getattr(config, 'LLM_PROMPT', DEFAULT_CONFIG['LLM_PROMPT'])
     print(f"ℹ️ Using template '{tpl_name if templates.get(tpl_name) else 'custom LLM_PROMPT'}' for '{original_input_name_stem}'.")
     
-    # Clean up prompt template
+    # Clean up prompt template (remove placeholders if any)
     prompt_core = prompt_core.replace("{text}", "").replace("{Text}", "").strip()
     lang = getattr(config, 'SUMMARY_LANGUAGE', DEFAULT_CONFIG['SUMMARY_LANGUAGE'])
-    
-    # Build full prompt
-    full_prompt = f"Please summarize the following text in {lang}. {prompt_core}\n\nText to summarize:\n{text_to_summarize}"
     
     print(f"{SUMMARY_START_MARKER}")  # Marker for GUI
     
@@ -189,9 +186,15 @@ def summarize_text(text_to_summarize, original_input_name_stem=""):
             return None
         
         print(f"\n🔄 Summarizing '{original_input_name_stem}' with {provider.__class__.__name__}")
+        print(f"🐛 DEBUG: Calling summarize with text={len(text_to_summarize)} chars, prompt={len(prompt_core)} chars, lang={lang}")
         
-        # Call the provider's summarize method
-        summary_result = provider.summarize(full_prompt)
+        # Call the provider's summarize method with correct parameters
+        summary_result = provider.summarize(
+            text=text_to_summarize,
+            prompt=prompt_core,
+            language=lang,
+            source_name=original_input_name_stem
+        )
         
         if summary_result:
             print(f"✅ Summary OK for '{original_input_name_stem}'.")
@@ -218,9 +221,6 @@ def main():
     parser.add_argument("input_sources", nargs='*', default=[], help="File(s) or URL(s). Omit if using --batch-file.")
     parser.add_argument("-o", "--output", help="Summary output. File if 1 input & not dir. Else, DIR for summaries.", default=None)
     parser.add_argument("-a", "--batch-file", help="File with input sources (one per line).", default=None)
-    diar_grp = parser.add_mutually_exclusive_group()
-    diar_grp.add_argument("--diarize", action='store_true', help="Enable diarization.")
-    diar_grp.add_argument("--no-diarize", action='store_true', help="Disable diarization.")
     args = parser.parse_args()
     
     sources = []
@@ -234,14 +234,8 @@ def main():
     sources.extend(args.input_sources)
     if not sources: print("❌ Error: No input sources.", file=sys.stderr); parser.print_help(); sys.exit(1)
 
-    diar_base = getattr(config, 'ENABLE_SPEAKER_DIARIZATION', DEFAULT_CONFIG['ENABLE_SPEAKER_DIARIZATION'])
-    diar_src = "config" if hasattr(config, 'ENABLE_SPEAKER_DIARIZATION') else "default"
-    if args.diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', True); print("ℹ️ Diarization: ENABLED (CLI).")
-    elif args.no_diarize: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', False); print("ℹ️ Diarization: DISABLED (CLI).")
-    else: setattr(config, 'ENABLE_SPEAKER_DIARIZATION', diar_base); print(f"ℹ️ Diarization from {diar_src}: {'ENABLED' if config.ENABLE_SPEAKER_DIARIZATION else 'DISABLED'}.")
-    if config.ENABLE_SPEAKER_DIARIZATION:
-        for k, v_def in [('DIARIZE_METHOD', DEFAULT_CONFIG['DIARIZE_METHOD']), ('DIARIZE_SPEAKER_PREFIX', DEFAULT_CONFIG['DIARIZE_SPEAKER_PREFIX'])]:
-            if not hasattr(config, k): setattr(config, k, v_def)
+    # Note: Diarization handled by transcription provider if supported
+    # No CLI flags needed - configure in .config/config.py if using compatible provider
     
     # Define scr_dir and temp_dir BEFORE using them
     scr_dir = Path(__file__).parent.resolve()

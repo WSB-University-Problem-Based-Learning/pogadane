@@ -8,24 +8,24 @@
 TRANSCRIPTION_PROVIDER = "faster-whisper" # Dostawca: "faster-whisper" (4x szybszy, GPU) lub "whisper" (oryginalny)
 
 # Ustawienia Faster-Whisper (pip install faster-whisper)
-FASTER_WHISPER_DEVICE = "auto"  # "cuda", "cpu", lub "auto"
-FASTER_WHISPER_COMPUTE_TYPE = "auto"  # "float16", "int8", "int8_float16", lub "auto"
-FASTER_WHISPER_BATCH_SIZE = 0  # 0 = bez batch, >0 dla przyspieszenia
-FASTER_WHISPER_VAD_FILTER = False  # Voice Activity Detection
+FASTER_WHISPER_DEVICE = "auto" # "cuda", "cpu", lub "auto"
+FASTER_WHISPER_COMPUTE_TYPE = "int8" # "float16", "int8", "int8_float16", lub "auto"
+FASTER_WHISPER_BATCH_SIZE = "16" # 0 = bez batch, >0 dla przyspieszenia
+FASTER_WHISPER_VAD_FILTER = False # Voice Activity Detection
 
 # Ustawienia Whisper (wspólne dla obu)
-WHISPER_LANGUAGE = "Polish"  # Język transkrypcji (np. "Polish", "English")
-WHISPER_MODEL = "turbo"     # Model: "tiny", "base", "small", "medium", "large", "turbo", "large-v3"
+WHISPER_LANGUAGE = "Polish" # Język transkrypcji (np. "Polish", "English")
+WHISPER_MODEL = "tiny" # Model: "tiny", "base", "small", "medium", "large", "turbo", "large-v3"
 
 # Ustawienia dla openai-whisper (jeśli TRANSCRIPTION_PROVIDER="whisper")
 WHISPER_DEVICE = "auto"     # Urządzenie: "auto", "cpu", "cuda"
 
 # YouTube Downloads (pip: yt-dlp)
-YT_DLP_PATH = "yt-dlp"  # Komenda lub pełna ścieżka
+YT_DLP_PATH = "yt-dlp" # Komenda lub pełna ścieżka
 
 # --- Ustawienia Podsumowania ---
 SUMMARY_PROVIDER = "transformers" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
-SUMMARY_LANGUAGE = "English" # Język podsumowania (uwaga: większość modeli Transformers działa tylko po angielsku)
+SUMMARY_LANGUAGE = "Polish" # Język podsumowania (uwaga: większość modeli Transformers działa tylko po angielsku)
 
 # --- Szablony Promptów LLM ---
 # Klucze to nazwy wyświetlane w GUI. Wartości to rdzenie promptów.
@@ -47,16 +47,16 @@ LLM_PROMPT_TEMPLATE_NAME = "Standardowy"
 LLM_PROMPT = "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:"
 
 # Ustawienia Ollama (jeśli SUMMARY_PROVIDER="ollama")
-OLLAMA_MODEL = "gemma3:4b"  # Model językowy Ollama do podsumowań
+OLLAMA_MODEL = "gemma3:4b" # Model językowy Ollama do podsumowań
 
 # Ustawienia Google Gemini API (jeśli SUMMARY_PROVIDER="google")
-GOOGLE_API_KEY = ""  # Wymagany, jeśli SUMMARY_PROVIDER="google". Wklej tutaj swój klucz API.
+GOOGLE_API_KEY = "" # Wymagany, jeśli SUMMARY_PROVIDER="google". Wklej tutaj swój klucz API.
 GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumowań
 
 # Ustawienia Transformers (jeśli SUMMARY_PROVIDER="transformers")
 # Transformers to lekkie modele AI, które działają lokalnie bez Ollama
 # Wymagają instalacji: pip install transformers torch
-TRANSFORMERS_MODEL = "facebook/bart-large-cnn" # Domyślny model (dobra jakość, ~1.6GB)
+TRANSFORMERS_MODEL = "google/flan-t5-base" # Domyślny model (dobra jakość, ~1.6GB)
 # Alternatywy:
 #   "sshleifer/distilbart-cnn-12-6"  - Szybszy, mniejszy (~500MB)
 #   "google/flan-t5-base"            - Uniwersalny (~900MB)

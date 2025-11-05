@@ -725,8 +725,25 @@ class PogadaneApp:
         display_name = entry if is_url else os.path.basename(entry) or entry
 
         status_text = ft.Text("Oczekuje", size=12, weight=ft.FontWeight.W_600, color="#6B7280")
+        
+        # Create spinning progress indicator (hidden by default)
+        status_spinner = ft.ProgressRing(
+            width=16,
+            height=16,
+            stroke_width=2,
+            color="#2563EB",
+            visible=False,
+        )
+        
         status_chip = ft.Container(
-            content=status_text,
+            content=ft.Row(
+                [
+                    status_spinner,
+                    status_text,
+                ],
+                spacing=8,
+                tight=True,
+            ),
             padding=ft.padding.symmetric(horizontal=12, vertical=6),
             border_radius=999,
             bgcolor="#E5E7EB",
@@ -774,11 +791,12 @@ class PogadaneApp:
             "status": FILE_STATUS_PENDING,
             "status_text": status_text,
             "status_chip": status_chip,
+            "status_spinner": status_spinner,
             "container": container,
         }
 
     def _set_queue_item_status(self, index: int, status: str):
-        """Update visual status for a queue entry"""
+        """Update visual status for a queue entry with animated spinner"""
 
         if index < 0 or index >= len(self.queue_items):
             return
@@ -786,27 +804,38 @@ class PogadaneApp:
         item = self.queue_items[index]
         status_text: ft.Text = item["status_text"]
         status_chip: ft.Container = item["status_chip"]
+        status_spinner: ft.ProgressRing = item.get("status_spinner")
 
         if status == FILE_STATUS_PROCESSING:
             status_text.value = "Przetwarzanie"
             status_text.color = "#2563EB"
             status_chip.bgcolor = "#DBEAFE"
+            if status_spinner:
+                status_spinner.visible = True
         elif status == FILE_STATUS_COMPLETED:
             status_text.value = "Zakończono"
             status_text.color = "#047857"
             status_chip.bgcolor = "#D1FAE5"
+            if status_spinner:
+                status_spinner.visible = False
         elif status == FILE_STATUS_ERROR:
             status_text.value = "Błąd"
             status_text.color = "#991B1B"
             status_chip.bgcolor = "#FEE2E2"
+            if status_spinner:
+                status_spinner.visible = False
         else:
             status_text.value = "Oczekuje"
             status_text.color = "#6B7280"
             status_chip.bgcolor = "#E5E7EB"
+            if status_spinner:
+                status_spinner.visible = False
 
         item["status"] = status
         status_chip.update()
         status_text.update()
+        if status_spinner:
+            status_spinner.update()
 
     def _update_progress(self, processed: int, message: Optional[str] = None):
         """Update global progress bar and text"""
@@ -848,43 +877,76 @@ class PogadaneApp:
                 container.update()
     
     def create_console_tab(self):
-        """Create console output tab with Material 3 design"""
+        """Create modern console output tab with live monitoring"""
         
+        # Header with info
+        console_header = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.TERMINAL_ROUNDED, size=24, color="#7C3AED"),
+                    ft.Column(
+                        [
+                            ft.Text("Monitor Procesów", size=18, weight=ft.FontWeight.BOLD),
+                            ft.Text("Podgląd na żywo przetwarzania audio i generowania podsumowań", size=13, color="#6B7280"),
+                        ],
+                        spacing=2,
+                        expand=True,
+                    ),
+                ],
+                spacing=12,
+            ),
+            padding=ft.padding.only(bottom=16),
+        )
+        
+        # Console output with monospace font and better styling
         self.console_output = ft.TextField(
             value="",
             multiline=True,
             read_only=True,
             border_radius=16,
             filled=True,
-            text_size=12,
-            min_lines=20,
+            text_size=11,
+            min_lines=25,
             expand=True,
+            bgcolor="#1F2937" if self.page.theme_mode == ft.ThemeMode.DARK else "#F9FAFB",
+            color="#E5E7EB" if self.page.theme_mode == ft.ThemeMode.DARK else "#111827",
+            border_color="#374151",
+            cursor_color="#2563EB",
         )
         
+        # Action buttons
         buttons = ft.Row(
             [
-                ft.FilledTonalButton(
+                ft.FilledButton(
                     "Zapisz Log",
-                    icon=ft.Icons.SAVE_ROUNDED,
+                    icon=ft.Icons.DOWNLOAD_ROUNDED,
                     on_click=self.save_console_log,
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=12),
-                        padding=16,
-                        bgcolor="#EDE9FE",  # Light purple tonal
-                        color="#5B21B6",
-                        animation_duration=200,
+                        padding=ft.padding.symmetric(horizontal=20, vertical=12),
+                        bgcolor="#2563EB",
+                        color="#FFFFFF",
                     ),
                 ),
                 ft.OutlinedButton(
-                    "Wyczyść",
-                    icon=ft.Icons.CLEAR_ROUNDED,
+                    "Wyczyść Konsol ę",
+                    icon=ft.Icons.DELETE_SWEEP_ROUNDED,
                     on_click=self.clear_console,
                     style=ft.ButtonStyle(
                         shape=ft.RoundedRectangleBorder(radius=12),
-                        padding=16,
-                        side=ft.BorderSide(1, "#9CA3AF"),
-                        color="#374151",
-                        animation_duration=200,
+                        padding=ft.padding.symmetric(horizontal=20, vertical=12),
+                        side=ft.BorderSide(1, "#DC2626"),
+                        color="#DC2626",
+                    ),
+                ),
+                ft.Container(expand=True),
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(ft.Icons.INFO_OUTLINE_ROUNDED, size=16, color="#6B7280"),
+                            ft.Text("Automatyczne przewijanie", size=12, color="#6B7280"),
+                        ],
+                        spacing=6,
                     ),
                 ),
             ],
@@ -894,82 +956,195 @@ class PogadaneApp:
         return ft.Container(
             content=ft.Column(
                 [
+                    console_header,
                     self.console_output,
+                    ft.Container(height=16),
                     buttons,
                 ],
-                spacing=16,
+                spacing=0,
                 expand=True,
             ),
             padding=24,
+            expand=True,
         )
     
     def create_results_viewer_tab(self):
-        """Create merged results and visualization workspace"""
+        """Create modern results viewer with card-based layout"""
 
-        # File selector
+        # Header
+        results_header = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.ANALYTICS_ROUNDED, size=24, color="#34D399"),
+                    ft.Column(
+                        [
+                            ft.Text("Przeglądarka Wyników", size=18, weight=ft.FontWeight.BOLD),
+                            ft.Text("Przeglądaj transkrypcje i podsumowania przetworzonych plików", size=13, color="#6B7280"),
+                        ],
+                        spacing=2,
+                        expand=True,
+                    ),
+                ],
+                spacing=12,
+            ),
+            padding=ft.padding.only(bottom=20),
+        )
+
+        # File selector with search
         self.file_selector = ft.Dropdown(
-            label="Wynik",
-            hint_text="Wybierz przetworzony plik z listy...",
+            label="📁 Wybierz przetworzony plik",
+            hint_text="Wybierz z listy aby zobaczyć wyniki...",
             on_change=self.display_selected_result,
             border_radius=12,
             filled=True,
+            border_color="#2563EB",
+            focused_border_color="#2563EB",
+            width=400,
         )
 
-        # Transcription output
-        self.transcription_output = ft.TextField(
-            label="Transkrypcja",
-            multiline=True,
-            read_only=True,
-            border_radius=16,
-            filled=True,
-            text_size=12,
-            min_lines=12,
+        # Empty state
+        self.results_empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(ft.Icons.ARTICLE_OUTLINED, size=64, color="#9CA3AF"),
+                    ft.Text(
+                        "Brak wyników",
+                        size=20,
+                        weight=ft.FontWeight.BOLD,
+                        color="#374151",
+                    ),
+                    ft.Text(
+                        "Przetworz pierwszy plik, aby zobaczyć transkrypcję i podsumowanie.",
+                        size=14,
+                        color="#6B7280",
+                        text_align=ft.TextAlign.CENTER,
+                    ),
+                    ft.Container(height=12),
+                    ft.FilledButton(
+                        "Przejdź do Kolejki",
+                        icon=ft.Icons.ARROW_BACK_ROUNDED,
+                        on_click=lambda _: setattr(self.tabs, 'selected_index', 0) or self.tabs.update(),
+                        style=ft.ButtonStyle(
+                            bgcolor="#7C3AED",
+                            color="#FFFFFF",
+                            shape=ft.RoundedRectangleBorder(radius=12),
+                            padding=16,
+                        ),
+                    ),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=12,
+            ),
+            padding=60,
+            alignment=ft.alignment.center,
             expand=True,
         )
 
-        # Summary output
-        self.summary_output = ft.TextField(
-            label="Streszczenie",
-            multiline=True,
-            read_only=True,
+        # Transcription card
+        self.transcription_card = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.SPEAKER_NOTES_ROUNDED, size=20, color="#2563EB"),
+                            ft.Text("Transkrypcja", size=16, weight=ft.FontWeight.BOLD),
+                            ft.Container(expand=True),
+                            ft.IconButton(
+                                icon=ft.Icons.COPY_ROUNDED,
+                                tooltip="Kopiuj do schowka",
+                                icon_size=18,
+                                on_click=lambda _: self.copy_to_clipboard(self.transcription_output.value, "Transkrypcję"),
+                            ),
+                        ],
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
+                    ft.Divider(height=1, color="#E5E7EB"),
+                    ft.Container(
+                        content=ft.TextField(
+                            value="",
+                            multiline=True,
+                            read_only=True,
+                            border=ft.InputBorder.NONE,
+                            text_size=13,
+                            min_lines=15,
+                            expand=True,
+                        ),
+                        expand=True,
+                    ),
+                ],
+                spacing=12,
+            ),
+            border=ft.border.all(1, "#E5E7EB"),
             border_radius=16,
-            filled=True,
-            text_size=12,
-            min_lines=12,
+            padding=20,
+            bgcolor="#FFFFFF" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
             expand=True,
+            visible=False,
         )
+        self.transcription_output = self.transcription_card.content.controls[2].content
 
-        text_outputs = ft.Tabs(
-            animation_duration=300,
-            tabs=[
-                ft.Tab(
-                    text="Transkrypcja",
-                    icon=ft.Icons.SPEAKER_NOTES_ROUNDED,
-                    content=ft.Container(
-                        content=self.transcription_output,
-                        padding=ft.padding.only(top=12),
+        # Summary card
+        self.summary_card = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Row(
+                        [
+                            ft.Icon(ft.Icons.AUTO_AWESOME_ROUNDED, size=20, color="#34D399"),
+                            ft.Text("Podsumowanie AI", size=16, weight=ft.FontWeight.BOLD),
+                            ft.Container(expand=True),
+                            ft.IconButton(
+                                icon=ft.Icons.COPY_ROUNDED,
+                                tooltip="Kopiuj do schowka",
+                                icon_size=18,
+                                on_click=lambda _: self.copy_to_clipboard(self.summary_output.value, "Podsumowanie"),
+                            ),
+                        ],
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
+                    ft.Divider(height=1, color="#E5E7EB"),
+                    ft.Container(
+                        content=ft.TextField(
+                            value="",
+                            multiline=True,
+                            read_only=True,
+                            border=ft.InputBorder.NONE,
+                            text_size=13,
+                            min_lines=15,
+                            expand=True,
+                        ),
                         expand=True,
                     ),
-                ),
-                ft.Tab(
-                    text="Streszczenie",
-                    icon=ft.Icons.DESCRIPTION_ROUNDED,
-                    content=ft.Container(
-                        content=self.summary_output,
-                        padding=ft.padding.only(top=12),
-                        expand=True,
-                    ),
-                ),
+                ],
+                spacing=12,
+            ),
+            border=ft.border.all(1, "#E5E7EB"),
+            border_radius=16,
+            padding=20,
+            bgcolor="#FFFFFF" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
+            expand=True,
+            visible=False,
+        )
+        self.summary_output = self.summary_card.content.controls[2].content
+
+        # Content area with cards
+        self.results_content = ft.Column(
+            [
+                self.results_empty_state,
             ],
+            spacing=16,
             expand=True,
         )
 
         return ft.Container(
             content=ft.Column(
                 [
+                    results_header,
                     self.file_selector,
-                    ft.Container(height=16),
-                    text_outputs,
+                    ft.Container(height=8),
+                    ft.Container(
+                        content=self.results_content,
+                        expand=True,
+                    ),
                 ],
                 spacing=0,
                 expand=True,
@@ -978,9 +1153,168 @@ class PogadaneApp:
             expand=True,
         )
 
+    def create_presets_selector(self):
+        """Create fancy preset selector with Fast/Medium/Slow options"""
+        
+        # Preset configurations
+        PRESETS = {
+            "fast": {
+                "name": "⚡ Szybki",
+                "description": "Najszybsze przetwarzanie, mniejsze modele",
+                "color": "#34D399",
+                "icon": ft.Icons.FLASH_ON_ROUNDED,
+                "settings": {
+                    "TRANSCRIPTION_PROVIDER": "faster-whisper",
+                    "WHISPER_MODEL": "base",
+                    "FASTER_WHISPER_DEVICE": "auto",
+                    "FASTER_WHISPER_COMPUTE_TYPE": "int8",
+                    "FASTER_WHISPER_BATCH_SIZE": "16",
+                    "SUMMARY_PROVIDER": "transformers",
+                    "TRANSFORMERS_MODEL": "google/flan-t5-small",
+                }
+            },
+            "medium": {
+                "name": "⚖️ Zrównoważony",
+                "description": "Dobra równowaga jakości i szybkości",
+                "color": "#2563EB",
+                "icon": ft.Icons.BALANCE_ROUNDED,
+                "settings": {
+                    "TRANSCRIPTION_PROVIDER": "faster-whisper",
+                    "WHISPER_MODEL": "turbo",
+                    "FASTER_WHISPER_DEVICE": "auto",
+                    "FASTER_WHISPER_COMPUTE_TYPE": "auto",
+                    "FASTER_WHISPER_BATCH_SIZE": "0",
+                    "SUMMARY_PROVIDER": "transformers",
+                    "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
+                }
+            },
+            "slow": {
+                "name": "🎯 Precyzyjny",
+                "description": "Najlepsza jakość, wolniejsze przetwarzanie",
+                "color": "#7C3AED",
+                "icon": ft.Icons.HIGH_QUALITY_ROUNDED,
+                "settings": {
+                    "TRANSCRIPTION_PROVIDER": "faster-whisper",
+                    "WHISPER_MODEL": "large-v3",
+                    "FASTER_WHISPER_DEVICE": "auto",
+                    "FASTER_WHISPER_COMPUTE_TYPE": "float16",
+                    "FASTER_WHISPER_BATCH_SIZE": "0",
+                    "SUMMARY_PROVIDER": "transformers",
+                    "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
+                }
+            }
+        }
+        
+        # Determine current preset based on settings
+        current_preset = "medium"  # default
+        current_model = getattr(self.config_module, "WHISPER_MODEL", "turbo")
+        if current_model in ["tiny", "base", "small"]:
+            current_preset = "fast"
+        elif current_model in ["large-v3", "large-v2", "large"]:
+            current_preset = "slow"
+        
+        # Slider value (0=fast, 1=medium, 2=slow)
+        slider_value = {"fast": 0, "medium": 1, "slow": 2}[current_preset]
+        
+        def apply_preset(e):
+            """Apply selected preset to all config fields"""
+            slider_val = int(preset_slider.value)
+            preset_key = ["fast", "medium", "slow"][slider_val]
+            preset = PRESETS[preset_key]
+            
+            # Update preset indicator
+            preset_name.value = preset["name"]
+            preset_desc.value = preset["description"]
+            preset_icon.name = preset["icon"]
+            preset_icon.color = preset["color"]
+            preset_card.border = ft.border.all(2, preset["color"])
+            
+            # Apply settings to config fields
+            for key, value in preset["settings"].items():
+                if key in self.config_fields:
+                    field = self.config_fields[key]
+                    if isinstance(field, ft.Switch):
+                        field.value = bool(value)
+                    elif hasattr(field, 'value'):
+                        field.value = str(value)
+            
+            # Update all fields
+            self.page.update()
+            
+            # Show feedback
+            self.show_snackbar(f"Zastosowano preset: {preset['name']}", success=True)
+        
+        # Create slider
+        preset_slider = ft.Slider(
+            min=0,
+            max=2,
+            divisions=2,
+            value=slider_value,
+            label="{value}",
+            on_change=apply_preset,
+            active_color="#2563EB",
+            inactive_color="#E5E7EB",
+            thumb_color="#2563EB",
+        )
+        
+        # Preset indicator
+        current = PRESETS[current_preset]
+        preset_icon = ft.Icon(current["icon"], size=32, color=current["color"])
+        preset_name = ft.Text(current["name"], size=18, weight=ft.FontWeight.BOLD)
+        preset_desc = ft.Text(current["description"], size=13, color="#6B7280")
+        
+        preset_card = ft.Container(
+            content=ft.Row(
+                [
+                    preset_icon,
+                    ft.Column(
+                        [
+                            preset_name,
+                            preset_desc,
+                        ],
+                        spacing=4,
+                        expand=True,
+                    ),
+                ],
+                spacing=16,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+            padding=16,
+            border_radius=12,
+            border=ft.border.all(2, current["color"]),
+            bgcolor="#FFFFFF" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
+        )
+        
+        # Slider labels
+        slider_container = ft.Column(
+            [
+                ft.Row(
+                    [
+                        ft.Text("⚡ Szybki", size=12, color="#6B7280", expand=True),
+                        ft.Text("⚖️ Zrównoważony", size=12, color="#6B7280", expand=True, text_align=ft.TextAlign.CENTER),
+                        ft.Text("🎯 Precyzyjny", size=12, color="#6B7280", expand=True, text_align=ft.TextAlign.RIGHT),
+                    ],
+                ),
+                preset_slider,
+            ],
+            spacing=8,
+        )
+        
+        return ft.Column(
+            [
+                ft.Text("⚡ Presety Konfiguracji", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("Wybierz profil wydajności - ustawienia zostaną automatycznie dostosowane", size=13, color="#6B7280"),
+                ft.Container(height=12),
+                preset_card,
+                ft.Container(height=8),
+                slider_container,
+            ],
+            spacing=0,
+        )
+
     def create_config_section(self, title: str, fields: List[tuple], description: str = None):
         """
-        Create a configuration section with fields
+        Create a configuration section with fields - Compact & Modern Design
         
         Args:
             title: Section title
@@ -990,18 +1324,18 @@ class PogadaneApp:
         
         section_fields = []
         
-        # Section title with optional description
+        # Compact section header with better visual hierarchy
         section_header = ft.Column(
             [
-                ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
-                ft.Text(description, size=13, color="#6B7280") if description else ft.Container(height=0),
+                ft.Text(title, size=18, weight=ft.FontWeight.BOLD, color="#1F2937"),
+                ft.Text(description, size=12, color="#6B7280", italic=True) if description else ft.Container(height=0),
             ],
-            spacing=4,
+            spacing=2,
         )
         section_fields.append(section_header)
-        section_fields.append(ft.Container(height=16))
+        section_fields.append(ft.Container(height=12))
         
-        # Create fields
+        # Create fields with compact spacing
         for field_info in fields:
             config_key = field_info[0]
             label = field_info[1]
@@ -1011,15 +1345,16 @@ class PogadaneApp:
             
             current_value = getattr(self.config_module, config_key, DEFAULT_CONFIG.get(config_key, ""))
             
-            # Create tooltip icon if tooltip provided
+            # Create compact tooltip icon
             tooltip_icon = None
             if tooltip:
                 tooltip_icon = ft.IconButton(
                     icon=ft.Icons.INFO_OUTLINE_ROUNDED,
-                    icon_size=18,
+                    icon_size=16,
                     tooltip=tooltip,
-                    icon_color="#6B7280",
+                    icon_color="#9CA3AF",
                     on_click=None,
+                    style=ft.ButtonStyle(padding=4),
                 )
             
             if field_type == "dropdown":
@@ -1027,28 +1362,37 @@ class PogadaneApp:
                     label=label,
                     value=str(current_value),
                     options=[ft.dropdown.Option(opt) for opt in options],
-                    border_radius=12,
+                    border_radius=8,
                     filled=True,
                     expand=True,
+                    dense=True,
+                    content_padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    label_style=ft.TextStyle(size=13, weight=ft.FontWeight.W_500),
+                    text_size=13,
                 )
                 self.config_fields[config_key] = field
                 
                 if tooltip_icon:
-                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    field_row = ft.Row([field, tooltip_icon], spacing=4, vertical_alignment=ft.CrossAxisAlignment.CENTER)
                     section_fields.append(field_row)
                 else:
                     section_fields.append(field)
                 
             elif field_type == "checkbox":
-                switch = ft.Switch(value=bool(current_value))
-                field = ft.Row(
-                    [
-                        ft.Text(label, size=14),
-                        switch,
-                        tooltip_icon if tooltip_icon else ft.Container(width=0),
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                switch = ft.Switch(value=bool(current_value), scale=0.9)
+                field = ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Text(label, size=13, weight=ft.FontWeight.W_500),
+                            ft.Row([switch, tooltip_icon if tooltip_icon else ft.Container(width=0)], spacing=4),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    ),
+                    padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    border=ft.border.all(1, "#E5E7EB"),
+                    border_radius=8,
+                    bgcolor="#F9FAFB",
                 )
                 self.config_fields[config_key] = switch
                 section_fields.append(field)
@@ -1059,14 +1403,18 @@ class PogadaneApp:
                     value=str(current_value),
                     password=True,
                     can_reveal_password=True,
-                    border_radius=12,
+                    border_radius=8,
                     filled=True,
                     expand=True,
+                    dense=True,
+                    content_padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    label_style=ft.TextStyle(size=13, weight=ft.FontWeight.W_500),
+                    text_size=13,
                 )
                 self.config_fields[config_key] = field
                 
                 if tooltip_icon:
-                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    field_row = ft.Row([field, tooltip_icon], spacing=4, vertical_alignment=ft.CrossAxisAlignment.CENTER)
                     section_fields.append(field_row)
                 else:
                     section_fields.append(field)
@@ -1075,14 +1423,20 @@ class PogadaneApp:
                 file_field = ft.TextField(
                     label=label,
                     value=str(current_value),
-                    border_radius=12,
+                    border_radius=8,
                     filled=True,
                     read_only=True,
+                    dense=True,
+                    content_padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    label_style=ft.TextStyle(size=13, weight=ft.FontWeight.W_500),
+                    text_size=13,
                 )
                 browse_btn = ft.IconButton(
                     icon=ft.Icons.FOLDER_OPEN_ROUNDED,
+                    icon_size=18,
                     tooltip="Przeglądaj...",
                     on_click=lambda _, f=file_field: self.browse_file(f),
+                    style=ft.ButtonStyle(padding=4),
                 )
                 field = ft.Row(
                     [
@@ -1090,7 +1444,7 @@ class PogadaneApp:
                         browse_btn,
                         tooltip_icon if tooltip_icon else ft.Container(width=0),
                     ],
-                    spacing=8,
+                    spacing=4,
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 )
                 self.config_fields[config_key] = file_field
@@ -1100,19 +1454,24 @@ class PogadaneApp:
                 field = ft.TextField(
                     label=label,
                     value=str(current_value),
-                    border_radius=12,
+                    border_radius=8,
                     filled=True,
                     expand=True,
+                    dense=True,
+                    content_padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                    label_style=ft.TextStyle(size=13, weight=ft.FontWeight.W_500),
+                    text_size=13,
                 )
                 self.config_fields[config_key] = field
                 
                 if tooltip_icon:
-                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    field_row = ft.Row([field, tooltip_icon], spacing=4, vertical_alignment=ft.CrossAxisAlignment.CENTER)
                     section_fields.append(field_row)
                 else:
                     section_fields.append(field)
             
-            section_fields.append(ft.Container(height=12))
+            # Reduced spacing between fields
+            section_fields.append(ft.Container(height=6))
         
         return ft.Column(section_fields, spacing=0, scroll=ft.ScrollMode.AUTO)
     
@@ -1196,6 +1555,9 @@ class PogadaneApp:
             # Clear previous config fields
             self.config_fields.clear()
             
+            # ⚡ PRESETS SECTION - Quick configuration
+            presets_section = self.create_presets_selector()
+            
             # 🎙️ TRANSCRIPTION SETTINGS (Primary feature - shown first)
             transcription_section = self.create_config_section(
                 title="🎙️ Transkrypcja Audio",
@@ -1266,39 +1628,53 @@ class PogadaneApp:
             
             # Dialog content with tabs for better organization
             dialog_content = ft.Container(
-                content=ft.Tabs(
-                    selected_index=0,
-                    animation_duration=300,
-                    tabs=[
-                        ft.Tab(
-                            text="Transkrypcja",
-                            icon=ft.Icons.MIC_ROUNDED,
-                            content=ft.Container(
-                                content=transcription_section,
-                                padding=ft.padding.all(20),
-                            ),
+                content=ft.Column(
+                    controls=[
+                        # Presets at the top for quick access
+                        ft.Container(
+                            content=presets_section,
+                            padding=ft.padding.symmetric(horizontal=20, vertical=16),
+                            bgcolor="#F9FAFB" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
+                            border_radius=16,
                         ),
-                        ft.Tab(
-                            text="Podsumowanie",
-                            icon=ft.Icons.AUTO_AWESOME_ROUNDED,
-                            content=ft.Container(
-                                content=summary_section,
-                                padding=ft.padding.all(20),
-                            ),
-                        ),
-                        ft.Tab(
-                            text="Zaawansowane",
-                            icon=ft.Icons.TUNE_ROUNDED,
-                            content=ft.Container(
-                                content=advanced_section,
-                                padding=ft.padding.all(20),
-                            ),
+                        ft.Divider(height=1, color="#E5E7EB"),
+                        # Tabs for detailed settings
+                        ft.Tabs(
+                            selected_index=0,
+                            animation_duration=300,
+                            tabs=[
+                                ft.Tab(
+                                    text="Transkrypcja",
+                                    icon=ft.Icons.MIC_ROUNDED,
+                                    content=ft.Container(
+                                        content=transcription_section,
+                                        padding=ft.padding.all(20),
+                                    ),
+                                ),
+                                ft.Tab(
+                                    text="Podsumowanie",
+                                    icon=ft.Icons.AUTO_AWESOME_ROUNDED,
+                                    content=ft.Container(
+                                        content=summary_section,
+                                        padding=ft.padding.all(20),
+                                    ),
+                                ),
+                                ft.Tab(
+                                    text="Zaawansowane",
+                                    icon=ft.Icons.TUNE_ROUNDED,
+                                    content=ft.Container(
+                                        content=advanced_section,
+                                        padding=ft.padding.all(20),
+                                    ),
+                                ),
+                            ],
+                            expand=1,
                         ),
                     ],
-                    expand=1,
+                    spacing=0,
                 ),
-                height=550,
-                width=700,
+                height=600,
+                width=750,
             )
             
             # Create dialog with fade-in animation
@@ -1310,6 +1686,21 @@ class PogadaneApp:
                 ], spacing=12),
                 content=dialog_content,
                 actions=[
+                    # Left side: Reset button
+                    ft.Container(
+                        content=ft.OutlinedButton(
+                            "Przywróć Domyślne",
+                            icon=ft.Icons.RESTORE_ROUNDED,
+                            on_click=lambda _: self.reset_to_defaults(settings_dialog),
+                            style=ft.ButtonStyle(
+                                shape=ft.RoundedRectangleBorder(radius=12),
+                                color="#DC2626",
+                                side=ft.BorderSide(2, "#DC2626"),
+                            ),
+                        ),
+                        expand=True,
+                    ),
+                    # Right side: Cancel and Save buttons
                     ft.TextButton(
                         "Anuluj",
                         on_click=lambda _: self.close_dialog(settings_dialog),
@@ -1328,7 +1719,7 @@ class PogadaneApp:
                         ),
                     ),
                 ],
-                actions_alignment=ft.MainAxisAlignment.END,
+                actions_alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             )
             
             # Close loading dialog and show settings dialog with animation
@@ -1357,6 +1748,100 @@ class PogadaneApp:
     def close_dialog(self, dialog):
         """Close the settings dialog"""
         dialog.open = False
+        self.page.update()
+    
+    def reset_to_defaults(self, settings_dialog):
+        """Reset all configuration to default values with confirmation"""
+        
+        # Create confirmation dialog
+        def confirm_reset(e):
+            confirm_dialog.open = False
+            self.page.update()
+            
+            # Show resetting indicator
+            reset_dialog = ft.AlertDialog(
+                content=ft.Column(
+                    controls=[
+                        ft.ProgressRing(width=50, height=50, color="#DC2626"),
+                        ft.Text("Przywracanie domyślnych...", size=16, text_align=ft.TextAlign.CENTER),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=20,
+                    width=250,
+                    height=120,
+                ),
+                modal=True,
+            )
+            
+            self.page.overlay.append(reset_dialog)
+            reset_dialog.open = True
+            self.page.update()
+            
+            try:
+                # Update all fields to default values
+                for key, field in self.config_fields.items():
+                    default_value = DEFAULT_CONFIG.get(key, "")
+                    
+                    if isinstance(field, ft.Switch):
+                        field.value = bool(default_value)
+                    elif hasattr(field, 'value'):
+                        field.value = str(default_value)
+                
+                # Update the fields visually
+                self.page.update()
+                
+                # Small delay to show the animation
+                import time
+                time.sleep(0.3)
+                
+                # Close reset dialog
+                reset_dialog.open = False
+                self.page.update()
+                
+                self.show_snackbar("Przywrócono domyślne ustawienia. Kliknij 'Zapisz i Zastosuj' aby zachować.", success=True)
+                
+            except Exception as ex:
+                reset_dialog.open = False
+                self.page.update()
+                self.show_snackbar(f"Błąd przywracania domyślnych: {str(ex)}", error=True)
+        
+        def cancel_reset(e):
+            confirm_dialog.open = False
+            self.page.update()
+        
+        # Confirmation dialog
+        confirm_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Row([
+                ft.Icon(ft.Icons.WARNING_ROUNDED, size=28, color="#FBBF24"),
+                ft.Text("Przywrócić Domyślne?", size=20, weight=ft.FontWeight.BOLD),
+            ], spacing=12),
+            content=ft.Text(
+                "Czy na pewno chcesz przywrócić wszystkie ustawienia do wartości domyślnych?\n\n"
+                "Ta operacja zastąpi bieżące wartości, ale nie zapisze ich automatycznie. "
+                "Będziesz musiał kliknąć 'Zapisz i Zastosuj' aby zachować zmiany.",
+                size=14,
+            ),
+            actions=[
+                ft.TextButton(
+                    "Anuluj",
+                    on_click=cancel_reset,
+                ),
+                ft.FilledButton(
+                    "Przywróć Domyślne",
+                    icon=ft.Icons.RESTORE_ROUNDED,
+                    on_click=confirm_reset,
+                    style=ft.ButtonStyle(
+                        bgcolor="#DC2626",
+                        color="#FFFFFF",
+                    ),
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.overlay.append(confirm_dialog)
+        confirm_dialog.open = True
         self.page.update()
     
     def save_config_from_dialog(self, dialog):
@@ -1760,7 +2245,7 @@ class PogadaneApp:
             self.show_snackbar("ℹ️ Konsola jest już pusta", success=True)
     
     def display_selected_result(self, e):
-        """Display selected file results"""
+        """Display selected file results in card-based layout"""
         if not self.file_selector.value:
             return
         
@@ -1771,43 +2256,116 @@ class PogadaneApp:
         result = self.results_manager.get_result(source)
         
         if result:
-            # Update transcription field
-            self.transcription_output.value = result.get("transcription", "Brak transkrypcji.")
-            self.transcription_output.update()
+            # Update transcription
+            transcription_text = result.get("transcription", "")
+            self.transcription_output.value = transcription_text if transcription_text else "⚠️ Brak transkrypcji."
             
-            # Update summary field
-            self.summary_output.value = result.get("summary", "Brak streszczenia.")
-            self.summary_output.update()
+            # Update summary
+            summary_text = result.get("summary", "")
+            self.summary_output.value = summary_text if summary_text else "⚠️ Brak podsumowania."
             
+            # Show cards, hide empty state
+            self.results_empty_state.visible = False
+            self.transcription_card.visible = True
+            self.summary_card.visible = True
+            
+            # Update results content
+            self.results_content.controls = [
+                ft.Row(
+                    [
+                        self.transcription_card,
+                        self.summary_card,
+                    ],
+                    spacing=16,
+                    expand=True,
+                )
+            ]
+            
+            self.results_content.update()
             self.update_status(f"📄 Wyświetlanie: {os.path.basename(source)}")
         else:
-            self.transcription_output.value = "⚠️ Nie znaleziono wyników dla wybranego pliku."
-            self.summary_output.value = "⚠️ Nie znaleziono wyników dla wybranego pliku."
-            self.transcription_output.update()
-            self.summary_output.update()
+            # Show empty state if no results
+            self.results_empty_state.visible = True
+            self.transcription_card.visible = False
+            self.summary_card.visible = False
+            self.results_content.controls = [self.results_empty_state]
+            self.results_content.update()
+    
+    def copy_to_clipboard(self, text: str, content_type: str):
+        """Copy text to clipboard with feedback"""
+        if not text or text.startswith("⚠️"):
+            self.show_snackbar(f"Brak treści do skopiowania", warning=True)
+            return
+        
+        try:
+            self.page.set_clipboard(text)
+            self.show_snackbar(f"✅ {content_type} skopiowano do schowka!", success=True)
+        except Exception as ex:
+            self.show_snackbar(f"❌ Błąd kopiowania: {str(ex)}", error=True)
     
     def save_config(self, e):
-        """Save configuration to file"""
+        """Save configuration to file - preserves comments and structure"""
         try:
             config_path = self.config_manager.config_path
             
-            # Build config content
-            config_lines = ["# Pogadane Configuration\n\n"]
+            # Read existing config file to preserve comments and structure
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config_lines = f.readlines()
             
+            # Build a mapping of values to update
+            updates = {}
             for key, field in self.config_fields.items():
                 if isinstance(field, ft.Switch):
-                    value = field.value
-                    config_lines.append(f"{key} = {value}\n")
+                    updates[key] = field.value
                 elif hasattr(field, 'value'):
-                    value = field.value
-                    if isinstance(value, str):
-                        config_lines.append(f'{key} = "{value}"\n')
-                    else:
-                        config_lines.append(f"{key} = {value}\n")
+                    updates[key] = field.value
             
-            # Write to file
+            # Update lines in place, preserving comments and structure
+            new_lines = []
+            for line in config_lines:
+                stripped = line.strip()
+                
+                # Skip empty lines and comments
+                if not stripped or stripped.startswith('#'):
+                    new_lines.append(line)
+                    continue
+                
+                # Check if this line is a config assignment
+                if '=' in line:
+                    # Extract the variable name (before =)
+                    var_name = line.split('=')[0].strip()
+                    
+                    # If this variable is in our updates, replace it
+                    if var_name in updates:
+                        value = updates[var_name]
+                        
+                        # Preserve inline comments if they exist
+                        inline_comment = ""
+                        if '#' in line:
+                            comment_start = line.index('#')
+                            inline_comment = " " + line[comment_start:]
+                        
+                        # Format the new value
+                        if isinstance(value, bool):
+                            new_line = f"{var_name} = {value}{inline_comment}"
+                        elif isinstance(value, str):
+                            new_line = f'{var_name} = "{value}"{inline_comment}'
+                        elif isinstance(value, (int, float)):
+                            new_line = f"{var_name} = {value}{inline_comment}"
+                        else:
+                            new_line = f'{var_name} = "{value}"{inline_comment}'
+                        
+                        new_lines.append(new_line if new_line.endswith('\n') else new_line + '\n')
+                    else:
+                        # Keep the line as-is if not in our updates
+                        new_lines.append(line)
+                else:
+                    # Keep non-assignment lines as-is
+                    new_lines.append(line)
+            
+            # Write updated config back to file
             with open(config_path, 'w', encoding='utf-8') as f:
-                f.writelines(config_lines)
+                f.writelines(new_lines)
             
             # Reload config
             self.config_manager.reload()
@@ -1817,6 +2375,8 @@ class PogadaneApp:
             self.update_status("Konfiguracja zapisana")
         except Exception as ex:
             self.show_snackbar(f"Błąd zapisu konfiguracji: {str(ex)}", error=True)
+            import traceback
+            traceback.print_exc()
     
     def update_status(self, message: str):
         """Update status bar message"""

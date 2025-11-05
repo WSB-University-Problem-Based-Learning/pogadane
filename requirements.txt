@@ -6,11 +6,18 @@
 #
 # For development: pip install -r requirements-dev.txt
 # For testing: pip install -r requirements-test.txt
-# For all features: pip install -e .[all]
 
 # Install package with core dependencies
 -e .
 
-# Optional: Transformers backend for local AI
+# Recommended: Faster-Whisper for transcription (4x faster than openai-whisper)
+# Uncomment to use TRANSCRIPTION_PROVIDER="faster-whisper" (default)
+# -e .[faster-whisper]
+
+# Alternative: OpenAI Whisper for transcription
+# Uncomment to use TRANSCRIPTION_PROVIDER="whisper"
+# -e .[whisper]
+
+# Optional: Transformers backend for local AI summarization
 # Uncomment to use SUMMARY_PROVIDER="transformers"
 # -e .[transformers]

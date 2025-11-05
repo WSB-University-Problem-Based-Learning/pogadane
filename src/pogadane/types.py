@@ -17,9 +17,8 @@ class ConfigProtocol(Protocol):
     Attributes match those found in .config/config.py
     """
     
-    # Executable paths
-    FASTER_WHISPER_EXE: str
-    YT_DLP_EXE: str
+    # Tool paths (pip-installed commands)
+    YT_DLP_PATH: str
     
     # Transcription settings
     TRANSCRIPTION_PROVIDER: str
@@ -27,10 +26,11 @@ class ConfigProtocol(Protocol):
     WHISPER_MODEL: str
     WHISPER_DEVICE: str
     
-    # Speaker diarization
-    ENABLE_SPEAKER_DIARIZATION: bool
-    DIARIZE_METHOD: str
-    DIARIZE_SPEAKER_PREFIX: str
+    # Faster-Whisper library settings
+    FASTER_WHISPER_DEVICE: str
+    FASTER_WHISPER_COMPUTE_TYPE: str
+    FASTER_WHISPER_BATCH_SIZE: int
+    FASTER_WHISPER_VAD_FILTER: bool
     
     # Summary/LLM settings
     SUMMARY_PROVIDER: str

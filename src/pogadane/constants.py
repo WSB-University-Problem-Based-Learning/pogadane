@@ -26,13 +26,20 @@ CUSTOM_PROMPT_OPTION_TEXT = "(Własny prompt poniżej)"
 
 # Default configuration values
 DEFAULT_CONFIG = {
-    "FASTER_WHISPER_EXE": "faster-whisper-xxl.exe",
-    "YT_DLP_EXE": "yt-dlp.exe",
+    # Transcription settings - pip-based providers
+    "TRANSCRIPTION_PROVIDER": "faster-whisper",  # "faster-whisper" or "whisper"
+    "FASTER_WHISPER_DEVICE": "auto",  # "cuda", "cpu", or "auto"
+    "FASTER_WHISPER_COMPUTE_TYPE": "auto",  # "float16", "int8", "int8_float16", or "auto"
+    "FASTER_WHISPER_BATCH_SIZE": 0,  # 0=no batching, >0 uses batched transcription
+    "FASTER_WHISPER_VAD_FILTER": False,  # Enable Voice Activity Detection
     "WHISPER_LANGUAGE": "Polish",
     "WHISPER_MODEL": "turbo",
-    "ENABLE_SPEAKER_DIARIZATION": False,
-    "DIARIZE_METHOD": "pyannote_v3.1",
-    "DIARIZE_SPEAKER_PREFIX": "MÓWCA",
+    "WHISPER_DEVICE": "auto",  # For openai-whisper library
+    
+    # YouTube download (pip: yt-dlp)
+    "YT_DLP_PATH": "yt-dlp",  # Command name or full path
+    
+    # Summary settings
     "SUMMARY_PROVIDER": "ollama",
     "SUMMARY_LANGUAGE": "Polish",
     "LLM_PROMPT_TEMPLATES": {

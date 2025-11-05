@@ -92,11 +92,11 @@ def download_youtube_audio(url, target_dir_path):
         Path to downloaded audio file or None on failure
     """
     print(f"\n🔄 Downloading YouTube Audio: {url}")
-    yt_dlp_exe = getattr(config, 'YT_DLP_EXE', DEFAULT_CONFIG['YT_DLP_EXE'])
+    yt_dlp_path = getattr(config, 'YT_DLP_PATH', DEFAULT_CONFIG.get('YT_DLP_PATH', 'yt-dlp'))
     temp_audio_filename = get_unique_download_filename(url)
     download_path = target_dir_path / temp_audio_filename
-    print(f"   Using yt-dlp: {yt_dlp_exe}, Output: {download_path}")
-    command = [yt_dlp_exe, "-x", "--audio-format", "mp3", "--force-overwrite", "-o", str(download_path), url]
+    print(f"   Using yt-dlp: {yt_dlp_path}, Output: {download_path}")
+    command = [yt_dlp_path, "-x", "--audio-format", "mp3", "--force-overwrite", "-o", str(download_path), url]
     process = run_command(command, capture_output=True)
     # Check if file exists AND has content
     dl_ok = download_path.is_file() and download_path.stat().st_size > 0 if download_path.exists() else False

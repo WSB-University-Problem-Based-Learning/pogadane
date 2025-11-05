@@ -83,6 +83,11 @@ transformers = [
     "torch>=2.0.0",
 ]
 
+# Faster-Whisper Python library (recommended for transcription)
+faster-whisper = [
+    "faster-whisper>=1.0.0",
+]
+
 # OpenAI Whisper transcription support
 whisper = [
     "openai-whisper>=20231117",
@@ -90,7 +95,7 @@ whisper = [
 
 # All optional dependencies combined
 all = [
-    "pogadane[dev,test,transformers,whisper]"
+    "pogadane[dev,test,transformers,faster-whisper,whisper]"
 ]
 
 [project.urls]

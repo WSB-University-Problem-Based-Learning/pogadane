@@ -1172,10 +1172,10 @@ class PogadaneApp:
                 fields=[
                     ("TRANSCRIPTION_PROVIDER", "Dostawca transkrypcji", "dropdown", ["faster-whisper", "whisper"]),
                     ("WHISPER_LANGUAGE", "Język transkrypcji", "text", None),
-                    ("WHISPER_MODEL", "Model Whisper", "dropdown", ["tiny", "base", "small", "medium", "large", "turbo"]),
-                    ("FASTER_WHISPER_EXE", "Plik Faster Whisper", "file", None),
-                    ("YT_DLP_EXE", "Plik yt-dlp", "file", None),
-                    ("ENABLE_SPEAKER_DIARIZATION", "Włącz diaryzację", "switch", None),
+                    ("WHISPER_MODEL", "Model Whisper", "dropdown", ["tiny", "base", "small", "medium", "large-v3", "turbo"]),
+                    ("FASTER_WHISPER_DEVICE", "Urządzenie", "dropdown", ["auto", "cuda", "cpu"]),
+                    ("FASTER_WHISPER_BATCH_SIZE", "Rozmiar partii (0=wyłączone)", "text", None),
+                    ("YT_DLP_PATH", "Ścieżka yt-dlp", "text", None),
                 ]
             )
             

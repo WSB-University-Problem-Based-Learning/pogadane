@@ -5,9 +5,19 @@ This module contains all magic numbers, default values, and constants
 used throughout the Pogadane application.
 """
 
+from pathlib import Path
+
 # Application metadata
 APP_VERSION = "0.1.8"
 APP_NAME = "Pogadane"
+
+# Paths
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+DEP_DIR = PROJECT_ROOT / "dep"
+MODELS_DIR = DEP_DIR / "models"
+
+# Ensure directories exist
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 # File markers for GUI parsing
 TRANSCRIPTION_START_MARKER = "--- POCZĄTEK TRANSKRYPCJI ---"
@@ -56,6 +66,7 @@ DEFAULT_CONFIG = {
     "GOOGLE_GEMINI_MODEL": "gemini-1.5-flash-latest",
     "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
     "TRANSFORMERS_DEVICE": "auto",
+    "TRANSFORMERS_CACHE_DIR": str(MODELS_DIR),  # Local model cache
     "TRANSCRIPTION_PROVIDER": "faster-whisper",
     "WHISPER_DEVICE": "auto",
     "TRANSCRIPTION_FORMAT": "txt",

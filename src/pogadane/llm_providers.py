@@ -283,47 +283,71 @@ class TransformersProvider(LLMProvider):
             model_type = model_config.get("type", "summarization")
             
             # Prepare input text
-            # Transformers models work better with shorter inputs (typically max 1024 tokens)
-            # Truncate if needed (roughly 4 chars per token)
-            max_input_length = 4000  # ~1000 tokens
-            if len(text) > max_input_length:
-                print(f"   ℹ️  Truncating long text ({len(text)} → {max_input_length} chars)")
-                text = text[:max_input_length] + "..."
+            # Clean the text first - remove excessive whitespace and newlines
+            text = ' '.join(text.split())
             
-            # Build input based on model type
-            if model_type == "text2text":
-                # For T5 models, include the instruction
-                prompt_clean = prompt.replace("{text}", "").replace("{Text}", "").strip()
-                input_text = f"Summarize in {language}: {prompt_clean}\n\n{text}"
-            else:
-                # For BART models, just use the text
-                input_text = text
+            # Try different chunk sizes if needed
+            chunk_sizes = [3500, 2500, 1500, 1000]  # Progressive fallback
             
-            # Generate summary
-            print(f"   Processing with {self.model_name}...")
-            
-            max_length = model_config.get("max_length", 150)
-            min_length = model_config.get("min_length", 30)
-            
-            result = self._pipeline(
-                input_text,
-                max_length=max_length,
-                min_length=min_length,
-                do_sample=False,
-                truncation=True
-            )
-            
-            if result and len(result) > 0:
-                summary = result[0]["summary_text"] if "summary_text" in result[0] else result[0].get("generated_text", "")
-                
-                if summary:
-                    print(f"✅ Summary OK for '{source_name}' (Transformers).")
+            for max_input_length in chunk_sizes:
+                try:
+                    # Truncate if needed
+                    if len(text) > max_input_length:
+                        if max_input_length == chunk_sizes[0]:  # Only print once
+                            print(f"   ℹ️  Truncating long text ({len(text)} → {max_input_length} chars)")
+                        working_text = text[:max_input_length]
+                    else:
+                        working_text = text
                     
-                    # Add language note if not in target language
-                    if language.lower() != "english":
-                        summary = f"[Note: Summary generated in English - model doesn't support {language}]\n\n{summary}"
+                    # Build input based on model type
+                    if model_type == "text2text":
+                        # For T5 models, include the instruction
+                        prompt_clean = prompt.replace("{text}", "").replace("{Text}", "").strip()
+                        input_text = f"Summarize in {language}: {prompt_clean}\n\n{working_text}"
+                    else:
+                        # For BART models, just use the text
+                        input_text = working_text
                     
-                    return summary.strip()
+                    # Generate summary
+                    if max_input_length == chunk_sizes[0]:
+                        print(f"   Processing with {self.model_name}...")
+                    
+                    max_length = model_config.get("max_length", 150)
+                    min_length = model_config.get("min_length", 30)
+                    
+                    # Use more conservative settings to avoid errors
+                    result = self._pipeline(
+                        input_text,
+                        max_length=max_length,
+                        min_length=min_length,
+                        do_sample=False,
+                        truncation=True,
+                        clean_up_tokenization_spaces=True
+                    )
+                    
+                    if result and len(result) > 0:
+                        summary = result[0]["summary_text"] if "summary_text" in result[0] else result[0].get("generated_text", "")
+                        
+                        if summary:
+                            print(f"✅ Summary OK for '{source_name}' (Transformers).")
+                            
+                            # Add language note if not in target language
+                            if language.lower() != "english":
+                                summary = f"[Note: Summary generated in English - model doesn't support {language}]\n\n{summary}"
+                            
+                            return summary.strip()
+                    
+                    # If we get here, no summary was generated
+                    break
+                    
+                except Exception as chunk_error:
+                    # If this isn't the last chunk size, try smaller
+                    if max_input_length != chunk_sizes[-1]:
+                        print(f"   ⚠️  Retrying with smaller chunk ({max_input_length} → {chunk_sizes[chunk_sizes.index(max_input_length) + 1]})")
+                        continue
+                    else:
+                        # Last attempt failed, re-raise
+                        raise chunk_error
             
             print(f"❌ Summary failed for '{source_name}' (Transformers). No output generated.", file=sys.stderr)
             return None
@@ -360,7 +384,16 @@ class TransformersProvider(LLMProvider):
                 return False
             
             try:
-                print(f"   Loading model '{self.model_name}' (first time may take a few minutes)...")
+                from .constants import MODELS_DIR
+                import os
+                
+                # Set cache directory to local dep/models
+                cache_dir = str(MODELS_DIR)
+                os.environ['TRANSFORMERS_CACHE'] = cache_dir
+                os.environ['HF_HOME'] = cache_dir
+                
+                print(f"   Loading model '{self.model_name}' from {cache_dir}")
+                print(f"   (First time may take a few minutes to download...)")
                 
                 model_config = self.MODELS.get(self.model_name, {})
                 model_type = model_config.get("type", "summarization")
@@ -380,7 +413,7 @@ class TransformersProvider(LLMProvider):
                 elif self.device == "cuda":
                     device = 0
                 
-                # Create pipeline
+                # Create pipeline - cache location set via environment variables above
                 self._pipeline = self._transformers.pipeline(
                     model_type,
                     model=self.model_name,

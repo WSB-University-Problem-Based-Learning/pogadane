@@ -106,7 +106,7 @@ Repository = "https://github.com/WSB-University-Problem-Based-Learning/pogadane"
 
 [project.scripts]
 pogadane-gui = "pogadane.gui_flet:main"
-pogadane-cli = "pogadane.transcribe_summarize_working:main"
+# CLI removed - application is now 100% GUI-based
 
 [tool.setuptools]
 zip-safe = false

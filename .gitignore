@@ -40,6 +40,7 @@ src/pogadane/pogadane_temp_audio/
 dep/yt-dlp/
 dep/faster-whisper/
 dep/ollama/
+dep/models/  # Transformers model cache
 # Keep the dep/ folder structure but ignore downloaded binaries
 !dep/.gitkeep
 !dep/*/.gitkeep

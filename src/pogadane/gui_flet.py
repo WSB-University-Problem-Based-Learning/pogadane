@@ -1,18 +1,17 @@
 """
 Pogadane GUI - Material 3 Expressive
 Beautiful Material Design 3 interface using Flet (Flutter-based)
+100% GUI-based - no CLI dependencies
 """
 
 import flet as ft
 import threading
 import queue
-import subprocess
 import sys
 import os
-import shlex
-import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from io import StringIO
 
 # Import utility modules
 from .constants import (
@@ -27,6 +26,7 @@ from .constants import (
 from .text_utils import strip_ansi, extract_transcription_and_summary
 from .config_loader import ConfigManager
 from .gui_utils import ResultsManager
+from .backend import PogadaneBackend
 
 
 class PogadaneApp:
@@ -834,15 +834,18 @@ class PogadaneApp:
         queue_border_color = "#E5E7EB" if is_light else "#374151"
         queue_placeholder_bg = "#F9FAFB" if is_light else "#1F2937"
 
-        if self.queue_placeholder:
+        # Only update if element is already added to page
+        if self.queue_placeholder and hasattr(self.queue_placeholder, 'page') and self.queue_placeholder.page:
             self.queue_placeholder.bgcolor = queue_placeholder_bg
             self.queue_placeholder.update()
 
         for item in self.queue_items:
             container: ft.Container = item["container"]
-            container.bgcolor = queue_card_bg
-            container.border = ft.border.all(1, queue_border_color)
-            container.update()
+            # Only update if element is already added to page
+            if hasattr(container, 'page') and container.page:
+                container.bgcolor = queue_card_bg
+                container.border = ft.border.all(1, queue_border_color)
+                container.update()
     
     def create_console_tab(self):
         """Create console output tab with Material 3 design"""
@@ -975,16 +978,25 @@ class PogadaneApp:
             expand=True,
         )
 
-    def create_config_section(self, title: str, fields: List[tuple]):
-        """Create a configuration section with fields"""
+    def create_config_section(self, title: str, fields: List[tuple], description: str = None):
+        """
+        Create a configuration section with fields
+        
+        Args:
+            title: Section title
+            fields: List of tuples (config_key, label, field_type, options, tooltip)
+            description: Optional section description
+        """
         
         section_fields = []
         
-        # Section title
-        section_header = ft.Row(
+        # Section title with optional description
+        section_header = ft.Column(
             [
                 ft.Text(title, size=20, weight=ft.FontWeight.BOLD),
+                ft.Text(description, size=13, color="#6B7280") if description else ft.Container(height=0),
             ],
+            spacing=4,
         )
         section_fields.append(section_header)
         section_fields.append(ft.Container(height=16))
@@ -995,8 +1007,20 @@ class PogadaneApp:
             label = field_info[1]
             field_type = field_info[2]
             options = field_info[3] if len(field_info) > 3 else None
+            tooltip = field_info[4] if len(field_info) > 4 else None
             
             current_value = getattr(self.config_module, config_key, DEFAULT_CONFIG.get(config_key, ""))
+            
+            # Create tooltip icon if tooltip provided
+            tooltip_icon = None
+            if tooltip:
+                tooltip_icon = ft.IconButton(
+                    icon=ft.Icons.INFO_OUTLINE_ROUNDED,
+                    icon_size=18,
+                    tooltip=tooltip,
+                    icon_color="#6B7280",
+                    on_click=None,
+                )
             
             if field_type == "dropdown":
                 field = ft.Dropdown(
@@ -1005,19 +1029,28 @@ class PogadaneApp:
                     options=[ft.dropdown.Option(opt) for opt in options],
                     border_radius=12,
                     filled=True,
+                    expand=True,
                 )
                 self.config_fields[config_key] = field
-                section_fields.append(field)
                 
-            elif field_type == "switch":
+                if tooltip_icon:
+                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    section_fields.append(field_row)
+                else:
+                    section_fields.append(field)
+                
+            elif field_type == "checkbox":
+                switch = ft.Switch(value=bool(current_value))
                 field = ft.Row(
                     [
                         ft.Text(label, size=14),
-                        ft.Switch(value=bool(current_value)),
+                        switch,
+                        tooltip_icon if tooltip_icon else ft.Container(width=0),
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 )
-                self.config_fields[config_key] = field.controls[1]
+                self.config_fields[config_key] = switch
                 section_fields.append(field)
                 
             elif field_type == "password":
@@ -1028,9 +1061,15 @@ class PogadaneApp:
                     can_reveal_password=True,
                     border_radius=12,
                     filled=True,
+                    expand=True,
                 )
                 self.config_fields[config_key] = field
-                section_fields.append(field)
+                
+                if tooltip_icon:
+                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    section_fields.append(field_row)
+                else:
+                    section_fields.append(field)
                 
             elif field_type == "file":
                 file_field = ft.TextField(
@@ -1049,8 +1088,10 @@ class PogadaneApp:
                     [
                         ft.Container(content=file_field, expand=True),
                         browse_btn,
+                        tooltip_icon if tooltip_icon else ft.Container(width=0),
                     ],
                     spacing=8,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 )
                 self.config_fields[config_key] = file_field
                 section_fields.append(field)
@@ -1061,18 +1102,19 @@ class PogadaneApp:
                     value=str(current_value),
                     border_radius=12,
                     filled=True,
+                    expand=True,
                 )
                 self.config_fields[config_key] = field
-                section_fields.append(field)
+                
+                if tooltip_icon:
+                    field_row = ft.Row([field, tooltip_icon], spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    section_fields.append(field_row)
+                else:
+                    section_fields.append(field)
             
-            section_fields.append(ft.Container(height=8))
+            section_fields.append(ft.Container(height=12))
         
-        return ft.Container(
-            content=ft.Column(section_fields, spacing=0),
-            border=ft.border.all(1),
-            border_radius=16,
-            padding=20,
-        )
+        return ft.Column(section_fields, spacing=0, scroll=ft.ScrollMode.AUTO)
     
     def create_status_bar(self):
         """Create status bar at bottom"""
@@ -1154,44 +1196,109 @@ class PogadaneApp:
             # Clear previous config fields
             self.config_fields.clear()
             
-            # Summary Settings Section
-            summary_section = self.create_config_section(
-                title="🤖 Ustawienia Podsumowania",
-                fields=[
-                    ("SUMMARY_PROVIDER", "Dostawca podsumowania", "dropdown", ["ollama", "transformers", "google"]),
-                    ("SUMMARY_LANGUAGE", "Język podsumowania", "text", None),
-                    ("OLLAMA_MODEL", "Model Ollama", "text", None),
-                    ("TRANSFORMERS_MODEL", "Model Transformers", "text", None),
-                    ("GOOGLE_API_KEY", "Klucz API Google", "password", None),
-                ]
-            )
-            
-            # Transcription Settings Section
+            # 🎙️ TRANSCRIPTION SETTINGS (Primary feature - shown first)
             transcription_section = self.create_config_section(
-                title="🎙️ Ustawienia Transkrypcji",
+                title="🎙️ Transkrypcja Audio",
+                description="Ustawienia konwersji mowy na tekst",
                 fields=[
-                    ("TRANSCRIPTION_PROVIDER", "Dostawca transkrypcji", "dropdown", ["faster-whisper", "whisper"]),
-                    ("WHISPER_LANGUAGE", "Język transkrypcji", "text", None),
-                    ("WHISPER_MODEL", "Model Whisper", "dropdown", ["tiny", "base", "small", "medium", "large-v3", "turbo"]),
-                    ("FASTER_WHISPER_DEVICE", "Urządzenie", "dropdown", ["auto", "cuda", "cpu"]),
-                    ("FASTER_WHISPER_BATCH_SIZE", "Rozmiar partii (0=wyłączone)", "text", None),
-                    ("YT_DLP_PATH", "Ścieżka yt-dlp", "text", None),
+                    ("TRANSCRIPTION_PROVIDER", "Silnik transkrypcji", "dropdown", 
+                     ["faster-whisper", "whisper"],
+                     "faster-whisper: Zalecany, 4x szybszy | whisper: Standardowy OpenAI Whisper"),
+                    
+                    ("WHISPER_MODEL", "Model AI", "dropdown", 
+                     ["tiny", "base", "small", "medium", "large-v3", "turbo"],
+                     "turbo: Najszybszy (zalecany) | large-v3: Najdokładniejszy | tiny: Najmniejszy"),
+                    
+                    ("WHISPER_LANGUAGE", "Język audio", "dropdown",
+                     ["Polish", "English", "German", "French", "Spanish", "Italian", "Ukrainian", "Russian"],
+                     "Język nagrania do transkrypcji"),
+                    
+                    ("FASTER_WHISPER_DEVICE", "Akcelerator sprzętowy", "dropdown", 
+                     ["auto", "cuda", "cpu"],
+                     "auto: Automatyczny (zalecany) | cuda: GPU NVIDIA | cpu: Tylko procesor"),
                 ]
             )
             
-            # Dialog content with scrollable column
+            # 🤖 SUMMARY SETTINGS
+            summary_section = self.create_config_section(
+                title="🤖 Generowanie Podsumowań",
+                description="Ustawienia AI do tworzenia streszczeń",
+                fields=[
+                    ("SUMMARY_PROVIDER", "Dostawca AI", "dropdown", 
+                     ["transformers", "ollama", "google"],
+                     "transformers: Offline, lokalny (ZALECANY) | ollama: Wymaga instalacji Ollama | google: Wymaga klucza API"),
+                    
+                    ("TRANSFORMERS_MODEL", "Model Transformers", "dropdown",
+                     ["facebook/bart-large-cnn", "sshleifer/distilbart-cnn-12-6", "google/flan-t5-base", "google/flan-t5-small"],
+                     "bart-large-cnn: Najlepsza jakość (~1.6GB) | distilbart: Szybszy (~500MB) | flan-t5-small: Najmniejszy (~300MB)"),
+                    
+                    ("OLLAMA_MODEL", "Model Ollama", "text", None,
+                     "Nazwa modelu Ollama (np. gemma3:4b, llama3:8b)"),
+                    
+                    ("GOOGLE_API_KEY", "Klucz API Google Gemini", "password", None,
+                     "Wymagany tylko dla dostawcy 'google'"),
+                    
+                    ("SUMMARY_LANGUAGE", "Język podsumowania", "dropdown",
+                     ["Polish", "English", "German", "French", "Spanish"],
+                     "Język wynikowego podsumowania"),
+                ]
+            )
+            
+            # ⚙️ ADVANCED SETTINGS (collapsible)
+            advanced_section = self.create_config_section(
+                title="⚙️ Ustawienia Zaawansowane",
+                description="Opcje dla zaawansowanych użytkowników",
+                fields=[
+                    ("FASTER_WHISPER_BATCH_SIZE", "Batch Size (0 = wyłączone)", "text", None,
+                     "Przetwarzanie wsadowe - większe wartości = szybsze, więcej RAM"),
+                    
+                    ("FASTER_WHISPER_COMPUTE_TYPE", "Typ obliczeń", "dropdown",
+                     ["auto", "int8", "float16", "int8_float16"],
+                     "auto: Automatyczny | int8: Szybszy, mniej pamięci | float16: Dokładniejszy"),
+                    
+                    ("FASTER_WHISPER_VAD_FILTER", "Voice Activity Detection", "checkbox", None,
+                     "Wykrywanie aktywności głosowej - usuwa ciszę"),
+                    
+                    ("YT_DLP_PATH", "Ścieżka yt-dlp", "text", None,
+                     "Domyślnie: yt-dlp (z PATH). Zmień tylko w razie problemów"),
+                ]
+            )
+            
+            # Dialog content with tabs for better organization
             dialog_content = ft.Container(
-                content=ft.Column(
-                    controls=[
-                        summary_section,
-                        ft.Divider(height=32),
-                        transcription_section,
+                content=ft.Tabs(
+                    selected_index=0,
+                    animation_duration=300,
+                    tabs=[
+                        ft.Tab(
+                            text="Transkrypcja",
+                            icon=ft.Icons.MIC_ROUNDED,
+                            content=ft.Container(
+                                content=transcription_section,
+                                padding=ft.padding.all(20),
+                            ),
+                        ),
+                        ft.Tab(
+                            text="Podsumowanie",
+                            icon=ft.Icons.AUTO_AWESOME_ROUNDED,
+                            content=ft.Container(
+                                content=summary_section,
+                                padding=ft.padding.all(20),
+                            ),
+                        ),
+                        ft.Tab(
+                            text="Zaawansowane",
+                            icon=ft.Icons.TUNE_ROUNDED,
+                            content=ft.Container(
+                                content=advanced_section,
+                                padding=ft.padding.all(20),
+                            ),
+                        ),
                     ],
-                    spacing=0,
-                    scroll=ft.ScrollMode.AUTO,
+                    expand=1,
                 ),
-                height=500,
-                width=600,
+                height=550,
+                width=700,
             )
             
             # Create dialog with fade-in animation
@@ -1439,70 +1546,59 @@ class PogadaneApp:
         ).start()
     
     def _execute_batch_processing_logic(self, input_sources):
-        """Execute batch processing for all input sources (real backend logic)"""
+        """Execute batch processing for all input sources using direct backend calls"""
+        
+        # Initialize backend (will use the same ConfigManager singleton as GUI)
+        backend = PogadaneBackend()
+        
+        # Set environment variables for better compatibility
+        os.environ['TQDM_DISABLE'] = '1'  # Disable tqdm progress bars
+        os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'  # Disable HuggingFace progress bars
         
         for i, input_src in enumerate(input_sources):
             # Update queue status to PROCESSING
             self.output_queue.put(("update_status", str(i), FILE_STATUS_PROCESSING))
             
-            # Build command - run as module to handle relative imports
-            cmd = [sys.executable, "-u", "-m", "pogadane.transcribe_summarize_working", input_src]
-            
-            # Add config file if selected
-            if hasattr(self, 'config_path') and self.config_path:
-                cmd.extend(["--config", str(self.config_path)])
-            
-            # Set environment variables to ensure UTF-8 encoding on Windows
-            env = os.environ.copy()
-            env['PYTHONIOENCODING'] = 'utf-8'
-            env['PYTHONUTF8'] = '1'  # Force UTF-8 mode (Python 3.7+)
-            env['TQDM_DISABLE'] = '1'  # Disable tqdm progress bars
-            env['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'  # Disable HuggingFace progress bars
-            
             try:
-                # Start subprocess with UTF-8 encoding
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    encoding='utf-8',
-                    errors='replace',  # Replace undecodable bytes instead of crashing
-                    bufsize=1,
-                    universal_newlines=True,
-                    env=env,  # Pass UTF-8 environment
+                # Capture stdout to collect processing output
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
+                captured_output = StringIO()
+                sys.stdout = captured_output
+                sys.stderr = captured_output
+                
+                # Process file using backend
+                transcription, summary = backend.process_file(
+                    input_src,
+                    progress_callback=lambda msg, prog=None: self.output_queue.put(("log", msg + "\n", "", ""))
                 )
                 
-                # Collect all output
-                full_log = []
-                for line in proc.stdout:
+                # Restore stdout/stderr
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                
+                # Get captured output
+                full_log_text = captured_output.getvalue()
+                
+                # Send log output to console
+                for line in full_log_text.splitlines(keepends=True):
                     clean_line = strip_ansi(line)
-                    full_log.append(clean_line)
                     self.output_queue.put(("log", clean_line, "", ""))
                 
-                # Wait for completion
-                proc.wait()
-                
-                # Combine full log for extraction
-                full_log_text = "".join(full_log)
-                
-                # Check return code
-                if proc.returncode == 0:
-                    # Try to extract transcription and summary from collected output
-                    trans, summ = extract_transcription_and_summary(full_log_text)
-                    
-                    if trans or summ:
-                        self.output_queue.put(("result", input_src, trans, summ))
-                        self.output_queue.put(("update_status", str(i), FILE_STATUS_COMPLETED))
-                    else:
-                        self.output_queue.put(("error", f"⚠️ Nie znaleziono wyników dla: {input_src}", "", ""))
-                        self.output_queue.put(("update_status", str(i), FILE_STATUS_ERROR))
+                # Check results
+                if transcription or summary:
+                    self.output_queue.put(("result", input_src, transcription or "", summary or ""))
+                    self.output_queue.put(("update_status", str(i), FILE_STATUS_COMPLETED))
                 else:
-                    self.output_queue.put(("error", f"❌ Błąd przetwarzania: {input_src} (kod {proc.returncode})", "", ""))
+                    self.output_queue.put(("error", f"⚠️ Nie znaleziono wyników dla: {input_src}", "", ""))
                     self.output_queue.put(("update_status", str(i), FILE_STATUS_ERROR))
                     
             except Exception as ex:
-                self.output_queue.put(("error", f"❌ Wyjątek podczas przetwarzania {input_src}: {ex}", "", ""))
+                # Restore stdout/stderr in case of error
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+                
+                self.output_queue.put(("error", f"❌ Błąd podczas przetwarzania {input_src}: {ex}", "", ""))
                 self.output_queue.put(("update_status", str(i), FILE_STATUS_ERROR))
         
         # Signal completion

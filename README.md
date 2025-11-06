@@ -1155,23 +1155,12 @@ pogadane/
 
 │   ├── llm_providers.py   # Summary providers
 
-│   └── transcription_providers.py  # Transcription providersRuntime settings are stored in `.config/config.py`. You can:- `python tools/dependency_manager.py --verify-only` — confirm external binaries (Windows)
+│   └── transcription_providers.py  # Transcription providersRuntime settings are stored in `.config/config.py`. You can:
 
-├── test/                  # Test suite
+- Edit the file directly with any text editor
+- Use the Settings dialog (⚙️ icon) in the GUI
 
-├── tools/                 # Installation and maintenance tools- Edit the file directly with any text editor- `python tools/pogadane_doctor.py` — legacy diagnostics when the new installer is unavailable
-
-├── .config/              # User configuration
-
-├── requirements*.txt     # Dependency specifications- Use the Settings dialog (⚙️ icon) in the GUI
-
-└── install.py            # Installation wizard
-
-```Before opening a PR, run tests (`pytest`) and your preferred linters/formatters.
-
-
-
----Key settings:
+Key settings:
 
 
 

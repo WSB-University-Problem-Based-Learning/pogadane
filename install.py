@@ -284,13 +284,6 @@ def install_transcription_engines():
         print_success("Both engines installed - configure your preferred one in config")
 
 
-def install_windows_binaries():
-    """DEPRECATED - Windows binaries are no longer used."""
-    # This function is kept for backwards compatibility but does nothing
-    # All dependencies are now installed via pip
-    pass
-
-
 def update_config_for_lightweight():
     """Update config file for lightweight installation."""
     config_file = CONFIG_DIR / "config.py"

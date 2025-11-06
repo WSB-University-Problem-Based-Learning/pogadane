@@ -1,6 +1,6 @@
 # config.py
-# Plik konfiguracyjny dla skryptu transcribe_summarize_working.py
-# oraz Pogadane GUI. Zmiany w GUI są zapisywane tutaj.
+# Configuration file for Pogadane application
+# GUI changes are saved here automatically
 
 # --- Configuration (100% pip-based) ---
 

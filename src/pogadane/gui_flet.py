@@ -1572,7 +1572,7 @@ class PogadaneApp:
             content=ft.Column(
                 controls=[
                     ft.ProgressRing(width=50, height=50),
-                    ft.Text("Ładowanie ustawień...", size=16, text_align=ft.TextAlign.CENTER),
+                    ft.Text("Ładowanie komponentów...", size=16, text_align=ft.TextAlign.CENTER),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20,
@@ -1626,6 +1626,7 @@ class PogadaneApp:
                 value=current_summary_provider,
                 options=[
                     ft.dropdown.Option(key="transformers", text="Transformers (Offline - Zalecany)"),
+                    ft.dropdown.Option(key="gguf", text="GGUF / Llama.cpp (Quantized, bardzo szybki)"),
                     ft.dropdown.Option(key="ollama", text="Ollama (Lokalny, wymaga instalacji)"),
                     ft.dropdown.Option(key="google", text="Google Gemini (Cloud, wymaga API)"),
                 ],
@@ -1734,6 +1735,139 @@ class PogadaneApp:
                 expand=True,
             )
             
+            # Prompt Customization Tab Content
+            prompt_tab_content = ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(
+                                "Dostosuj prompty używane do generowania podsumowań",
+                                size=13,
+                                color="#6B7280",
+                                italic=True,
+                            ),
+                        ]),
+                        padding=ft.padding.only(bottom=16),
+                    ),
+                    ft.Text("🎯 System Prompt", size=15, weight=ft.FontWeight.BOLD, color="#7C3AED"),
+                    ft.Container(height=4),
+                    ft.TextField(
+                        label="Instrukcja systemowa dla AI",
+                        value=getattr(self.config_module, "SYSTEM_PROMPT", "You are a helpful AI assistant that creates concise summaries."),
+                        multiline=True,
+                        min_lines=3,
+                        max_lines=5,
+                        border_radius=8,
+                        filled=True,
+                        hint_text="Opisz rolę i zachowanie AI...",
+                        on_change=lambda e: setattr(self.config_fields, "SYSTEM_PROMPT", e.control),
+                    ),
+                    ft.Container(height=12),
+                    ft.Text("💬 User Prompt Template", size=15, weight=ft.FontWeight.BOLD, color="#2563EB"),
+                    ft.Container(height=4),
+                    ft.TextField(
+                        label="Szablon pytania (użyj {text} dla transkrypcji)",
+                        value=getattr(self.config_module, "USER_PROMPT_TEMPLATE", "Summarize the following text:\n\n{text}"),
+                        multiline=True,
+                        min_lines=4,
+                        max_lines=6,
+                        border_radius=8,
+                        filled=True,
+                        hint_text="Zbuduj prompt z {text} jako placeholder...",
+                        on_change=lambda e: setattr(self.config_fields, "USER_PROMPT_TEMPLATE", e.control),
+                    ),
+                    ft.Container(height=12),
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Icon(ft.Icons.LIGHTBULB_OUTLINE, size=16, color="#F59E0B"),
+                                ft.Text("Wskazówki:", size=12, weight=ft.FontWeight.BOLD, color="#F59E0B"),
+                            ], spacing=6),
+                            ft.Text("• Użyj {text} jako miejsca na transkrypcję", size=11, color="#6B7280"),
+                            ft.Text("• System prompt definiuje rolę AI (np. ekspert, asystent)", size=11, color="#6B7280"),
+                            ft.Text("• User prompt określa zadanie (np. podsumuj, wyciągnij kluczowe punkty)", size=11, color="#6B7280"),
+                            ft.Text("• Krótsze prompty = szybsze przetwarzanie", size=11, color="#6B7280"),
+                        ], spacing=4),
+                        padding=12,
+                        border=ft.border.all(1, "#FCD34D"),
+                        border_radius=8,
+                        bgcolor="#FFFBEB",
+                    ),
+                ], spacing=0, scroll=ft.ScrollMode.AUTO),
+                padding=20,
+                expand=True,
+            )
+            
+            # Store prompt fields for saving
+            if len(prompt_tab_content.content.controls) > 2:
+                self.config_fields["SYSTEM_PROMPT"] = prompt_tab_content.content.controls[2]
+            if len(prompt_tab_content.content.controls) > 6:
+                self.config_fields["USER_PROMPT_TEMPLATE"] = prompt_tab_content.content.controls[6]
+            
+            # Dependencies Check Tab Content - Lazy loaded placeholder
+            self.dependencies_checks_container = ft.Column([
+                ft.Container(
+                    content=ft.Column([
+                        ft.ProgressRing(width=40, height=40),
+                        ft.Text("Kliknij 'Sprawdź Zależności' aby rozpocząć", size=14, color="#6B7280", text_align=ft.TextAlign.CENTER),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=16),
+                    padding=40,
+                    alignment=ft.alignment.center,
+                ),
+            ], spacing=8)
+            
+            dependencies_tab_content = ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Icon(ft.Icons.CHECKLIST_ROUNDED, size=20, color="#10B981"),
+                                ft.Text("Status Zależności Systemowych", size=16, weight=ft.FontWeight.BOLD),
+                            ], spacing=8),
+                            ft.Text(
+                                "Sprawdź dostępność wymaganych narzędzi i bibliotek",
+                                size=13,
+                                color="#6B7280",
+                                italic=True,
+                            ),
+                        ]),
+                        padding=ft.padding.only(bottom=16),
+                    ),
+                    ft.Container(
+                        content=self.dependencies_checks_container,
+                        padding=16,
+                        border=ft.border.all(1, "#E5E7EB"),
+                        border_radius=12,
+                        bgcolor="#FFFFFF" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
+                    ),
+                    ft.Container(height=12),
+                    ft.Row([
+                        ft.FilledButton(
+                            "Sprawdź Zależności",
+                            icon=ft.Icons.PLAY_ARROW_ROUNDED,
+                            on_click=lambda _: self.load_dependencies_check(),
+                            style=ft.ButtonStyle(
+                                bgcolor="#10B981",
+                                color="#FFFFFF",
+                                shape=ft.RoundedRectangleBorder(radius=8),
+                            ),
+                        ),
+                        ft.OutlinedButton(
+                            "Zainstaluj Brakujące",
+                            icon=ft.Icons.DOWNLOAD_ROUNDED,
+                            on_click=lambda _: self.install_missing_dependencies(),
+                            style=ft.ButtonStyle(
+                                side=ft.BorderSide(1, "#2563EB"),
+                                color="#2563EB",
+                                shape=ft.RoundedRectangleBorder(radius=8),
+                            ),
+                        ),
+                    ], spacing=8),
+                ], spacing=0, scroll=ft.ScrollMode.AUTO),
+                padding=20,
+                expand=True,
+            )
+            
             # Dialog content with tabs
             dialog_content = ft.Container(
                 content=ft.Tabs(
@@ -1749,6 +1883,16 @@ class PogadaneApp:
                             text="Podsumowania AI",
                             icon=ft.Icons.AUTO_AWESOME_ROUNDED,
                             content=summary_tab_content,
+                        ),
+                        ft.Tab(
+                            text="Prompty",
+                            icon=ft.Icons.EDIT_NOTE_ROUNDED,
+                            content=prompt_tab_content,
+                        ),
+                        ft.Tab(
+                            text="Zależności",
+                            icon=ft.Icons.CHECKLIST_ROUNDED,
+                            content=dependencies_tab_content,
                         ),
                     ],
                     expand=True,
@@ -1939,6 +2083,8 @@ class PogadaneApp:
                     ft.dropdown.Option("google-t5/t5-base", "T5 Base - Zbalansowany (~890MB)"),
                     ft.dropdown.Option("google-t5/t5-large", "T5 Large - Potężny (~2.8GB)"),
                     ft.dropdown.Option("google/gemma-2-2b-it", "Gemma 2-2B - Instrukcyjny (~5GB)"),
+                    ft.dropdown.Option("google/gemma-2-9b-it", "Gemma 2-9B - Zaawansowany (~18GB)"),
+                    ft.dropdown.Option("google/gemma-3-4b-it", "Gemma 3-4B - Nowy, mocny (~8GB) 🔒"),
                 ],
                 border_radius=8,
                 filled=True,
@@ -1962,6 +2108,28 @@ class PogadaneApp:
                             size=11,
                             color="#6B7280",
                             italic=True,
+                        ),
+                        ft.Container(height=8),
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Row([
+                                    ft.Icon(ft.Icons.LOCK_ROUNDED, size=14, color="#F59E0B"),
+                                    ft.Text("Uwaga: Gemma 3-4B 🔒", size=11, weight=ft.FontWeight.BOLD, color="#F59E0B"),
+                                ], spacing=6),
+                                ft.Text(
+                                    "Ten model wymaga uwierzytelnienia HuggingFace:\n"
+                                    "1. Utwórz konto: huggingface.co/join\n"
+                                    "2. Zaakceptuj licencję: huggingface.co/google/gemma-3-4b-it\n"
+                                    "3. Wygeneruj token: huggingface.co/settings/tokens\n"
+                                    "4. Zaloguj się: huggingface-cli login",
+                                    size=10,
+                                    color="#6B7280",
+                                ),
+                            ], spacing=4),
+                            padding=12,
+                            border=ft.border.all(1, "#FCD34D"),
+                            border_radius=8,
+                            bgcolor="#FFFBEB",
                         ),
                     ], spacing=0),
                     padding=16,
@@ -2067,8 +2235,192 @@ class PogadaneApp:
                 )
             ]
         
+        elif provider == "gguf":
+            # Show GGUF model path input
+            gguf_path = ft.TextField(
+                label="📁 Ścieżka do Pliku GGUF",
+                value=getattr(self.config_module, "GGUF_MODEL_PATH", "dep/models/gemma-3-4b-it-Q4_K_M.gguf"),
+                border_radius=8,
+                filled=True,
+                bgcolor="#E0F2FE",
+                text_size=13,
+                helper_text="Ścieżka relatywna lub bezwzględna do pliku .gguf",
+            )
+            self.config_fields["GGUF_MODEL_PATH"] = gguf_path
+            
+            gpu_layers = ft.TextField(
+                label="🎮 Warstwy GPU",
+                value=str(getattr(self.config_module, "GGUF_N_GPU_LAYERS", 0)),
+                border_radius=8,
+                filled=True,
+                bgcolor="#E0F2FE",
+                text_size=13,
+                helper_text="0 = tylko CPU, >0 = użyj GPU (np. 35 dla 4GB VRAM)",
+                keyboard_type=ft.KeyboardType.NUMBER,
+            )
+            self.config_fields["GGUF_N_GPU_LAYERS"] = gpu_layers
+            
+            self.summary_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.BOLT_ROUNDED, size=18, color="#0284C7"),
+                            ft.Text("GGUF Quantized - Bardzo szybki", size=13, weight=ft.FontWeight.BOLD, color="#0369A1"),
+                        ], spacing=8),
+                        ft.Container(height=8),
+                        gguf_path,
+                        ft.Container(height=8),
+                        gpu_layers,
+                        ft.Container(height=12),
+                        ft.Container(
+                            content=ft.Column([
+                                ft.Row([
+                                    ft.Icon(ft.Icons.INFO_OUTLINE, size=14, color="#0284C7"),
+                                    ft.Text("Informacje o GGUF:", size=11, weight=ft.FontWeight.BOLD, color="#0284C7"),
+                                ], spacing=6),
+                                ft.Text(
+                                    "• Quantized models = mniejsze, szybsze niż Transformers\n"
+                                    "• Działa na CPU - nie wymaga GPU\n"
+                                    "• Instalacja: pip install llama-cpp-python\n"
+                                    "• Pobierz modele: huggingface.co (szukaj .gguf)",
+                                    size=10,
+                                    color="#6B7280",
+                                ),
+                            ], spacing=4),
+                            padding=12,
+                            border=ft.border.all(1, "#7DD3FC"),
+                            border_radius=8,
+                            bgcolor="#F0F9FF",
+                        ),
+                    ], spacing=0),
+                    padding=16,
+                    border=ft.border.all(1, "#7DD3FC"),
+                    border_radius=12,
+                    bgcolor="#E0F2FE",
+                )
+            ]
+        
         if hasattr(self, 'settings_dialog'):
             self.page.update()
+    
+    def _create_dependency_check(self, name: str, command: str, icon, color: str):
+        """Create a dependency check row with status indicator"""
+        import subprocess
+        
+        # Check if dependency exists
+        try:
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            is_available = result.returncode == 0
+            version = result.stdout.split('\n')[0] if is_available else "Nie znaleziono"
+            status_color = "#10B981" if is_available else "#EF4444"
+            status_icon = ft.Icons.CHECK_CIRCLE_ROUNDED if is_available else ft.Icons.ERROR_ROUNDED
+        except Exception:
+            is_available = False
+            version = "Błąd sprawdzania"
+            status_color = "#F59E0B"
+            status_icon = ft.Icons.WARNING_ROUNDED
+        
+        return ft.Container(
+            content=ft.Row([
+                ft.Icon(icon, size=24, color=color),
+                ft.Column([
+                    ft.Text(name, size=14, weight=ft.FontWeight.BOLD),
+                    ft.Text(version, size=11, color="#6B7280"),
+                ], spacing=2, expand=True),
+                ft.Icon(status_icon, size=20, color=status_color),
+            ], spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            padding=8,
+        )
+    
+    def load_dependencies_check(self):
+        """Load and check all dependencies (called when user clicks the button)"""
+        # Show loading indicator
+        self.dependencies_checks_container.controls = [
+            ft.Container(
+                content=ft.Column([
+                    ft.ProgressRing(width=40, height=40),
+                    ft.Text("Sprawdzanie zależności...", size=14, color="#6B7280", text_align=ft.TextAlign.CENTER),
+                ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=16),
+                padding=40,
+                alignment=ft.alignment.center,
+            ),
+        ]
+        self.page.update()
+        
+        # Run actual checks after a brief moment to show loading state
+        import time
+        time.sleep(0.1)
+        
+        # Build the actual checks
+        self.dependencies_checks_container.controls = [
+            self._create_dependency_check("Python", "python --version", ft.Icons.CODE_ROUNDED, "#3B82F6"),
+            ft.Divider(height=1),
+            self._create_dependency_check("FFmpeg", "ffmpeg -version", ft.Icons.VIDEO_LIBRARY_ROUNDED, "#EC4899"),
+            ft.Divider(height=1),
+            self._create_dependency_check("yt-dlp", "yt-dlp --version", ft.Icons.DOWNLOAD_ROUNDED, "#EF4444"),
+            ft.Divider(height=1),
+            self._create_dependency_check("PyTorch", "python -c \"import torch; print(torch.__version__)\"", ft.Icons.MEMORY_ROUNDED, "#F97316"),
+            ft.Divider(height=1),
+            self._create_dependency_check("Transformers", "python -c \"import transformers; print(transformers.__version__)\"", ft.Icons.AUTO_AWESOME_ROUNDED, "#8B5CF6"),
+            ft.Divider(height=1),
+            self._create_dependency_check("Faster-Whisper", "python -c \"import faster_whisper; print(faster_whisper.__version__)\"", ft.Icons.MIC_ROUNDED, "#06B6D4"),
+        ]
+        self.page.update()
+        self.show_snackbar("✅ Sprawdzanie zakończone", success=True)
+    
+    def refresh_dependencies_check(self):
+        """Refresh the dependencies check status (reload the checks)"""
+        self.load_dependencies_check()
+    
+    def install_missing_dependencies(self):
+        """Show instructions for installing missing dependencies"""
+        instructions = """
+📦 Instrukcje instalacji zależności:
+
+1. Python: Zainstaluj z python.org
+2. FFmpeg: 
+   - Windows: winget install FFmpeg
+   - Linux: apt install ffmpeg
+   - Mac: brew install ffmpeg
+
+3. yt-dlp: pip install yt-dlp
+
+4. PyTorch: pip install torch
+
+5. Transformers: pip install transformers
+
+6. Faster-Whisper: pip install faster-whisper
+
+💡 Uruchom install.py w głównym folderze projektu
+   aby automatycznie zainstalować wszystkie zależności.
+        """
+        
+        info_dialog = ft.AlertDialog(
+            title=ft.Text("📦 Instalacja Zależności", size=18, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                content=ft.Text(instructions, size=12, selectable=True),
+                width=500,
+                padding=10,
+            ),
+            actions=[
+                ft.TextButton("Zamknij", on_click=lambda _: self._close_info_dialog(info_dialog)),
+            ],
+        )
+        
+        self.page.overlay.append(info_dialog)
+        info_dialog.open = True
+        self.page.update()
+    
+    def _close_info_dialog(self, dialog):
+        """Close info dialog"""
+        dialog.open = False
+        self.page.update()
     
     def update_transcription_settings(self):
         """Update visible transcription settings when provider changes"""
@@ -2436,6 +2788,23 @@ class PogadaneApp:
                     self.console_output.value += data
                     self.console_output.update()
                     
+                    # Extract percentage from console output and update progress bar
+                    # Format: 🔧 [0%] or 📄 [10%] or 🎤 [30%] etc.
+                    import re
+                    percentage_match = re.search(r'\[(\d+)%\]', data)
+                    if percentage_match:
+                        percentage = int(percentage_match.group(1))
+                        # Update progress bar to reflect percentage
+                        if self.progress_bar and hasattr(self.progress_bar, 'page') and self.progress_bar.page:
+                            # Calculate progress: base progress + current item's sub-progress
+                            if self.total_items > 0:
+                                # Each item contributes (1/total_items) to overall progress
+                                base_progress = self.completed_items / self.total_items
+                                current_item_progress = (percentage / 100) / self.total_items
+                                total_progress = base_progress + current_item_progress
+                                self.progress_bar.value = min(max(total_progress, 0), 1)
+                                self.progress_bar.update()
+                    
                 elif msg_type == "error":
                     # Show error in console
                     data = msg[1]
@@ -2655,11 +3024,11 @@ class PogadaneApp:
                     value = field.value
                     
                     # Special type conversions for known integer fields
-                    if key == "FASTER_WHISPER_BATCH_SIZE":
+                    if key in ["FASTER_WHISPER_BATCH_SIZE", "GGUF_N_GPU_LAYERS"]:
                         try:
                             value = int(value) if value else 0
                         except (ValueError, TypeError):
-                            logger.warning(f"Invalid batch_size value '{value}', using 0")
+                            logger.warning(f"Invalid {key} value '{value}', using 0")
                             value = 0
                     
                     updates[key] = value

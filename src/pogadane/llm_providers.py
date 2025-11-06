@@ -289,6 +289,14 @@ class TransformersProvider(LLMProvider):
             "type": "text-generation",
             "size": "18GB",
             "description": "Gemma 2 9B Instruct - Powerful instruction-tuned (~18GB)"
+        },
+        "google/gemma-3-4b-it": {
+            "max_length": 2048,
+            "min_length": 50,
+            "type": "text-generation",
+            "size": "8GB",
+            "description": "Gemma 3 4B Instruct - Latest Google model (~8GB)",
+            "gated": True  # Requires HuggingFace authentication
         }
     }
     
@@ -493,7 +501,20 @@ class TransformersProvider(LLMProvider):
                 return True
                 
             except Exception as e:
-                print(f"❌ Error loading model '{self.model_name}': {e}", file=sys.stderr)
+                error_message = str(e)
+                print(f"❌ Error loading model '{self.model_name}': {error_message}", file=sys.stderr)
+                
+                # Check if this is a gated model authentication error
+                if "gated" in error_message.lower() or "401" in error_message or "authenticate" in error_message.lower():
+                    model_config = self.MODELS.get(self.model_name, {})
+                    if model_config.get("gated", False):
+                        print(f"\n🔒 Model '{self.model_name}' requires HuggingFace authentication:", file=sys.stderr)
+                        print(f"   1. Create account at: https://huggingface.co/join", file=sys.stderr)
+                        print(f"   2. Request access at: https://huggingface.co/{self.model_name}", file=sys.stderr)
+                        print(f"   3. Generate token at: https://huggingface.co/settings/tokens", file=sys.stderr)
+                        print(f"   4. Run: huggingface-cli login", file=sys.stderr)
+                        print(f"   5. Enter your token when prompted\n", file=sys.stderr)
+                
                 if self.debug_mode:
                     import traceback
                     traceback.print_exc()
@@ -518,6 +539,153 @@ class TransformersProvider(LLMProvider):
             }
             for model_name, config in cls.MODELS.items()
         }
+
+
+class LlamaCppProvider(LLMProvider):
+    """
+    Llama.cpp GGUF model provider implementation.
+    
+    Uses llama-cpp-python to run quantized GGUF models locally.
+    Perfect for running large models efficiently on CPU or GPU.
+    
+    Supported formats:
+    - GGUF quantized models (Q4_K_M, Q5_K_M, Q8_0, etc.)
+    - Works with Gemma, Llama, Mistral, and other GGUF models
+    """
+    
+    def __init__(self, model_path: str, debug_mode: bool = False, n_ctx: int = 4096, n_gpu_layers: int = 0):
+        """
+        Initialize Llama.cpp provider.
+        
+        Args:
+            model_path: Path to the GGUF model file
+            debug_mode: Enable debug logging
+            n_ctx: Context window size (default: 4096)
+            n_gpu_layers: Number of layers to offload to GPU (0 = CPU only)
+        """
+        self.model_path = model_path
+        self.debug_mode = debug_mode
+        self.n_ctx = n_ctx
+        self.n_gpu_layers = n_gpu_layers
+        self._llm = None
+        self._llama_cpp = None
+    
+    def summarize(self, text: str, prompt: str, language: str, source_name: str = "") -> Optional[str]:
+        """Generate summary using Llama.cpp GGUF model."""
+        if not self._ensure_model_loaded():
+            return None
+        
+        print(f"\n🔄 Summarizing '{source_name}' with GGUF model ({Path(self.model_path).name})")
+        
+        try:
+            # Build the full prompt
+            full_prompt = self._build_prompt(text, prompt, language)
+            
+            print(f"   Generating summary...")
+            
+            # Generate summary with llama.cpp
+            response = self._llm(
+                full_prompt,
+                max_tokens=512,  # Maximum tokens to generate
+                temperature=0.7,
+                top_p=0.9,
+                repeat_penalty=1.1,
+                stop=["</s>", "\n\n\n"],  # Stop sequences
+                echo=False  # Don't echo the prompt
+            )
+            
+            if response and 'choices' in response and len(response['choices']) > 0:
+                summary = response['choices'][0]['text'].strip()
+                
+                if summary:
+                    print(f"✅ Summary OK for '{source_name}' (GGUF).")
+                    return summary
+            
+            print(f"❌ Summary failed for '{source_name}' (GGUF). No output generated.", file=sys.stderr)
+            return None
+            
+        except Exception as e:
+            print(f"❌ GGUF model error for '{source_name}': {e}", file=sys.stderr)
+            if self.debug_mode:
+                import traceback
+                traceback.print_exc()
+            return None
+    
+    def is_available(self) -> bool:
+        """Check if llama-cpp-python is available and model exists."""
+        if not self._ensure_library_loaded():
+            return False
+        
+        # Check if model file exists
+        model_file = Path(self.model_path)
+        if not model_file.exists():
+            print(f"❌ Error: GGUF model file not found: {self.model_path}", file=sys.stderr)
+            return False
+        
+        return True
+    
+    def _ensure_library_loaded(self) -> bool:
+        """Ensure llama-cpp-python library is loaded."""
+        if self._llama_cpp is None:
+            try:
+                from llama_cpp import Llama
+                self._llama_cpp = Llama
+                print("✅ llama-cpp-python library loaded.")
+                return True
+            except ImportError:
+                print("❌ Error: llama-cpp-python library not installed.", file=sys.stderr)
+                print("   Install with: pip install llama-cpp-python", file=sys.stderr)
+                return False
+        return True
+    
+    def _ensure_model_loaded(self) -> bool:
+        """Ensure GGUF model is loaded."""
+        if self._llm is None:
+            if not self._ensure_library_loaded():
+                return False
+            
+            try:
+                model_file = Path(self.model_path)
+                if not model_file.exists():
+                    print(f"❌ Error: GGUF model file not found: {self.model_path}", file=sys.stderr)
+                    return False
+                
+                print(f"   Loading GGUF model: {model_file.name}")
+                print(f"   Context size: {self.n_ctx}, GPU layers: {self.n_gpu_layers}")
+                
+                # Load the model
+                self._llm = self._llama_cpp(
+                    model_path=str(model_file),
+                    n_ctx=self.n_ctx,
+                    n_gpu_layers=self.n_gpu_layers,
+                    verbose=self.debug_mode
+                )
+                
+                print(f"   ✅ GGUF model loaded successfully")
+                return True
+                
+            except Exception as e:
+                print(f"❌ Error loading GGUF model '{self.model_path}': {e}", file=sys.stderr)
+                if self.debug_mode:
+                    import traceback
+                    traceback.print_exc()
+                return False
+        
+        return True
+    
+    def _build_prompt(self, text: str, prompt: str, language: str) -> str:
+        """Build the full prompt for GGUF model."""
+        # For Gemma models, use Gemma chat template
+        if "gemma" in self.model_path.lower():
+            # Gemma chat template format
+            system_msg = f"You are a helpful AI assistant that creates summaries in {language}."
+            user_msg = f"{prompt}\n\nText to summarize:\n{text[:2000]}"  # Limit text length
+            
+            return f"<start_of_turn>user\n{user_msg}<end_of_turn>\n<start_of_turn>model\n"
+        else:
+            # Generic format for other models
+            prompt_clean = prompt.replace("{text}", "").replace("{Text}", "").strip()
+            return f"### Instruction:\n{prompt_clean} Please respond in {language}.\n\n### Input:\n{text[:2000]}\n\n### Response:\n"
 
 
 class LLMProviderFactory:
@@ -558,6 +726,8 @@ class LLMProviderFactory:
             google_model = config.get('GOOGLE_GEMINI_MODEL', 'gemini-1.5-flash-latest')
             transformers_model = config.get('TRANSFORMERS_MODEL', TransformersProvider.DEFAULT_MODEL)
             transformers_device = config.get('TRANSFORMERS_DEVICE', 'auto')
+            gguf_model_path = config.get('GGUF_MODEL_PATH', '')
+            gguf_n_gpu_layers = int(config.get('GGUF_N_GPU_LAYERS', 0))
             use_debug = config.get('DEBUG_MODE', False) if not debug_mode else debug_mode
         else:
             # Attribute-based config object (standard usage)
@@ -567,6 +737,8 @@ class LLMProviderFactory:
             google_model = getattr(config, 'GOOGLE_GEMINI_MODEL', 'gemini-1.5-flash-latest')
             transformers_model = getattr(config, 'TRANSFORMERS_MODEL', TransformersProvider.DEFAULT_MODEL)
             transformers_device = getattr(config, 'TRANSFORMERS_DEVICE', 'auto')
+            gguf_model_path = getattr(config, 'GGUF_MODEL_PATH', '')
+            gguf_n_gpu_layers = int(getattr(config, 'GGUF_N_GPU_LAYERS', 0))
             use_debug = getattr(config, 'DEBUG_MODE', False) if not debug_mode else debug_mode
         
         # Ensure provider_type is a string
@@ -582,7 +754,9 @@ class LLMProviderFactory:
             return GoogleGeminiProvider(google_api_key, google_model, use_debug)
         elif provider_type == "transformers":
             return TransformersProvider(transformers_model, use_debug, transformers_device)
+        elif provider_type == "gguf" or provider_type == "llama-cpp":
+            return LlamaCppProvider(gguf_model_path, use_debug, n_gpu_layers=gguf_n_gpu_layers)
         else:
             print(f"❌ Error: Unknown provider type '{provider_type}'", file=sys.stderr)
-            print(f"   Supported types: ollama, google, transformers", file=sys.stderr)
+            print(f"   Supported types: ollama, google, transformers, gguf", file=sys.stderr)
             return None

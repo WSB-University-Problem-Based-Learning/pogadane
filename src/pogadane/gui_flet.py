@@ -108,23 +108,23 @@ class PogadaneApp:
             inverse_primary="#60A5FA",
         )
         
-        # Dark Theme - Adapted Pogadane Brand Colors
+        # Dark Theme - Material 3 Expressive DARK MODE Pogadane Brand Colors
         dark_theme = ft.ColorScheme(
-            # Primary - Brighter blue for dark mode
+            # Primary - Light Blue for primary actions
             primary="#60A5FA",
-            on_primary="#1E3A8A",
+            on_primary="#00287A",  # Dark Blue text/icons
             primary_container="#1E40AF",
             on_primary_container="#DBEAFE",
             
-            # Secondary - Brighter purple for dark mode
+            # Secondary - Light Purple for secondary actions
             secondary="#A78BFA",
-            on_secondary="#5B21B6",
+            on_secondary="#39008B",  # Dark Purple text/icons
             secondary_container="#6D28D9",
             on_secondary_container="#EDE9FE",
             
-            # Tertiary - Adjusted green for dark mode
+            # Tertiary - Bright Green for success, confirmation, key CTAs
             tertiary="#6EE7B7",
-            on_tertiary="#047857",
+            on_tertiary="#003E26",  # Dark Green text/icons
             tertiary_container="#059669",
             on_tertiary_container="#D1FAE5",
             
@@ -134,18 +134,18 @@ class PogadaneApp:
             error_container="#B91C1C",
             on_error_container="#FEE2E2",
             
-            # Background & Surface - Dark mode
-            background="#111827",
-            on_background="#F9FAFB",
-            surface="#1F2937",
-            on_surface="#F9FAFB",
+            # Background & Surface - Dark mode UI
+            background="#111827",  # Main page background, darkest
+            on_background="#F3F4F6",  # Headlines, titles, high-emphasis text
+            surface="#374151",  # Main background for cards, content areas
+            on_surface="#F3F4F6",  # Headlines, titles, high-emphasis text
             
             # Surface Variants
             surface_variant="#374151",
-            on_surface_variant="#E5E7EB",
+            on_surface_variant="#9CA3AF",  # Body text, medium-emphasis text
             
             # Outline & Borders
-            outline="#6B7280",
+            outline="#6B7280",  # Borders, dividers
             outline_variant="#4B5563",
             
             # Shadow & Overlay
@@ -168,12 +168,14 @@ class PogadaneApp:
             color_scheme=dark_theme,
         )
         
-        # Brand accent colors (for special use cases)
+        # Brand accent colors (Material 3 Expressive Dark Mode)
         self.brand_colors = {
-            "highlight_yellow": "#FBBF24",  # Warnings, offline status
-            "accent_green": "#6EE7B7",      # Bright positive feedback
-            "success": "#34D399",            # Success states
+            "highlight_yellow": "#FBBF24",  # Accent Yellow - warnings, 'offline' status
+            "accent_green": "#6EE7B7",      # Bright Green - positive feedback, success
+            "success": "#6EE7B7",            # Success states
             "warning": "#FBBF24",            # Warning states
+            "primary": "#60A5FA",            # Light Blue - primary actions
+            "secondary": "#A78BFA",          # Light Purple - secondary actions
         }
         
         # Material 3 Expressive Design Tokens
@@ -894,12 +896,13 @@ class PogadaneApp:
             self.progress_text.update()
 
     def refresh_theme_sensitive_elements(self):
-        """Update UI elements that depend on the active theme"""
+        """Update UI elements that depend on the active theme - Material 3 Expressive"""
 
         is_light = self.page.theme_mode == ft.ThemeMode.LIGHT
-        queue_card_bg = "#FFFFFF" if is_light else "#111827"
-        queue_border_color = "#E5E7EB" if is_light else "#374151"
-        queue_placeholder_bg = "#F9FAFB" if is_light else "#1F2937"
+        # Material 3 Expressive Dark Mode colors
+        queue_card_bg = "#FFFFFF" if is_light else "#374151"  # Surface
+        queue_border_color = "#E5E7EB" if is_light else "#6B7280"  # Outline
+        queue_placeholder_bg = "#F9FAFB" if is_light else "#374151"  # Surface
 
         # Only update if element is already added to page
         if self.queue_placeholder and hasattr(self.queue_placeholder, 'page') and self.queue_placeholder.page:
@@ -913,6 +916,68 @@ class PogadaneApp:
                 container.bgcolor = queue_card_bg
                 container.border = ft.border.all(1, queue_border_color)
                 container.update()
+    
+    def get_theme_color(self, light_color: str, dark_color: str = None) -> str:
+        """
+        Get theme-appropriate color - Material 3 Expressive Dark Mode.
+        
+        Args:
+            light_color: Color for light mode
+            dark_color: Color for dark mode (auto-darkened if not provided)
+        
+        Returns:
+            Appropriate color based on current theme
+        """
+        is_light = self.page.theme_mode == ft.ThemeMode.LIGHT
+        
+        if is_light:
+            return light_color
+        
+        # If dark color not provided, use Material 3 Expressive dark mode mappings
+        if dark_color is None:
+            # Material 3 Expressive Dark Mode color mappings
+            color_map = {
+                # Surface colors (using M3 dark surface = #374151)
+                "#FFFFFF": "#374151",  # White -> Surface
+                "#F9FAFB": "#374151",  # Very light gray -> Surface
+                "#F3F4F6": "#374151",  # Light gray -> Surface
+                "#E5E7EB": "#374151",  # Gray -> Surface
+                
+                # Primary (Light Blue #60A5FA)
+                "#DBEAFE": "#1E40AF",  # Light blue -> Dark blue container
+                "#F0F9FF": "#1E40AF",  # Very light blue -> Dark blue container
+                "#EFF6FF": "#1E40AF",  # Very light blue -> Dark blue container
+                "#E0F2FE": "#1E40AF",  # Light cyan -> Dark blue container
+                
+                # Secondary (Light Purple #A78BFA)
+                "#F3E8FF": "#6D28D9",  # Light purple -> Dark purple container
+                "#FAF5FF": "#6D28D9",  # Very light purple -> Dark purple container
+                "#EDE9FE": "#6D28D9",  # Light purple -> Dark purple container
+                
+                # Tertiary (Bright Green #6EE7B7)
+                "#F0FDF4": "#059669",  # Light green -> Dark green container
+                "#D1FAE5": "#059669",  # Very light green -> Dark green container
+                "#ECFDF5": "#059669",  # Light green -> Dark green container
+                
+                # Error (Red)
+                "#FEE2E2": "#B91C1C",  # Light red -> Dark red container
+                "#FEF2F2": "#B91C1C",  # Very light red -> Dark red container
+                
+                # Warning (Accent Yellow #FBBF24)
+                "#FFFBEB": "#78350F",  # Light yellow -> Dark yellow/brown
+                "#FEF3C7": "#78350F",  # Very light yellow -> Dark yellow/brown
+                
+                # Border colors
+                "#FCA5A5": "#B91C1C",  # Light red border -> Dark red
+                "#93C5FD": "#1E40AF",  # Light blue border -> Dark blue
+                "#C4B5FD": "#6D28D9",  # Light purple border -> Dark purple
+                "#7DD3FC": "#1E40AF",  # Light cyan border -> Dark blue
+                "#FCD34D": "#78350F",  # Yellow border -> Dark yellow
+                "#A5F3FC": "#1E40AF",  # Light cyan -> Dark blue
+            }
+            dark_color = color_map.get(light_color, light_color)
+        
+        return dark_color
     
     def create_console_tab(self):
         """Create modern console output tab with live monitoring"""
@@ -1608,7 +1673,7 @@ class PogadaneApp:
                 ],
                 border_radius=12,
                 filled=True,
-                bgcolor="#F0F9FF",
+                bgcolor=self.get_theme_color("#F0F9FF"),
                 border_color="#2563EB",
                 focused_border_color="#1D4ED8",
                 label_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
@@ -1632,7 +1697,7 @@ class PogadaneApp:
                 ],
                 border_radius=12,
                 filled=True,
-                bgcolor="#F0FDF4",
+                bgcolor=self.get_theme_color("#F0FDF4"),
                 border_color="#10B981",
                 focused_border_color="#059669",
                 label_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
@@ -2088,7 +2153,7 @@ class PogadaneApp:
                 ],
                 border_radius=8,
                 filled=True,
-                bgcolor="#DBEAFE",
+                bgcolor=self.get_theme_color("#DBEAFE"),
                 text_size=13,
             )
             self.config_fields["TRANSFORMERS_MODEL"] = model_dropdown
@@ -2123,19 +2188,19 @@ class PogadaneApp:
                                     "3. Wygeneruj token: huggingface.co/settings/tokens\n"
                                     "4. Zaloguj się: huggingface-cli login",
                                     size=10,
-                                    color="#6B7280",
+                                    color="#9CA3AF",
                                 ),
                             ], spacing=4),
                             padding=12,
-                            border=ft.border.all(1, "#FCD34D"),
+                            border=ft.border.all(1, self.get_theme_color("#FCD34D", "#B45309")),
                             border_radius=8,
-                            bgcolor="#FFFBEB",
+                            bgcolor=self.get_theme_color("#FFFBEB"),
                         ),
                     ], spacing=0),
                     padding=16,
-                    border=ft.border.all(1, "#93C5FD"),
+                    border=ft.border.all(1, self.get_theme_color("#93C5FD", "#1E40AF")),
                     border_radius=12,
-                    bgcolor="#EFF6FF",
+                    bgcolor=self.get_theme_color("#EFF6FF"),
                 )
             ]
             
@@ -2146,7 +2211,7 @@ class PogadaneApp:
                 value=getattr(self.config_module, "OLLAMA_MODEL", "gemma3:4b"),
                 border_radius=8,
                 filled=True,
-                bgcolor="#F3E8FF",
+                bgcolor=self.get_theme_color("#F3E8FF"),
                 text_size=13,
                 helper_text="Przykład: gemma3:4b, llama3:8b, mistral:7b",
             )
@@ -2167,14 +2232,14 @@ class PogadaneApp:
                             ft.Text(
                                 "Zainstaluj: https://ollama.ai",
                                 size=11,
-                                color="#6B7280",
+                                color="#9CA3AF",
                             ),
                         ], spacing=4),
                     ], spacing=0),
                     padding=16,
-                    border=ft.border.all(1, "#C4B5FD"),
+                    border=ft.border.all(1, self.get_theme_color("#C4B5FD", "#6D28D9")),
                     border_radius=12,
-                    bgcolor="#FAF5FF",
+                    bgcolor=self.get_theme_color("#FAF5FF"),
                 )
             ]
             
@@ -2187,7 +2252,7 @@ class PogadaneApp:
                 can_reveal_password=True,
                 border_radius=8,
                 filled=True,
-                bgcolor="#FEE2E2",
+                bgcolor=self.get_theme_color("#FEE2E2"),
                 text_size=13,
                 helper_text="Pobierz z: https://aistudio.google.com/app/apikey",
             )
@@ -2224,14 +2289,14 @@ class PogadaneApp:
                             ft.Text(
                                 "Wymaga połączenia z internetem",
                                 size=11,
-                                color="#6B7280",
+                                color="#9CA3AF",
                             ),
                         ], spacing=4),
                     ], spacing=0),
                     padding=16,
-                    border=ft.border.all(1, "#FCA5A5"),
+                    border=ft.border.all(1, self.get_theme_color("#FCA5A5", "#991B1B")),
                     border_radius=12,
-                    bgcolor="#FEF2F2",
+                    bgcolor=self.get_theme_color("#FEF2F2"),
                 )
             ]
         
@@ -2242,7 +2307,7 @@ class PogadaneApp:
                 value=getattr(self.config_module, "GGUF_MODEL_PATH", "dep/models/gemma-3-4b-it-Q4_K_M.gguf"),
                 border_radius=8,
                 filled=True,
-                bgcolor="#E0F2FE",
+                bgcolor=self.get_theme_color("#E0F2FE"),
                 text_size=13,
                 helper_text="Ścieżka relatywna lub bezwzględna do pliku .gguf",
             )
@@ -2253,7 +2318,7 @@ class PogadaneApp:
                 value=str(getattr(self.config_module, "GGUF_N_GPU_LAYERS", 0)),
                 border_radius=8,
                 filled=True,
-                bgcolor="#E0F2FE",
+                bgcolor=self.get_theme_color("#E0F2FE"),
                 text_size=13,
                 helper_text="0 = tylko CPU, >0 = użyj GPU (np. 35 dla 4GB VRAM)",
                 keyboard_type=ft.KeyboardType.NUMBER,
@@ -2284,19 +2349,19 @@ class PogadaneApp:
                                     "• Instalacja: pip install llama-cpp-python\n"
                                     "• Pobierz modele: huggingface.co (szukaj .gguf)",
                                     size=10,
-                                    color="#6B7280",
+                                    color="#9CA3AF",
                                 ),
                             ], spacing=4),
                             padding=12,
-                            border=ft.border.all(1, "#7DD3FC"),
+                            border=ft.border.all(1, self.get_theme_color("#7DD3FC", "#0369A1")),
                             border_radius=8,
-                            bgcolor="#F0F9FF",
+                            bgcolor=self.get_theme_color("#F0F9FF"),
                         ),
                     ], spacing=0),
                     padding=16,
-                    border=ft.border.all(1, "#7DD3FC"),
+                    border=ft.border.all(1, self.get_theme_color("#7DD3FC", "#0369A1")),
                     border_radius=12,
-                    bgcolor="#E0F2FE",
+                    bgcolor=self.get_theme_color("#E0F2FE"),
                 )
             ]
         

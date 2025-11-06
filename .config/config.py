@@ -24,7 +24,7 @@ WHISPER_DEVICE = "auto"     # Urządzenie: "auto", "cpu", "cuda"
 YT_DLP_PATH = "yt-dlp" # Komenda lub pełna ścieżka
 
 # --- Ustawienia Podsumowania ---
-SUMMARY_PROVIDER = "transformers" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
+SUMMARY_PROVIDER = "ollama" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
 SUMMARY_LANGUAGE = "Polish" # Język podsumowania (uwaga: większość modeli Transformers działa tylko po angielsku)
 
 # --- Szablony Promptów LLM ---

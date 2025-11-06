@@ -1,14 +1,4 @@
-# Pogadane# Pogadane# Pogadane# Pogadane# Pogadane
-
-
-
-<p align="center">
-
-  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
-
-</p><p align="center">
-
-
+# Pogadane
 
 <p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
 
@@ -16,15 +6,7 @@
 
 </p></p><p align="center">
 
-
-
 ---
-
-
-
-## Highlights<p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
-
-
 
 - 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
 

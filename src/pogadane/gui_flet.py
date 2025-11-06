@@ -1569,7 +1569,7 @@ class PogadaneApp:
     # Event Handlers
     
     def open_settings_dialog(self, e):
-        """Open settings dialog window with loading animation"""
+        """Open settings dialog window with smart, context-aware UI"""
         # Show loading indicator
         loading_dialog = ft.AlertDialog(
             content=ft.Column(
@@ -1593,126 +1593,171 @@ class PogadaneApp:
             # Clear previous config fields
             self.config_fields.clear()
             
-            # ⚡ PRESETS SECTION - Quick configuration
-            presets_section = self.create_presets_selector()
+            # Get current values
+            current_transcription_provider = getattr(self.config_module, "TRANSCRIPTION_PROVIDER", "faster-whisper")
+            current_summary_provider = getattr(self.config_module, "SUMMARY_PROVIDER", "transformers")
             
-            # 🎙️ TRANSCRIPTION SETTINGS (Primary feature - shown first)
-            transcription_section = self.create_config_section(
-                title="🎙️ Transkrypcja Audio",
-                description="Ustawienia konwersji mowy na tekst",
-                fields=[
-                    ("TRANSCRIPTION_PROVIDER", "Silnik transkrypcji", "dropdown", 
-                     ["faster-whisper", "whisper"],
-                     "faster-whisper: Zalecany, 4x szybszy | whisper: Standardowy OpenAI Whisper"),
-                    
-                    ("WHISPER_MODEL", "Model AI", "dropdown", 
-                     ["tiny", "base", "small", "medium", "large-v3", "turbo"],
-                     "turbo: Najszybszy (zalecany) | large-v3: Najdokładniejszy | tiny: Najmniejszy"),
-                    
-                    ("WHISPER_LANGUAGE", "Język audio", "dropdown",
-                     ["Polish", "English", "German", "French", "Spanish", "Italian", "Ukrainian", "Russian"],
-                     "Język nagrania do transkrypcji"),
-                    
-                    ("FASTER_WHISPER_DEVICE", "Akcelerator sprzętowy", "dropdown", 
-                     ["auto", "cuda", "cpu"],
-                     "auto: Automatyczny (zalecany) | cuda: GPU NVIDIA | cpu: Tylko procesor"),
-                ]
+            # Create containers for conditional sections
+            self.transcription_settings_container = ft.Column(spacing=8, visible=True)
+            self.summary_settings_container = ft.Column(spacing=8, visible=True)
+            
+            # 🎙️ TRANSCRIPTION PROVIDER SELECTOR (Main Choice)
+            transcription_provider_dropdown = ft.Dropdown(
+                label="🎙️ Silnik Transkrypcji",
+                value=current_transcription_provider,
+                options=[
+                    ft.dropdown.Option(key="faster-whisper", text="Faster-Whisper (Zalecany - 4x szybszy)"),
+                    ft.dropdown.Option(key="whisper", text="OpenAI Whisper (Standardowy)"),
+                ],
+                border_radius=12,
+                filled=True,
+                bgcolor="#F0F9FF",
+                border_color="#2563EB",
+                focused_border_color="#1D4ED8",
+                label_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
+                text_size=14,
+                on_change=lambda _: self.update_transcription_settings(),
+            )
+            self.config_fields["TRANSCRIPTION_PROVIDER"] = transcription_provider_dropdown
+            
+            # Build transcription settings based on provider
+            self.build_transcription_settings(current_transcription_provider)
+            
+            # 🤖 SUMMARY PROVIDER SELECTOR (Main Choice)
+            summary_provider_dropdown = ft.Dropdown(
+                label="🤖 Dostawca AI Podsumowań",
+                value=current_summary_provider,
+                options=[
+                    ft.dropdown.Option(key="transformers", text="Transformers (Offline - Zalecany)"),
+                    ft.dropdown.Option(key="ollama", text="Ollama (Lokalny, wymaga instalacji)"),
+                    ft.dropdown.Option(key="google", text="Google Gemini (Cloud, wymaga API)"),
+                ],
+                border_radius=12,
+                filled=True,
+                bgcolor="#F0FDF4",
+                border_color="#10B981",
+                focused_border_color="#059669",
+                label_style=ft.TextStyle(size=14, weight=ft.FontWeight.BOLD),
+                text_size=14,
+                on_change=lambda _: self.update_summary_settings(),
+            )
+            self.config_fields["SUMMARY_PROVIDER"] = summary_provider_dropdown
+            
+            # Build summary settings based on provider
+            self.build_summary_settings(current_summary_provider)
+            
+            # Common settings (always visible)
+            whisper_model = ft.Dropdown(
+                label="Model Whisper",
+                value=getattr(self.config_module, "WHISPER_MODEL", "turbo"),
+                options=[
+                    ft.dropdown.Option("tiny", "Tiny - Najmniejszy, najszybszy"),
+                    ft.dropdown.Option("base", "Base - Mały, szybki"),
+                    ft.dropdown.Option("small", "Small - Zbalansowany"),
+                    ft.dropdown.Option("medium", "Medium - Dobra jakość"),
+                    ft.dropdown.Option("large-v3", "Large-v3 - Najlepsza jakość"),
+                    ft.dropdown.Option("turbo", "Turbo - Zalecany (szybki + dokładny)"),
+                ],
+                border_radius=8,
+                filled=True,
+                text_size=13,
+            )
+            self.config_fields["WHISPER_MODEL"] = whisper_model
+            
+            whisper_language = ft.Dropdown(
+                label="Język Audio",
+                value=getattr(self.config_module, "WHISPER_LANGUAGE", "Polish"),
+                options=[ft.dropdown.Option(lang) for lang in 
+                         ["Polish", "English", "German", "French", "Spanish", "Italian", "Ukrainian", "Russian"]],
+                border_radius=8,
+                filled=True,
+                text_size=13,
+            )
+            self.config_fields["WHISPER_LANGUAGE"] = whisper_language
+            
+            summary_language = ft.Dropdown(
+                label="Język Podsumowania",
+                value=getattr(self.config_module, "SUMMARY_LANGUAGE", "English"),
+                options=[ft.dropdown.Option(lang) for lang in 
+                         ["Polish", "English", "German", "French", "Spanish"]],
+                border_radius=8,
+                filled=True,
+                text_size=13,
+                width=200,
+            )
+            self.config_fields["SUMMARY_LANGUAGE"] = summary_language
+            
+            # Transcription Tab Content
+            transcription_tab_content = ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(
+                                "Wybierz silnik transkrypcji i skonfiguruj opcje przetwarzania audio",
+                                size=13,
+                                color="#6B7280",
+                                italic=True,
+                            ),
+                        ]),
+                        padding=ft.padding.only(bottom=16),
+                    ),
+                    transcription_provider_dropdown,
+                    ft.Container(height=12),
+                    self.transcription_settings_container,
+                    ft.Container(height=12),
+                    whisper_model,
+                    ft.Container(height=12),
+                    whisper_language,
+                ], spacing=0, scroll=ft.ScrollMode.AUTO),
+                padding=20,
+                expand=True,
             )
             
-            # 🤖 SUMMARY SETTINGS
-            summary_section = self.create_config_section(
-                title="🤖 Generowanie Podsumowań",
-                description="Ustawienia AI do tworzenia streszczeń",
-                fields=[
-                    ("SUMMARY_PROVIDER", "Dostawca AI", "dropdown", 
-                     ["transformers", "ollama", "google"],
-                     "transformers: Offline, lokalny (ZALECANY) | ollama: Wymaga instalacji Ollama | google: Wymaga klucza API"),
-                    
-                    ("TRANSFORMERS_MODEL", "Model Transformers", "dropdown",
-                     ["facebook/bart-large-cnn", "sshleifer/distilbart-cnn-12-6", "google/flan-t5-base", "google/flan-t5-small"],
-                     "bart-large-cnn: Najlepsza jakość (~1.6GB) | distilbart: Szybszy (~500MB) | flan-t5-small: Najmniejszy (~300MB)"),
-                    
-                    ("OLLAMA_MODEL", "Model Ollama", "text", None,
-                     "Nazwa modelu Ollama (np. gemma3:4b, llama3:8b)"),
-                    
-                    ("GOOGLE_API_KEY", "Klucz API Google Gemini", "password", None,
-                     "Wymagany tylko dla dostawcy 'google'"),
-                    
-                    ("SUMMARY_LANGUAGE", "Język podsumowania", "dropdown",
-                     ["Polish", "English", "German", "French", "Spanish"],
-                     "Język wynikowego podsumowania"),
-                ]
+            # Summary Tab Content
+            summary_tab_content = ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(
+                                "Wybierz dostawcę AI do generowania podsumowań",
+                                size=13,
+                                color="#6B7280",
+                                italic=True,
+                            ),
+                        ]),
+                        padding=ft.padding.only(bottom=16),
+                    ),
+                    summary_provider_dropdown,
+                    ft.Container(height=12),
+                    self.summary_settings_container,
+                    ft.Container(height=20),
+                    summary_language,
+                ], spacing=0, scroll=ft.ScrollMode.AUTO),
+                padding=20,
+                expand=True,
             )
             
-            # ⚙️ ADVANCED SETTINGS (collapsible)
-            advanced_section = self.create_config_section(
-                title="⚙️ Ustawienia Zaawansowane",
-                description="Opcje dla zaawansowanych użytkowników",
-                fields=[
-                    ("FASTER_WHISPER_BATCH_SIZE", "Batch Size (0 = wyłączone)", "text", None,
-                     "Przetwarzanie wsadowe - większe wartości = szybsze, więcej RAM"),
-                    
-                    ("FASTER_WHISPER_COMPUTE_TYPE", "Typ obliczeń", "dropdown",
-                     ["auto", "int8", "float16", "int8_float16"],
-                     "auto: Automatyczny | int8: Szybszy, mniej pamięci | float16: Dokładniejszy"),
-                    
-                    ("FASTER_WHISPER_VAD_FILTER", "Voice Activity Detection", "checkbox", None,
-                     "Wykrywanie aktywności głosowej - usuwa ciszę"),
-                    
-                    ("YT_DLP_PATH", "Ścieżka yt-dlp", "text", None,
-                     "Domyślnie: yt-dlp (z PATH). Zmień tylko w razie problemów"),
-                ]
-            )
-            
-            # Dialog content with tabs for better organization
+            # Dialog content with tabs
             dialog_content = ft.Container(
-                content=ft.Column(
-                    controls=[
-                        # Presets at the top for quick access
-                        ft.Container(
-                            content=presets_section,
-                            padding=ft.padding.symmetric(horizontal=20, vertical=16),
-                            bgcolor="#F9FAFB" if self.page.theme_mode == ft.ThemeMode.LIGHT else "#1F2937",
-                            border_radius=16,
+                content=ft.Tabs(
+                    selected_index=0,
+                    animation_duration=300,
+                    tabs=[
+                        ft.Tab(
+                            text="Transkrypcja Audio",
+                            icon=ft.Icons.MIC_ROUNDED,
+                            content=transcription_tab_content,
                         ),
-                        ft.Divider(height=1, color="#E5E7EB"),
-                        # Tabs for detailed settings
-                        ft.Tabs(
-                            selected_index=0,
-                            animation_duration=300,
-                            tabs=[
-                                ft.Tab(
-                                    text="Transkrypcja",
-                                    icon=ft.Icons.MIC_ROUNDED,
-                                    content=ft.Container(
-                                        content=transcription_section,
-                                        padding=ft.padding.all(20),
-                                    ),
-                                ),
-                                ft.Tab(
-                                    text="Podsumowanie",
-                                    icon=ft.Icons.AUTO_AWESOME_ROUNDED,
-                                    content=ft.Container(
-                                        content=summary_section,
-                                        padding=ft.padding.all(20),
-                                    ),
-                                ),
-                                ft.Tab(
-                                    text="Zaawansowane",
-                                    icon=ft.Icons.TUNE_ROUNDED,
-                                    content=ft.Container(
-                                        content=advanced_section,
-                                        padding=ft.padding.all(20),
-                                    ),
-                                ),
-                            ],
-                            expand=1,
+                        ft.Tab(
+                            text="Podsumowania AI",
+                            icon=ft.Icons.AUTO_AWESOME_ROUNDED,
+                            content=summary_tab_content,
                         ),
                     ],
-                    spacing=0,
+                    expand=True,
                 ),
                 height=600,
-                width=750,
+                width=700,
             )
             
             # Create dialog with fade-in animation
@@ -1760,6 +1805,9 @@ class PogadaneApp:
                 actions_alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             )
             
+            # Store dialog reference for updates
+            self.settings_dialog = settings_dialog
+            
             # Close loading dialog and show settings dialog with animation
             loading_dialog.open = False
             self.page.update()
@@ -1777,11 +1825,263 @@ class PogadaneApp:
             # Close loading dialog on error
             loading_dialog.open = False
             self.page.update()
-            
-            print(f"❌ Error opening settings dialog: {ex}")
+            print(f"[ERROR] Failed to open settings dialog: {ex}")
             import traceback
             traceback.print_exc()
-            self.show_snackbar(f"Błąd otwierania ustawień: {str(ex)}", error=True)
+    
+    def build_transcription_settings(self, provider: str):
+        """Build transcription settings UI based on provider"""
+        self.transcription_settings_container.controls.clear()
+        
+        if provider == "faster-whisper":
+            # Show Faster-Whisper specific settings
+            device_dropdown = ft.Dropdown(
+                label="⚡ Akcelerator Sprzętowy",
+                value=getattr(self.config_module, "FASTER_WHISPER_DEVICE", "auto"),
+                options=[
+                    ft.dropdown.Option(key="auto", text="Auto - Automatyczne wykrywanie (zalecany)"),
+                    ft.dropdown.Option(key="cuda", text="CUDA - GPU NVIDIA (najszybszy)"),
+                    ft.dropdown.Option(key="cpu", text="CPU - Tylko procesor (wolniejszy)"),
+                ],
+                border_radius=8,
+                filled=True,
+                bgcolor="#FEF3C7",
+                text_size=13,
+            )
+            self.config_fields["FASTER_WHISPER_DEVICE"] = device_dropdown
+            
+            batch_size = ft.TextField(
+                label="Batch Size (0 = wyłączone)",
+                value=str(getattr(self.config_module, "FASTER_WHISPER_BATCH_SIZE", "0")),
+                border_radius=8,
+                filled=True,
+                text_size=13,
+                helper_text="Większa wartość = szybsze, więcej RAM",
+            )
+            self.config_fields["FASTER_WHISPER_BATCH_SIZE"] = batch_size
+            
+            compute_type = ft.Dropdown(
+                label="Typ Obliczeń",
+                value=getattr(self.config_module, "FASTER_WHISPER_COMPUTE_TYPE", "auto"),
+                options=[
+                    ft.dropdown.Option("auto", "Auto - Automatyczny"),
+                    ft.dropdown.Option("int8", "INT8 - Szybszy, mniej pamięci"),
+                    ft.dropdown.Option("float16", "FLOAT16 - Dokładniejszy"),
+                    ft.dropdown.Option("int8_float16", "INT8+FLOAT16 - Hybrydowy"),
+                ],
+                border_radius=8,
+                filled=True,
+                text_size=13,
+            )
+            self.config_fields["FASTER_WHISPER_COMPUTE_TYPE"] = compute_type
+            
+            vad_filter = ft.Checkbox(
+                label="Voice Activity Detection (usuwa ciszę)",
+                value=getattr(self.config_module, "FASTER_WHISPER_VAD_FILTER", True),
+            )
+            self.config_fields["FASTER_WHISPER_VAD_FILTER"] = vad_filter
+            
+            self.transcription_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("⚙️ Opcje Faster-Whisper", size=13, weight=ft.FontWeight.BOLD, color="#92400E"),
+                        ft.Container(height=8),
+                        device_dropdown,
+                        ft.Container(height=8),
+                        batch_size,
+                        ft.Container(height=8),
+                        compute_type,
+                        ft.Container(height=12),
+                        vad_filter,
+                    ], spacing=0),
+                    padding=16,
+                    border=ft.border.all(1, "#FCD34D"),
+                    border_radius=12,
+                    bgcolor="#FFFBEB",
+                )
+            ]
+        else:
+            # For standard whisper, show simple message
+            self.transcription_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.INFO_OUTLINE, size=24, color="#2563EB"),
+                        ft.Text(
+                            "OpenAI Whisper używa domyślnych ustawień",
+                            size=12,
+                            color="#6B7280",
+                            text_align=ft.TextAlign.CENTER,
+                        ),
+                    ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=8),
+                    padding=16,
+                    border=ft.border.all(1, "#BFDBFE"),
+                    border_radius=12,
+                    bgcolor="#EFF6FF",
+                )
+            ]
+        
+        if hasattr(self, 'settings_dialog'):
+            self.page.update()
+    
+    def build_summary_settings(self, provider: str):
+        """Build summary settings UI based on provider"""
+        self.summary_settings_container.controls.clear()
+        
+        if provider == "transformers":
+            # Show Transformers model selector
+            model_dropdown = ft.Dropdown(
+                label="🤖 Model AI Transformers",
+                value=getattr(self.config_module, "TRANSFORMERS_MODEL", "facebook/bart-large-cnn"),
+                options=[
+                    ft.dropdown.Option("facebook/bart-large-cnn", "BART Large CNN - Najlepsza jakość (~1.6GB)"),
+                    ft.dropdown.Option("sshleifer/distilbart-cnn-12-6", "DistilBART - Szybszy (~500MB)"),
+                    ft.dropdown.Option("google/flan-t5-base", "FLAN-T5 Base - Google (~990MB)"),
+                    ft.dropdown.Option("google/flan-t5-small", "FLAN-T5 Small - Mały (~300MB)"),
+                    ft.dropdown.Option("google/flan-t5-large", "FLAN-T5 Large - Duży (~3GB)"),
+                    ft.dropdown.Option("google-t5/t5-small", "T5 Small - Kompaktowy (~240MB)"),
+                    ft.dropdown.Option("google-t5/t5-base", "T5 Base - Zbalansowany (~890MB)"),
+                    ft.dropdown.Option("google-t5/t5-large", "T5 Large - Potężny (~2.8GB)"),
+                    ft.dropdown.Option("google/gemma-2-2b-it", "Gemma 2-2B - Instrukcyjny (~5GB)"),
+                ],
+                border_radius=8,
+                filled=True,
+                bgcolor="#DBEAFE",
+                text_size=13,
+            )
+            self.config_fields["TRANSFORMERS_MODEL"] = model_dropdown
+            
+            self.summary_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.OFFLINE_BOLT_ROUNDED, size=18, color="#1D4ED8"),
+                            ft.Text("Offline - Nie wymaga internetu", size=13, weight=ft.FontWeight.BOLD, color="#1E40AF"),
+                        ], spacing=8),
+                        ft.Container(height=8),
+                        model_dropdown,
+                        ft.Container(height=12),
+                        ft.Text(
+                            "💡 Modele pobierane automatycznie przy pierwszym użyciu",
+                            size=11,
+                            color="#6B7280",
+                            italic=True,
+                        ),
+                    ], spacing=0),
+                    padding=16,
+                    border=ft.border.all(1, "#93C5FD"),
+                    border_radius=12,
+                    bgcolor="#EFF6FF",
+                )
+            ]
+            
+        elif provider == "ollama":
+            # Show Ollama model input
+            ollama_model = ft.TextField(
+                label="🦙 Nazwa Modelu Ollama",
+                value=getattr(self.config_module, "OLLAMA_MODEL", "gemma3:4b"),
+                border_radius=8,
+                filled=True,
+                bgcolor="#F3E8FF",
+                text_size=13,
+                helper_text="Przykład: gemma3:4b, llama3:8b, mistral:7b",
+            )
+            self.config_fields["OLLAMA_MODEL"] = ollama_model
+            
+            self.summary_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.COMPUTER_ROUNDED, size=18, color="#7C3AED"),
+                            ft.Text("Lokalny serwer - Wymaga Ollama", size=13, weight=ft.FontWeight.BOLD, color="#6D28D9"),
+                        ], spacing=8),
+                        ft.Container(height=8),
+                        ollama_model,
+                        ft.Container(height=12),
+                        ft.Row([
+                            ft.Icon(ft.Icons.INFO_OUTLINE, size=16, color="#9333EA"),
+                            ft.Text(
+                                "Zainstaluj: https://ollama.ai",
+                                size=11,
+                                color="#6B7280",
+                            ),
+                        ], spacing=4),
+                    ], spacing=0),
+                    padding=16,
+                    border=ft.border.all(1, "#C4B5FD"),
+                    border_radius=12,
+                    bgcolor="#FAF5FF",
+                )
+            ]
+            
+        elif provider == "google":
+            # Show Google API key input
+            api_key = ft.TextField(
+                label="🔑 Klucz API Google Gemini",
+                value=getattr(self.config_module, "GOOGLE_API_KEY", ""),
+                password=True,
+                can_reveal_password=True,
+                border_radius=8,
+                filled=True,
+                bgcolor="#FEE2E2",
+                text_size=13,
+                helper_text="Pobierz z: https://aistudio.google.com/app/apikey",
+            )
+            self.config_fields["GOOGLE_API_KEY"] = api_key
+            
+            gemini_model = ft.Dropdown(
+                label="🌟 Model Gemini",
+                value=getattr(self.config_module, "GOOGLE_GEMINI_MODEL", "gemini-1.5-flash"),
+                options=[
+                    ft.dropdown.Option("gemini-1.5-flash", "Gemini 1.5 Flash - Szybki (zalecany)"),
+                    ft.dropdown.Option("gemini-1.5-pro", "Gemini 1.5 Pro - Najbardziej inteligentny"),
+                    ft.dropdown.Option("gemini-pro", "Gemini Pro - Standardowy"),
+                ],
+                border_radius=8,
+                filled=True,
+                text_size=13,
+            )
+            self.config_fields["GOOGLE_GEMINI_MODEL"] = gemini_model
+            
+            self.summary_settings_container.controls = [
+                ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(ft.Icons.CLOUD_ROUNDED, size=18, color="#DC2626"),
+                            ft.Text("Cloud API - Wymaga klucza", size=13, weight=ft.FontWeight.BOLD, color="#B91C1C"),
+                        ], spacing=8),
+                        ft.Container(height=8),
+                        api_key,
+                        ft.Container(height=8),
+                        gemini_model,
+                        ft.Container(height=12),
+                        ft.Row([
+                            ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=16, color="#DC2626"),
+                            ft.Text(
+                                "Wymaga połączenia z internetem",
+                                size=11,
+                                color="#6B7280",
+                            ),
+                        ], spacing=4),
+                    ], spacing=0),
+                    padding=16,
+                    border=ft.border.all(1, "#FCA5A5"),
+                    border_radius=12,
+                    bgcolor="#FEF2F2",
+                )
+            ]
+        
+        if hasattr(self, 'settings_dialog'):
+            self.page.update()
+    
+    def update_transcription_settings(self):
+        """Update visible transcription settings when provider changes"""
+        provider = self.config_fields["TRANSCRIPTION_PROVIDER"].value
+        self.build_transcription_settings(provider)
+    
+    def update_summary_settings(self):
+        """Update visible summary settings when provider changes"""
+        provider = self.config_fields["SUMMARY_PROVIDER"].value
+        self.build_summary_settings(provider)
     
     def close_dialog(self, dialog):
         """Close the settings dialog"""
@@ -1957,16 +2257,16 @@ class PogadaneApp:
         self.current_font_scale += delta * 0.1
         self.current_font_scale = max(0.7, min(1.5, self.current_font_scale))  # Clamp between 0.7 and 1.5
         
-        # Update text fields font sizes
-        if self.console_output:
+        # Update text fields font sizes (only if they exist and are on the page)
+        if self.console_output and hasattr(self.console_output, 'page') and self.console_output.page:
             self.console_output.text_size = int(12 * self.current_font_scale)
             self.console_output.update()
         
-        if self.transcription_output:
+        if self.transcription_output and hasattr(self.transcription_output, 'page') and self.transcription_output.page:
             self.transcription_output.text_size = int(12 * self.current_font_scale)
             self.transcription_output.update()
         
-        if self.summary_output:
+        if self.summary_output and hasattr(self.summary_output, 'page') and self.summary_output.page:
             self.summary_output.text_size = int(12 * self.current_font_scale)
             self.summary_output.update()
         

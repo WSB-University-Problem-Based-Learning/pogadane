@@ -19,12 +19,6 @@ MODELS_DIR = DEP_DIR / "models"
 # Ensure directories exist
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-# File markers for GUI parsing
-TRANSCRIPTION_START_MARKER = "--- POCZĄTEK TRANSKRYPCJI ---"
-TRANSCRIPTION_END_MARKER = "--- KONIEC TRANSKRYPCJI ---"
-SUMMARY_START_MARKER = "--- POCZĄTEK STRESZCZENIA ---"
-SUMMARY_END_MARKER = "--- KONIEC STRESZCZENIA ---"
-
 # GUI status messages
 FILE_STATUS_PENDING = "⏳ Oczekuje"
 FILE_STATUS_PROCESSING = "⚙️ Przetwarzanie..."

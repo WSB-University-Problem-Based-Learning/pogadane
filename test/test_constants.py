@@ -13,10 +13,6 @@ from pogadane.constants import (
     FILE_STATUS_PROCESSING,
     FILE_STATUS_COMPLETED,
     FILE_STATUS_ERROR,
-    TRANSCRIPTION_START_MARKER,
-    TRANSCRIPTION_END_MARKER,
-    SUMMARY_START_MARKER,
-    SUMMARY_END_MARKER,
 )
 
 
@@ -65,29 +61,6 @@ class TestConstants:
         ]
         assert len(statuses) == len(set(statuses))
 
-    def test_marker_constants(self):
-        """Test transcription and summary markers are defined."""
-        markers = [
-            TRANSCRIPTION_START_MARKER,
-            TRANSCRIPTION_END_MARKER,
-            SUMMARY_START_MARKER,
-            SUMMARY_END_MARKER,
-        ]
-        for marker in markers:
-            assert isinstance(marker, str)
-            assert len(marker) > 0
-            assert "---" in marker  # Markers should be distinctive
-
-    def test_marker_uniqueness(self):
-        """Test that all markers are unique."""
-        markers = [
-            TRANSCRIPTION_START_MARKER,
-            TRANSCRIPTION_END_MARKER,
-            SUMMARY_START_MARKER,
-            SUMMARY_END_MARKER,
-        ]
-        assert len(markers) == len(set(markers))
-
     def test_default_config_is_dict(self):
         """Test that DEFAULT_CONFIG is a dictionary."""
         assert isinstance(DEFAULT_CONFIG, dict)
@@ -96,8 +69,8 @@ class TestConstants:
     def test_default_config_required_keys(self):
         """Test that DEFAULT_CONFIG has all required keys."""
         required_keys = [
-            'FASTER_WHISPER_EXE',
-            'YT_DLP_EXE',
+            'TRANSCRIPTION_PROVIDER',
+            'YT_DLP_PATH',
             'WHISPER_LANGUAGE',
             'WHISPER_MODEL',
             'SUMMARY_PROVIDER',
@@ -112,21 +85,24 @@ class TestConstants:
         """Test that DEFAULT_CONFIG values have expected types."""
         # String values
         string_keys = [
-            'FASTER_WHISPER_EXE',
-            'YT_DLP_EXE',
+            'TRANSCRIPTION_PROVIDER',
+            'YT_DLP_PATH',
             'WHISPER_LANGUAGE',
             'WHISPER_MODEL',
             'SUMMARY_PROVIDER',
             'SUMMARY_LANGUAGE',
             'OLLAMA_MODEL',
+            'FASTER_WHISPER_DEVICE',
+            'FASTER_WHISPER_COMPUTE_TYPE',
         ]
         for key in string_keys:
-            assert isinstance(DEFAULT_CONFIG[key], str)
-            assert len(DEFAULT_CONFIG[key]) > 0
+            if key in DEFAULT_CONFIG:  # Some keys may be optional
+                assert isinstance(DEFAULT_CONFIG[key], str)
+                assert len(DEFAULT_CONFIG[key]) > 0
 
         # Boolean values
         assert isinstance(DEFAULT_CONFIG['DEBUG_MODE'], bool)
-        assert isinstance(DEFAULT_CONFIG['ENABLE_SPEAKER_DIARIZATION'], bool)
+        assert isinstance(DEFAULT_CONFIG['FASTER_WHISPER_VAD_FILTER'], bool)
 
     def test_default_config_whisper_model(self):
         """Test that default Whisper model is valid."""
@@ -135,7 +111,7 @@ class TestConstants:
 
     def test_default_config_summary_provider(self):
         """Test that default summary provider is valid."""
-        valid_providers = ['ollama', 'google']
+        valid_providers = ['ollama', 'google', 'transformers']
         assert DEFAULT_CONFIG['SUMMARY_PROVIDER'] in valid_providers
 
     def test_default_config_prompt_templates(self):

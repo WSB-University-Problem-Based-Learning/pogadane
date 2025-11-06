@@ -24,7 +24,7 @@ WHISPER_DEVICE = "auto"     # Urządzenie: "auto", "cpu", "cuda"
 YT_DLP_PATH = "yt-dlp" # Komenda lub pełna ścieżka
 
 # --- Ustawienia Podsumowania ---
-SUMMARY_PROVIDER = "ollama" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
+SUMMARY_PROVIDER = "transformers" # Dostawca: "transformers" (pip, offline), "ollama" (lokalnie, wymaga instalacji), lub "google" (cloud API)
 SUMMARY_LANGUAGE = "Polish" # Język podsumowania (uwaga: większość modeli Transformers działa tylko po angielsku)
 
 # --- Szablony Promptów LLM ---
@@ -56,7 +56,7 @@ GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumo
 # Ustawienia Transformers (jeśli SUMMARY_PROVIDER="transformers")
 # Transformers to lekkie modele AI, które działają lokalnie bez Ollama
 # Wymagają instalacji: pip install transformers torch
-TRANSFORMERS_MODEL = "facebook/bart-large-cnn" # Domyślny model (dobra jakość, ~1.6GB)
+TRANSFORMERS_MODEL = "google-t5/t5-small" # Domyślny model (dobra jakość, ~1.6GB)
 # Alternatywy:
 #   "sshleifer/distilbart-cnn-12-6"  - Szybszy, mniejszy (~500MB)
 #   "google/flan-t5-base"            - Uniwersalny (~900MB)

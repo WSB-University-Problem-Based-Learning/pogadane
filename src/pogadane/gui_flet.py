@@ -1134,21 +1134,18 @@ class PogadaneApp:
                                 icon=ft.Icons.COPY_ROUNDED,
                                 tooltip="Kopiuj do schowka",
                                 icon_size=18,
-                                on_click=lambda _: self.copy_to_clipboard(self.summary_output.value, "Podsumowanie"),
+                                on_click=lambda _: self.copy_to_clipboard(self.summary_output.value if hasattr(self.summary_output, 'value') else "", "Podsumowanie"),
                             ),
                         ],
                         vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     ),
                     ft.Divider(height=1, color="#E5E7EB"),
                     ft.Container(
-                        content=ft.TextField(
+                        content=ft.Markdown(
                             value="",
-                            multiline=True,
-                            read_only=True,
-                            border=ft.InputBorder.NONE,
-                            text_size=13,
-                            min_lines=15,
-                            expand=True,
+                            selectable=True,
+                            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                            on_tap_link=lambda e: self.page.launch_url(e.data),
                         ),
                         expand=True,
                     ),
@@ -2266,9 +2263,8 @@ class PogadaneApp:
             self.transcription_output.text_size = int(12 * self.current_font_scale)
             self.transcription_output.update()
         
-        if self.summary_output and hasattr(self.summary_output, 'page') and self.summary_output.page:
-            self.summary_output.text_size = int(12 * self.current_font_scale)
-            self.summary_output.update()
+        # Note: Markdown control doesn't support text_size property, it uses its own styling
+        # Font size for summary (Markdown) is handled by the Markdown renderer
         
         scale_percent = int(self.current_font_scale * 100)
         self.update_status(f"Rozmiar czcionki: {scale_percent}%")

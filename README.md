@@ -1490,7 +1490,7 @@ pytest- 🎨 Prawdziwy Material Design 3 (nie tylko inspirowany!)
 
 # Format code
 
-black src/ test/**Dokumentacja:** [GUI_MATERIAL_3_EXPRESSIVE.md](doc/GUI_MATERIAL_3_EXPRESSIVE.md)
+black src/ test/
 
 
 
@@ -1520,11 +1520,9 @@ pogadane/- 📱 Zaokrąglone rogi i karty
 
 │   ├── gui_flet.py        # Material 3 GUI
 
-│   ├── gui.py             # Legacy GUI**Dokumentacja:** [GUI_MATERIAL_DESIGN.md](doc/GUI_MATERIAL_DESIGN.md)
+│   ├── gui.py             # Legacy GUI
 
-│   ├── transcribe_summarize_working.py  # CLI
-
-│   ├── config_loader.py   # Configuration handling#### 🖥️ Legacy Bootstrap GUI
+│   ├── transcribe_summarize_working.py  # CLI#### 🖥️ Legacy Bootstrap GUI
 
 │   ├── llm_providers.py   # Summary providersStabilny, sprawdzony interfejs w stylu Bootstrap.
 
@@ -1548,7 +1546,7 @@ pogadane/- 📱 Zaokrąglone rogi i karty
 
 
 
-## Troubleshooting**Zobacz również:** [Porównanie GUI](doc/GUI_COMPARISON_ALL.md) aby wybrać najlepszą opcję dla siebie.
+## Troubleshooting
 
 
 
@@ -1867,7 +1865,7 @@ pytest```
 
 **Need more help?**
 - See detailed Polish documentation above
-- Check [QUICK_START.md](QUICK_START.md) for beginner-friendly guide
 - Visit [Issues](https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues) on GitHub
+- See [doc/CROSS_PLATFORM_GUIDE.md](doc/CROSS_PLATFORM_GUIDE.md) for platform-specific installation
+- See [doc/PROGRESS_API_REFERENCE.md](doc/PROGRESS_API_REFERENCE.md) for developer API documentation
 
-For more detailed instructions, see the Polish sections above or `doc/README.md`.

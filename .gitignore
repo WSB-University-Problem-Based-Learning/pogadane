@@ -30,10 +30,24 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec.backup
 
 # Pogadane temp artifacts
 src/pogadane/pogadane_temp_audio/
+
+# Pogadane sample audio files (not distributed - copyright holders' permission required)
+samples/*.mp3
+samples/*.wav
+samples/*.m4a
+samples/*.ogg
+samples/*.flac
+# Keep samples directory structure but ignore audio files
+!samples/.gitkeep
+!samples/README.md
 
 # Pogadane external dependencies (downloaded by tools/install.py)
 # These are NOT stored in Git to keep repository clean

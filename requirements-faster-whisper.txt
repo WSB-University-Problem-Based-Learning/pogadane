@@ -1,16 +1,24 @@
-# Faster-Whisper Dependencies
+# ============================================================================
+# Pogadane - Faster-Whisper Dependencies (RECOMMENDED)
+# ============================================================================
 # Install with: pip install -r requirements-faster-whisper.txt
 #
 # SYSTRAN faster-whisper: High-performance transcription using CTranslate2
 # Up to 4x faster than OpenAI Whisper with the same accuracy
 #
+# ✅ RECOMMENDED: This is the default transcription engine for Pogadane
+#
 # Features:
 # - GPU acceleration (CUDA 12 required)
 # - CPU with INT8 quantization
 # - Batched transcription
+# - Speaker diarization support
 # - VAD (Voice Activity Detection)
 # - Word-level timestamps
 # - Multiple model sizes (tiny to large-v3)
+#
+# Alternative: See requirements-whisper.txt for pure Python option
+# ============================================================================
 
 faster-whisper>=1.0.0
 

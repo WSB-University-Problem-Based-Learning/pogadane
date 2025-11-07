@@ -1,8 +1,34 @@
-# Pogadane - Transformers (Local AI) Dependencies
+# ============================================================================
+# Pogadane - Transformers (Local AI) Dependencies (OPTIONAL ALTERNATIVE)
+# ============================================================================
 # Install with: pip install -r requirements-transformers.txt
 #
+# ⚠️ OPTIONAL: This is an alternative AI backend (NOT RECOMMENDED)
+#
 # This enables SUMMARY_PROVIDER="transformers" for local AI summarization
-# without needing to install Ollama. Models run directly with Python.
+# without needing GGUF models or Ollama. However:
+# - English summaries only
+# - Lower quality than GGUF/Ollama
+# - Large PyTorch download (~1GB)
+# - Requires ~2-4GB RAM
+#
+# ✅ RECOMMENDED: Use llama-cpp-python + GGUF models instead
+#   (installed automatically with python install.py)
+#
+# When to use this:
+# - You need English-only summaries
+# - You cannot use GGUF models
+# - You prefer Hugging Face models (BART, T5, FLAN-T5)
+#
+# Configuration:
+#   Set SUMMARY_PROVIDER="transformers" in .config/config.py
+#
+# Available models:
+#   - google/flan-t5-small (~300MB, fastest)
+#   - sshleifer/distilbart-cnn-12-6 (~500MB)
+#   - google/flan-t5-base (~900MB)
+#   - facebook/bart-large-cnn (~1.6GB, best quality)
+# ============================================================================
 
 # Core transformers library
 transformers>=4.30.0

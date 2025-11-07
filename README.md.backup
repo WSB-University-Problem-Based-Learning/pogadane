@@ -1,16 +1,22 @@
-# Pogadane# Pogadane
+# Pogadane
 
-
-
-<p align="center"><p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
-
-  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
-
-  <br/>  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+<p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
 
   <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
 
-</p></p></p><p align="center">
+</p></p><p align="center">
+
+---
+
+- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+
+- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
+
+- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer</p></p><p align="center"><p align="center">
+
+- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
+
+- 🧰 Cross-platform installer that prepares dependencies in one pass
 
 
 
@@ -18,897 +24,435 @@
 
 
 
-## Highlights- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+## Quick Start
 
 
 
-- 🎙️ **Batch transcription** for local audio files and YouTube URLs- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
-
-- 🤖 **AI-powered summaries** using local GGUF models, Ollama, Transformers, or Google Gemini
-
-- 🖥️ **Material 3 Expressive GUI** with waveform visualization and results viewer- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer</p></p><p align="center"><p align="center">
-
-- ⚡ **4x faster transcription** with faster-whisper (GPU/CPU optimized)
-
-- 🧠 **Efficient AI models** using GGUF quantization (e.g., Gemma 3 4B runs on 4GB RAM)- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
-
-- ⚙️ **Easy configuration** stored in `.config/config.py` with in-app overrides
-
-- 🧰 **Cross-platform** installer that prepares dependencies in one pass- 🧰 Cross-platform installer that prepares dependencies in one pass
-
-
-
----
-
-
-
-## Quick Start------
-
-
-
-```bash
+```bash## Highlights<p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
 
 # 1. Clone and enter the project
 
-git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git## Quick Start
+git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 
 cd pogadane
 
-
-
-# 2. Create a virtual environment (recommended)
-
-python -m venv .venv```bash## Highlights<p align="center">  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
-
-.\.venv\Scripts\Activate.ps1  # Windows PowerShell
-
-# source .venv/bin/activate    # macOS/Linux# 1. Clone and enter the project
-
-
-
-# 3. Run the guided installer (RECOMMENDED stack: ~500MB)git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
-
-python install.py
-
-cd pogadane
-
-# 4. Launch the GUI
-
-python run_gui_flet.py- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
-
-```
+- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
 
 # 2. Create a virtual environment (recommended)
-
----
 
 python -m venv .venv- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
 
-## Installation
-
 .\.venv\Scripts\Activate.ps1  # Windows PowerShell
-
-### Recommended: Guided Installer
 
 # source .venv/bin/activate    # macOS/Linux- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer</p></p></p>
 
-The installer sets up the optimal stack for Pogadane with **faster-whisper** (4x faster transcription) + **GGUF models** (efficient AI) + **yt-dlp** (YouTube support).
 
 
-
-```bash
-
-python install.py                # Interactive wizard (RECOMMENDED)# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
-
-python install.py --full         # All options including alternative backends
-
-python install.py --dev          # Adds development toolspip install -r requirements.txt
-
-```
-
-- 🧰 Cross-platform installer that prepares dependencies in one pass
-
-**What gets installed:**
-
-- **Core dependencies**: Flet GUI, Google Gemini API, yt-dlp downloader# 4. Run the guided installer
-
-- **Default transcription**: faster-whisper (4x faster, GPU support, speaker diarization)
-
-- **Default AI**: llama-cpp-python for GGUF models (e.g., Gemma 3 4B Q4_K_M)python install.py --lightweight
-
-- **Total download**: ~500MB
-
-
-
-**Optional components** (installed with `--full`):
-
-- `openai-whisper`: Alternative Python-based transcription (slower, no diarization)# 5. Launch the GUI------
-
-- `transformers + PyTorch`: Alternative AI backend for BART/T5 models (~1-3GB)
-
-- `ollama`: External tool for local AI (install separately from https://ollama.com)python run_gui_flet.py
-
-
-
-### Manual Installation```
-
-
-
-If you prefer manual setup:
-
-
-
-```bash---## Quick Start
-
-# 1. Install core dependencies
+# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
 
 pip install -r requirements.txt
 
+- 🧰 Cross-platform installer that prepares dependencies in one pass
 
+# 4. Run the guided installer
 
-# 2. Install default transcription engine## Installation
+python install.py --lightweight
 
-pip install -r requirements-faster-whisper.txt
 
 
-
-# 3. Optional: Alternative transcription (not recommended by default)
-
-pip install -r requirements-whisper.txt### Guided Installer (Recommended)```bash## Highlights<p align="center"><p align="center">
-
-
-
-# 4. Optional: Alternative AI backend (not recommended by default)
-
-pip install -r requirements-transformers.txt
-
-```bash# 1. Clone and enter the project
-
-# 5. Optional: Development tools
-
-pip install -r requirements-dev.txtpython install.py                # interactive wizard
-
-```
-
-python install.py --full         # all features + external binariesgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
-
----
-
-python install.py --lightweight  # pure Python toolchain
-
-## Running Pogadane
-
-python install.py --dev          # adds developer toolingcd pogadane
-
-### GUI (Recommended)
-
-```
-
-```bash
-
-python run_gui_flet.py- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
-
-```
-
-### Manual Setup
-
-**Features:**
-
-- 🎨 **Material Design 3** with Flutter-powered UI# 2. Create a virtual environment (recommended)
-
-- 📊 **Waveform visualization** and topic timeline
-
-- 📋 **Queue management** with per-file results1. **Install Python 3.9+** and ensure `python`/`pip` are on PATH
-
-- 🌓 **Automatic dark/light mode**
-
-- 💫 **Smooth 60fps animations**2. **Install dependencies:**python -m venv .venv- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
-
-- ⚙️ **Settings dialog** for configuration overrides
-
-   ```bash
-
-### CLI Workflow
-
-   pip install -r requirements.txt.\.venv\Scripts\Activate.ps1  # Windows PowerShell
-
-Process single file:
-
-   pip install -r requirements-transformers.txt   # optional: local AI
-
-```bash
-
-python -m pogadane.transcribe_summarize_working audio_file.mp3   pip install -r requirements-whisper.txt        # optional: Python Whisper# source .venv/bin/activate    # macOS/Linux- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer</p>## Pogadane
-
-```
-
-   ```
-
-Process multiple files and YouTube URLs:
-
-3. **Download optional binaries:**
-
-```bash
-
-python -m pogadane.transcribe_summarize_working file1.mp3 file2.wav https://youtube.com/watch?v=...   - yt-dlp: https://github.com/yt-dlp/yt-dlp/releases
-
-```
-
-   - faster-whisper-xxl.exe: https://github.com/Purfview/whisper-standalone-win# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
-
-Get help:
-
-
-
-```bash
-
-python -m pogadane.transcribe_summarize_working --help---pip install -r requirements.txt
-
-```
-
-
-
----
-
-## Running Pogadane- 🧰 Cross-platform installer that prepares dependencies in one pass
-
-## Configuration
-
-
-
-Settings are in `.config/config.py`. Edit the file directly or use the GUI Settings dialog (⚙️ icon).
-
-### GUI# 4. Run the guided installer
-
-### Transcription Settings
-
-
-
-```python
-
-# Transcription engine: "faster-whisper" (recommended) or "whisper"```bashpython install.py --lightweight
-
-TRANSCRIPTION_PROVIDER = "faster-whisper"
+# 5. Launch the GUI------
 
 python run_gui_flet.py
 
-# Whisper model: "tiny", "base", "small", "medium", "large", "turbo"
-
-WHISPER_MODEL = "base"```
-
-
-
-# Language: "pl" (Polish), "en" (English), "auto" (auto-detect)
-
-WHISPER_LANGUAGE = "pl"
-
-Features:# 5. Launch the GUI------Pogadane turns long-form audio recordings and YouTube videos into searchable transcripts and AI-assisted summaries that stay on your machine. The project ships with a modern Material 3 GUI and a CLI workflow.
-
-# Speaker diarization (requires faster-whisper)
-
-ENABLE_SPEAKER_DIARIZATION = True- 🎨 Material Design 3 with Flutter
-
 ```
 
-- 📊 Waveform visualisation and topic timelinepython run_gui_flet.py
 
-### Summarization Settings
-
-- 📋 Queue management with per-file results
-
-```python
-
-# AI provider: "gguf" (local GGUF models), "ollama", "transformers", "google"- 🌓 Automatic dark/light mode```
-
-SUMMARY_PROVIDER = "gguf"
-
-- 💫 60fps animations
-
-# For GGUF models (recommended for efficiency)
-
-GGUF_MODEL_PATH = "dep/models/gemma-3-4b-it-Q4_K_M.gguf"
-
-
-
-# For Ollama (alternative local AI)### CLI
-
-OLLAMA_MODEL = "gemma3:4b"
 
 ---## Quick Start
 
-# For Transformers (alternative, English only)
-
-TRANSFORMERS_MODEL = "facebook/bart-large-cnn"```bash
 
 
+## Installation
 
-# For Google Gemini (cloud-based)# Single file
 
-GOOGLE_API_KEY = "your_key_here"
+
+### Guided Installer (Recommended)```bash## Highlights<p align="center"><p align="center">
+
+
+
+```bash# 1. Clone and enter the project
+
+python install.py                # interactive wizard
+
+python install.py --full         # all features + external binariesgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
+
+python install.py --lightweight  # pure Python toolchain
+
+python install.py --dev          # adds developer toolingcd pogadane
+
+```
+
+- 🎙️ Batch transcription for local audio files and YouTube URLs  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+
+### Manual Setup
+
+# 2. Create a virtual environment (recommended)
+
+1. **Install Python 3.9+** and ensure `python`/`pip` are on PATH
+
+2. **Install dependencies:**python -m venv .venv- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
+
+   ```bash
+
+   pip install -r requirements.txt.\.venv\Scripts\Activate.ps1  # Windows PowerShell
+
+   pip install -r requirements-transformers.txt   # optional: local AI
+
+   pip install -r requirements-whisper.txt        # optional: Python Whisper# source .venv/bin/activate    # macOS/Linux- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer</p>## Pogadane
+
+   ```
+
+3. **Download optional binaries:**
+
+   - yt-dlp: https://github.com/yt-dlp/yt-dlp/releases
+
+   - faster-whisper-xxl.exe: https://github.com/Purfview/whisper-standalone-win# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
+
+
+
+---pip install -r requirements.txt
+
+
+
+## Running Pogadane- 🧰 Cross-platform installer that prepares dependencies in one pass
+
+
+
+### GUI# 4. Run the guided installer
+
+
+
+```bashpython install.py --lightweight
+
+python run_gui_flet.py
+
+```
+
+
+
+Features:# 5. Launch the GUI------Pogadane turns long-form audio recordings and YouTube videos into searchable transcripts and AI-assisted summaries that stay on your machine. The project ships with a modern Material 3 GUI and a CLI workflow.
+
+- 🎨 Material Design 3 with Flutter
+
+- 📊 Waveform visualisation and topic timelinepython run_gui_flet.py
+
+- 📋 Queue management with per-file results
+
+- 🌓 Automatic dark/light mode```
+
+- 💫 60fps animations
+
+
+
+### CLI
+
+---## Quick Start
+
+```bash
+
+# Single file
 
 python -m pogadane.transcribe_summarize_working audio.mp3
 
-# Summary language
-
-SUMMARY_LANGUAGE = "Polish"  # or "English"## Installation Options
-
-```
+## Installation Options
 
 # Multiple files
 
-### Helper Tools
-
 python -m pogadane.transcribe_summarize_working file1.mp3 file2.wav https://youtube.com/watch?v=...
 
-```python
-
-# Path to yt-dlp executable (for YouTube downloads)
-
-YT_DLP_EXE = "dep/yt-dlp/yt-dlp.exe"  # Windows
-
-# YT_DLP_EXE = "yt-dlp"                 # macOS/Linux# Options### Guided Installer (Recommended)```bash## Highlights---
 
 
+# Options### Guided Installer (Recommended)```bash## Highlights---
 
-# Path to faster-whisper executable (optional, for standalone version)python -m pogadane.transcribe_summarize_working --help
-
-FASTER_WHISPER_EXE = ""  # Leave empty to use Python library
-
-``````
-
-
-
----
-
-
-
-## Transcription Options---```bash# 1. Clone and enter the project
-
-
-
-### faster-whisper (Recommended)
-
-
-
-✅ **Pros:**## Configurationpython install.py                # interactive wizard
-
-- 4x faster than openai-whisper
-
-- GPU acceleration (CUDA/ROCm)
-
-- Speaker diarization support
-
-- Best quality and speedSettings are in `.config/config.py`. Edit the file directly or use the GUI Settings dialog (⚙️ icon).python install.py --full         # all features + external binariesgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
-
-- Lower memory usage
-
-
-
-⚠️ **Cons:**
-
-- Requires compiled dependencies (~300MB)**Transcription:**python install.py --lightweight  # pure Python toolchain
-
-
-
-**Setup:** Installed automatically with `python install.py`- `TRANSCRIPTION_PROVIDER` — `"faster-whisper"` or `"whisper"`
-
-
-
----- `WHISPER_MODEL` — `"tiny"`, `"base"`, `"small"`, `"medium"`, `"large"`, `"turbo"`python install.py --dev          # adds developer toolingcd pogadane
-
-
-
-### openai-whisper (Alternative)- `WHISPER_LANGUAGE` — e.g., `"pl"`, `"en"`
-
-
-
-✅ **Pros:**- `ENABLE_SPEAKER_DIARIZATION` — `True`/`False````
-
-- Pure Python, no compiled dependencies
-
-- Easy installation
-
-- Works on all platforms
-
-**Summarization:**- 🎙️ Batch transcription for local audio files and YouTube URLs## Highlights
-
-⚠️ **Cons:**
-
-- 4x slower than faster-whisper- `SUMMARY_PROVIDER` — `"ollama"`, `"transformers"`, or `"google"`
-
-- No speaker diarization
-
-- Higher memory usage- `OLLAMA_MODEL` — e.g., `"gemma3:4b"`The installer validates Python, installs dependencies, downloads helper binaries when needed, and creates `.config/config.py` with sensible defaults.
-
-
-
-**Setup:**- `TRANSFORMERS_MODEL` — e.g., `"facebook/bart-large-cnn"`
-
-```bash
-
-pip install -r requirements-whisper.txt- `GOOGLE_API_KEY` — your Gemini API key# 2. Create a virtual environment (recommended)
+python -m pogadane.transcribe_summarize_working --help
 
 ```
 
-Set `TRANSCRIPTION_PROVIDER = "whisper"` in `.config/config.py`- `SUMMARY_LANGUAGE` — e.g., `"Polish"`, `"English"`
+
+
+---```bash# 1. Clone and enter the project
 
 
 
----### Manual Setup
+## Configurationpython install.py                # interactive wizard
 
 
 
-## Summarization Options**External Tools:**
+Settings are in `.config/config.py`. Edit the file directly or use the GUI Settings dialog (⚙️ icon).python install.py --full         # all features + external binariesgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 
 
 
-### GGUF Models (Recommended)- `YT_DLP_EXE` — path to yt-dlppython -m venv .venv- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
+**Transcription:**python install.py --lightweight  # pure Python toolchain
+
+- `TRANSCRIPTION_PROVIDER` — `"faster-whisper"` or `"whisper"`
+
+- `WHISPER_MODEL` — `"tiny"`, `"base"`, `"small"`, `"medium"`, `"large"`, `"turbo"`python install.py --dev          # adds developer toolingcd pogadane
+
+- `WHISPER_LANGUAGE` — e.g., `"pl"`, `"en"`
+
+- `ENABLE_SPEAKER_DIARIZATION` — `True`/`False````
 
 
 
-✅ **Pros:**- `FASTER_WHISPER_EXE` — path to faster-whisper-xxl.exe
+**Summarization:**- 🎙️ Batch transcription for local audio files and YouTube URLs## Highlights
 
-- Completely local and private
+- `SUMMARY_PROVIDER` — `"ollama"`, `"transformers"`, or `"google"`
 
-- Efficient quantization (4-bit, 8-bit)1. **Install Python 3.9+** and ensure `python`/`pip` are on PATH
+- `OLLAMA_MODEL` — e.g., `"gemma3:4b"`The installer validates Python, installs dependencies, downloads helper binaries when needed, and creates `.config/config.py` with sensible defaults.
 
-- Runs on CPU or GPU
+- `TRANSFORMERS_MODEL` — e.g., `"facebook/bart-large-cnn"`
 
-- Multi-language support---
+- `GOOGLE_API_KEY` — your Gemini API key# 2. Create a virtual environment (recommended)
 
-- Low memory usage (4-8GB RAM)
+- `SUMMARY_LANGUAGE` — e.g., `"Polish"`, `"English"`
+
+### Manual Setup
+
+**External Tools:**
+
+- `YT_DLP_EXE` — path to yt-dlppython -m venv .venv- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
+
+- `FASTER_WHISPER_EXE` — path to faster-whisper-xxl.exe
+
+1. **Install Python 3.9+** and ensure `python`/`pip` are on PATH
+
+---
 
 2. **Install core dependencies:**.\.venv\Scripts\Activate.ps1  # Windows PowerShell
 
-⚠️ **Cons:**
+## Transcription Options
 
-- Requires downloading model file (~2-4GB)## Transcription Options
+   ```bash
 
+### Faster-Whisper (Recommended)
 
+- ✅ GPU acceleration (CUDA)   pip install -r requirements.txt# source .venv/bin/activate    # macOS/Linux- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer- 🎙️ Batch transcription for local audio files and YouTube URLs
 
-**Setup:** Installed automatically with `python install.py`   ```bash
+- ✅ Speaker diarization
 
+- ✅ Best quality and speed   ```
 
+- ⚠️ Requires external binary (~2GB)
 
-**Example model:** Gemma 3 4B Q4_K_M (quantized to 4-bit, ~2.5GB)### Faster-Whisper (Recommended)
-
-
-
----- ✅ GPU acceleration (CUDA)   pip install -r requirements.txt# source .venv/bin/activate    # macOS/Linux- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer- 🎙️ Batch transcription for local audio files and YouTube URLs
-
-
-
-### Ollama (Alternative)- ✅ Speaker diarization
-
-
-
-✅ **Pros:**- ✅ Best quality and speed   ```
-
-- Easy model management
-
-- Completely local and private- ⚠️ Requires external binary (~2GB)
-
-- Multi-language support
-
-- Excellent quality3. **Install optional components:**
-
-
-
-⚠️ **Cons:****Setup:**
-
-- Requires separate installation
-
-- Larger models (~4-8GB per model)1. Download from https://github.com/Purfview/whisper-standalone-win/releases   ```bash
-
-
-
-**Setup:**2. Configure `FASTER_WHISPER_EXE` in `.config/config.py`
-
-1. Install Ollama from https://ollama.com/download
-
-2. Pull model: `ollama pull gemma3:4b`   # For local AI summaries (no Ollama needed)# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
-
-3. Set `SUMMARY_PROVIDER = "ollama"` in config
-
-### Whisper (Python)
-
----
-
-- ✅ Pure Python, no binaries   pip install -r requirements-transformers.txt
-
-### Transformers (Alternative)
-
-- ✅ Easy: `pip install -r requirements-whisper.txt`
-
-✅ **Pros:**
-
-- Pure Python, no external services- ⚠️ No speaker diarization   pip install -r requirements.txt
-
-- Easy installation
-
-- Lightweight models (300MB-1.6GB)- ⚠️ Slower
-
-
-
-⚠️ **Cons:**   # For Python-based Whisper transcription
-
-- English summaries only
-
-- Lower quality than GGUF/Ollama**Setup:**
-
-- Requires PyTorch (~1GB)
-
-```bash   pip install -r requirements-whisper.txt- 🧰 Cross-platform installer that prepares dependencies in one pass- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer
+3. **Install optional components:**
 
 **Setup:**
 
-```bashpip install -r requirements-whisper.txt
+1. Download from https://github.com/Purfview/whisper-standalone-win/releases   ```bash
 
-pip install -r requirements-transformers.txt
+2. Configure `FASTER_WHISPER_EXE` in `.config/config.py`
 
-``````   
+   # For local AI summaries (no Ollama needed)# 3. Install project requirements- ⚙️ Configuration stored in `.config/config.py` with in-app overrides- 🤖 Summaries powered by Ollama, local Transformers, or Google Gemini
 
-Set `SUMMARY_PROVIDER = "transformers"` in config
+### Whisper (Python)
+
+- ✅ Pure Python, no binaries   pip install -r requirements-transformers.txt
+
+- ✅ Easy: `pip install -r requirements-whisper.txt`
+
+- ⚠️ No speaker diarization   pip install -r requirements.txt
+
+- ⚠️ Slower
+
+   # For Python-based Whisper transcription
+
+**Setup:**
+
+```bash   pip install -r requirements-whisper.txt- 🧰 Cross-platform installer that prepares dependencies in one pass- 🖥️ Material 3 Expressive GUI with waveform visualisation and results viewer
+
+pip install -r requirements-whisper.txt
+
+```   
 
 Set `TRANSCRIPTION_PROVIDER = "whisper"` in config.
 
-**Available models:**
+   # For development tools# 4. Run the guided installer
 
-- `"google/flan-t5-small"` (~300MB, fastest)   # For development tools# 4. Run the guided installer
-
-- `"sshleifer/distilbart-cnn-12-6"` (~500MB)
-
-- `"google/flan-t5-base"` (~900MB)---
-
-- `"facebook/bart-large-cnn"` (~1.6GB, best quality)
+---
 
    pip install -r requirements-dev.txt
 
----
-
 ## Summary Options
-
-### Google Gemini (Cloud)
 
    ```python install.py --lightweight- ⚙️ Configuration stored in `.config/config.py` with in-app overrides
 
-✅ **Pros:**
+### Ollama (Recommended)
 
-- Excellent quality### Ollama (Recommended)
-
-- Multi-language support
-
-- No local resources needed- ✅ Completely local and private4. **Download helper binaries** (optional, for advanced features):
-
-- Free tier available
+- ✅ Completely local and private4. **Download helper binaries** (optional, for advanced features):
 
 - ✅ Multi-language support
 
-⚠️ **Cons:**
-
-- Requires internet connection- ✅ Best quality   - `yt-dlp` for YouTube downloads — https://github.com/yt-dlp/yt-dlp/releases
-
-- Not private (data sent to Google)
-
-- Requires API key
+- ✅ Best quality   - `yt-dlp` for YouTube downloads — https://github.com/yt-dlp/yt-dlp/releases
 
 
 
-**Setup:****Setup:**   - `faster-whisper-xxl.exe` for GPU-accelerated transcription — https://github.com/Purfview/whisper-standalone-win
+**Setup:**   - `faster-whisper-xxl.exe` for GPU-accelerated transcription — https://github.com/Purfview/whisper-standalone-win
 
-1. Get API key from https://aistudio.google.com/
-
-2. Set `GOOGLE_API_KEY = "your_key_here"` in `.config/config.py`1. Install from https://ollama.com/
-
-3. Set `SUMMARY_PROVIDER = "google"` in config
+1. Install from https://ollama.com/
 
 2. `ollama pull gemma3:4b`5. **Configure paths** via the GUI settings dialog or edit `.config/config.py` directly# 5. Launch the GUI---- 🧰 Cross-platform installer (`install.py`) that prepares dependencies in one pass
 
----
-
 3. Set `SUMMARY_PROVIDER = "ollama"`
 
-## Development
 
-
-
-### Running Tests
 
 ### Transformers (Lightweight)
 
-```bash
+- ✅ Pure Python---python run_gui_flet.py
 
-pip install -r requirements-dev.txt- ✅ Pure Python---python run_gui_flet.py
+- ✅ Lightweight (300MB-1.6GB)
 
-pytest
-
-```- ✅ Lightweight (300MB-1.6GB)
+- ⚠️ English only
 
 
 
-### Code Quality- ⚠️ English only
-
-
+**Setup:**## Running Pogadane```
 
 ```bash
-
-# Linting
-
-pylint src/pogadane/**Setup:**## Running Pogadane```
-
-
-
-# Type checking```bash
-
-mypy src/pogadane/
 
 pip install -r requirements-transformers.txt
-
-# Formatting
-
-black src/pogadane/```
 
 ```
 
 Set `SUMMARY_PROVIDER = "transformers"`### GUI
 
-### Building Documentation
+
+
+**Models:**
+
+- `"google/flan-t5-small"` (~300MB, fastest)
+
+- `"sshleifer/distilbart-cnn-12-6"` (~500MB)```bash---## Quick Start---
+
+- `"google/flan-t5-base"` (~900MB)
+
+- `"facebook/bart-large-cnn"` (~1.6GB, best)python run_gui_flet.py
 
 
 
-```bash
+### Google Gemini (Cloud)```
 
-cd doc/**Models:**
+- ✅ Excellent quality
 
-# See doc/README.md for details
-
-```- `"google/flan-t5-small"` (~300MB, fastest)
-
-
-
----- `"sshleifer/distilbart-cnn-12-6"` (~500MB)```bash---## Quick Start---
-
-
-
-## Troubleshooting- `"google/flan-t5-base"` (~900MB)
-
-
-
-### faster-whisper not found- `"facebook/bart-large-cnn"` (~1.6GB, best)python run_gui_flet.py
-
-
-
-**Solution:** Configure path in GUI Settings or switch to `whisper` provider in `.config/config.py`
-
-
-
-### Out of memory errors### Google Gemini (Cloud)```
-
-
-
-**Solutions:**- ✅ Excellent quality
-
-- Use smaller Whisper model (e.g., `"tiny"` or `"base"`)
-
-- Use GGUF models instead of Transformers- ✅ Multi-language
-
-- Disable speaker diarization: `ENABLE_SPEAKER_DIARIZATION = False`
+- ✅ Multi-language
 
 - ⚠️ Requires internet & API key
 
-### YouTube download fails
-
 Features:## Installation Options
 
-**Solution:** Update yt-dlp to latest version:
+**Setup:**
 
-```bash**Setup:**
+1. Get key from https://aistudio.google.com/- 🎨 Modern Material Design 3 with Flutter
 
-# Windows
+2. Set `GOOGLE_API_KEY` in `.config/config.py`
 
-dep\yt-dlp\yt-dlp.exe --update1. Get key from https://aistudio.google.com/- 🎨 Modern Material Design 3 with Flutter
-
-
-
-# macOS/Linux2. Set `GOOGLE_API_KEY` in `.config/config.py`
-
-pip install --upgrade yt-dlp
-
-```3. Set `SUMMARY_PROVIDER = "google"`- 📊 Waveform visualisation and topic timeline
+3. Set `SUMMARY_PROVIDER = "google"`- 📊 Waveform visualisation and topic timeline
 
 
 
-### GUI not starting
+---- 📋 Queue management with per-file results
 
 
-
-**Solution:** Check Flet installation:---- 📋 Queue management with per-file results
-
-```bash
-
-pip install --upgrade flet
-
-```
 
 ## Development- 🌓 Automatic dark/light mode### Option A — Guided Installer (Recommended)```bash## Quick Start
 
-### Ollama connection error
+
+
+```bash- 💫 Smooth 60fps animations
+
+# Install dev dependencies
+
+pip install -r requirements-dev.txt
 
 
 
-**Solution:** Ensure Ollama is running:
+# Run tests### CLI
 
-```bash```bash- 💫 Smooth 60fps animations
-
-ollama serve  # Start Ollama server
-
-```# Install dev dependencies
-
-
-
----pip install -r requirements-dev.txt
-
-
-
-## Cross-Platform Notes
-
-
-
-### Windows# Run tests### CLI
-
-- Uses PowerShell for installation scripts
-
-- Pre-built yt-dlp.exe downloaded to `dep/yt-dlp/`pytest
-
-- CUDA support available for NVIDIA GPUs
+pytest
 
 ```bash# 1. Clone and enter the project
 
-### macOS
+# Code quality
 
-- Uses Bash for installation scripts# Code quality
+black src/ test/Process single file:
 
-- Install yt-dlp via Homebrew: `brew install yt-dlp`
+flake8 src/ test/
 
-- Metal GPU acceleration for Apple Siliconblack src/ test/Process single file:
-
-
-
-### Linuxflake8 src/ test/
-
-- Uses Bash for installation scripts
-
-- Install yt-dlp via package manager: `sudo apt install yt-dlp`pylint src/pogadane/```bashpython install.py                # interactive wizard
-
-- CUDA/ROCm support for NVIDIA/AMD GPUs
+pylint src/pogadane/```bashpython install.py                # interactive wizard
 
 mypy src/pogadane/
 
-For detailed platform-specific instructions, see [doc/CROSS_PLATFORM_GUIDE.md](doc/CROSS_PLATFORM_GUIDE.md)
-
 ```python -m pogadane.transcribe_summarize_working audio_file.mp3
 
----
 
-
-
-## Project Structure
 
 **Project Structure:**```python install.py --full         # all features + external binariesgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git```bash
 
 ```
 
-pogadane/```
+pogadane/
 
-├── src/pogadane/           # Main application code
+├── src/pogadane/
 
-│   ├── gui_flet.py         # Material 3 GUIpogadane/
+│   ├── gui_flet.py                         # Material 3 GUIProcess multiple sources:python install.py --lightweight  # pure Python toolchain
 
-│   ├── transcription_providers.py  # Whisper integration
+│   ├── transcribe_summarize_working.py     # CLI
 
-│   ├── llm_providers.py    # AI summarization├── src/pogadane/
+│   ├── config_loader.py                    # Config handling```bash
 
-│   └── config_loader.py    # Configuration management
+│   ├── llm_providers.py                    # Summary providers
 
-├── .config/                # User configuration│   ├── gui_flet.py                         # Material 3 GUIProcess multiple sources:python install.py --lightweight  # pure Python toolchain
+│   └── transcription_providers.py          # Transcriptionpython -m pogadane.transcribe_summarize_working file1.mp3 file2.wav https://youtube.com/watch?v=...python install.py --dev          # adds developer toolingcd pogadane# 1. Clone and enter the project
 
-│   └── config.py           # Main settings file
+├── test/                                    # Tests
 
-├── dep/                    # External dependencies│   ├── transcribe_summarize_working.py     # CLI
+├── tools/                                   # Installation tools```
 
-│   ├── models/             # GGUF model files
+├── .config/                                 # User config
 
-│   └── yt-dlp/             # YouTube downloader│   ├── config_loader.py                    # Config handling```bash
-
-├── doc/                    # Documentation
-
-├── test/                   # Unit tests│   ├── llm_providers.py                    # Summary providers
-
-├── install.py              # Guided installer
-
-├── run_gui_flet.py         # GUI launcher│   └── transcription_providers.py          # Transcriptionpython -m pogadane.transcribe_summarize_working file1.mp3 file2.wav https://youtube.com/watch?v=...python install.py --dev          # adds developer toolingcd pogadane# 1. Clone and enter the project
-
-└── requirements*.txt       # Python dependencies
-
-```├── test/                                    # Tests
-
-
-
----├── tools/                                   # Installation tools```
-
-
-
-## License├── .config/                                 # User config
-
-
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.└── requirements*.txt                        # Dependencies```
-
-
-
-For third-party licenses and attributions, see [NOTICES.md](NOTICES.md).```
-
-
-
----Common options:
-
-
-
-## Contributing---
-
-
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.- `--config path/to/config.py` — use custom configgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
-
-
-
----## Troubleshooting
-
-
-
-## Acknowledgments- `--output-dir path/to/results` — save results directory
-
-
-
-- **faster-whisper**: High-performance Whisper implementation**GUI won't start:**
-
-- **Whisper**: OpenAI's speech recognition model
-
-- **Gemma**: Google's lightweight AI models```bash- `--summary-provider {ollama,transformers,google}` — override summary providerThe installer validates Python, installs dependencies, downloads helper binaries when needed, and creates `.config/config.py` with sensible defaults.
-
-- **Flet**: Flutter-based Python GUI framework
-
-- **yt-dlp**: Powerful YouTube downloader# Install dependencies
-
-- **llama.cpp**: Efficient GGUF model inference
-
-pip install -r requirements.txt- `--help` — show all options
-
-For full citations and legal notices, see [NOTICES.md](NOTICES.md).
-
-# Run from project root
-
----
-
-python run_gui_flet.py# 2. Create a virtual environment (recommended)cd pogadane
-
-## Support
+└── requirements*.txt                        # Dependencies```
 
 ```
 
-- **Issues**: https://github.com/WSB-University-Problem-Based-Learning/pogadane/issues
-
-- **Discussions**: https://github.com/WSB-University-Problem-Based-Learning/pogadane/discussions---
-
-- **Documentation**: [doc/README.md](doc/README.md)
-
-**Transcription issues:**
+Common options:
 
 ---
 
-- Missing faster-whisper: Configure path in GUI Settings or switch to `whisper` provider### Option B — Manual Setup
+- `--config path/to/config.py` — use custom configgit clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 
-*Made with ❤️ by the Pogadane team*
+## Troubleshooting
+
+- `--output-dir path/to/results` — save results directory
+
+**GUI won't start:**
+
+```bash- `--summary-provider {ollama,transformers,google}` — override summary providerThe installer validates Python, installs dependencies, downloads helper binaries when needed, and creates `.config/config.py` with sensible defaults.
+
+# Install dependencies
+
+pip install -r requirements.txt- `--help` — show all options
+
+# Run from project root
+
+python run_gui_flet.py# 2. Create a virtual environment (recommended)cd pogadane
+
+```
+
+---
+
+**Transcription issues:**
+
+- Missing faster-whisper: Configure path in GUI Settings or switch to `whisper` provider### Option B — Manual Setup
 
 - Missing whisper module: `pip install -r requirements-whisper.txt`
 

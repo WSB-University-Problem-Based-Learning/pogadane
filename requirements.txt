@@ -1,23 +1,27 @@
-# Pogadane - Production Dependencies
+# ============================================================================
+# Pogadane - Core Dependencies
+# ============================================================================
 # Install with: pip install -r requirements.txt
 #
-# This file installs the package with its core dependencies defined in pyproject.toml
-# to maintain a single source of truth.
+# This installs the CORE ONLY dependencies (GUI, Google Gemini API, yt-dlp)
+# 
+# RECOMMENDED STACK (install after core):
+#   pip install -r requirements-faster-whisper.txt  # Transcription (4x faster)
 #
-# For development: pip install -r requirements-dev.txt
-# For testing: pip install -r requirements-test.txt
+# The guided installer (python install.py) automatically sets up:
+#   - Core dependencies (this file)
+#   - faster-whisper (recommended transcription)
+#   - llama-cpp-python (GGUF model support)
+#   - yt-dlp (YouTube downloader)
+#
+# OPTIONAL ALTERNATIVES:
+#   pip install -r requirements-whisper.txt         # Alternative transcription
+#   pip install -r requirements-transformers.txt    # Alternative AI backend
+#
+# DEVELOPMENT:
+#   pip install -r requirements-dev.txt             # Development tools
+#   pip install -r requirements-test.txt            # Testing tools
+# ============================================================================
 
-# Install package with core dependencies
+# Install package with core dependencies only
 -e .
-
-# Recommended: Faster-Whisper for transcription (4x faster than openai-whisper)
-# Uncomment to use TRANSCRIPTION_PROVIDER="faster-whisper" (default)
-# -e .[faster-whisper]
-
-# Alternative: OpenAI Whisper for transcription
-# Uncomment to use TRANSCRIPTION_PROVIDER="whisper"
-# -e .[whisper]
-
-# Optional: Transformers backend for local AI summarization
-# Uncomment to use SUMMARY_PROVIDER="transformers"
-# -e .[transformers]

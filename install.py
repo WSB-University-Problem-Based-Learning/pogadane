@@ -168,170 +168,88 @@ def install_core_packages():
 
 
 def install_lightweight():
-    """Install lightweight configuration (Python-only, no external binaries)."""
+    """Install recommended default configuration (faster-whisper + yt-dlp + GGUF)."""
     print("\n" + "="*70)
-    print(f"{Colors.BOLD}{Colors.GREEN}📦 LIGHTWEIGHT INSTALLATION (100% pip-based){Colors.END}")
+    print(f"{Colors.BOLD}{Colors.GREEN}📦 RECOMMENDED INSTALLATION (Default Stack){Colors.END}")
     print("="*70)
     print("\nThis installs:")
-    print("  • openai-whisper (lightweight transcription)")
-    print("  • transformers (AI summarization)")
     print("  • yt-dlp (YouTube support)")
-    print("  • No external binaries required")
-    print("  • Total download: ~500MB - 2GB")
+    print("  • faster-whisper (4x faster transcription with GPU support)")
+    print("  • llama-cpp-python (for GGUF models like Gemma)")
+    print("  • Total download: ~500MB")
+    print()
+    print(f"{Colors.CYAN}Default model: dep/models/gemma-3-4b-it-Q4_K_M.gguf{Colors.END}")
+    print(f"{Colors.YELLOW}Note: Download model separately (see README.md){Colors.END}")
     print()
     
     # Install yt-dlp
     print_header("Installing yt-dlp (YouTube Support)")
     install_package("yt-dlp", "YouTube video/audio downloader")
     
-    # Install Whisper
-    print_header("Installing Whisper (Python Transcription)")
-    install_package("openai-whisper>=20230314", "Lightweight transcription engine")
+    # Install faster-whisper
+    print_header("Installing faster-whisper (Recommended Transcription)")
+    install_package("faster-whisper>=1.0.0", "Fast transcription with GPU support")
     
-    # Install Transformers
-    print_header("Installing Transformers (Python AI)")
-    install_package("transformers>=4.30.0", "Lightweight AI summarization")
-    install_package("torch>=2.0.0", "PyTorch for Transformers")
+    # Install llama-cpp-python for GGUF models
+    print_header("Installing llama-cpp-python (GGUF Model Support)")
+    install_package("llama-cpp-python", "Run quantized GGUF models efficiently")
     
-    # Update config
-    print_header("Configuring for Lightweight Mode")
-    update_config_for_lightweight()
-    
-    print_success("Lightweight installation complete!")
+    print_success("Recommended installation complete!")
     print("\n" + "="*70)
     print(f"{Colors.BOLD}Next steps:{Colors.END}")
-    print("  1. Run the app: python run_gui_flet.py")
-    print("  2. Transcription will use Python Whisper")
-    print("  3. AI will use Transformers (English only)")
-    print("  4. For Ollama (Polish support): Install from ollama.com/download")
-    print("  5. For faster transcription: pip install faster-whisper")
+    print("  1. Download GGUF model: see README.md for instructions")
+    print("  2. Run the app: python run_gui_flet.py")
+    print("  3. Transcription: faster-whisper (automatic download)")
+    print("  4. AI Summary: GGUF model (gemma-3-4b-it-Q4_K_M.gguf)")
+    print("  5. Optional: Install Ollama for more models (ollama.com)")
     print("  6. Edit .config/config.py to customize")
     print("="*70 + "\n")
 
 
 def install_full():
-    """Install full configuration (all features via pip)."""
+    """Install all options (including optional backends)."""
     print("\n" + "="*70)
-    print(f"{Colors.BOLD}{Colors.GREEN}📦 FULL INSTALLATION (100% pip-based){Colors.END}")
+    print(f"{Colors.BOLD}{Colors.GREEN}📦 FULL INSTALLATION (All Options){Colors.END}")
     print("="*70)
     print("\nThis installs:")
     print("  • yt-dlp (YouTube support)")
-    print("  • faster-whisper (4x faster transcription)")
-    print("  • openai-whisper (fallback transcription)")
-    print("  • Transformers (AI summarization)")
+    print("  • faster-whisper (recommended transcription)")
+    print("  • llama-cpp-python (GGUF models)")
+    print("  • openai-whisper (alternative transcription)")
+    print("  • transformers + torch (alternative AI)")
     print("  • Total download: ~1GB - 3GB")
     print()
-    print(f"{Colors.YELLOW}NOTE: Ollama (for Polish AI) requires separate installation from ollama.com{Colors.END}")
+    print(f"{Colors.YELLOW}NOTE: This includes optional backends. Most users should use lightweight.{Colors.END}")
     print()
     
-    # Install yt-dlp (cross-platform via pip)
+    # Install yt-dlp
     print_header("Installing yt-dlp (YouTube Support)")
     install_package("yt-dlp", "YouTube video/audio downloader")
     
-    # Install both Whisper engines
+    # Install faster-whisper
     print_header("Installing Faster-Whisper (Recommended)")
     install_package("faster-whisper>=1.0.0", "Fast transcription engine with GPU support")
     
-    print_header("Installing OpenAI Whisper (Fallback)")
-    install_package("openai-whisper>=20230314", "Original Whisper transcription engine")
+    # Install llama-cpp-python
+    print_header("Installing llama-cpp-python (GGUF Models)")
+    install_package("llama-cpp-python", "GGUF model support")
     
-    # Install Transformers
-    print_header("Installing Transformers (AI Summarization)")
-    install_package("transformers>=4.30.0", "AI summarization")
-    install_package("torch>=2.0.0", "PyTorch for AI")
+    # Install optional backends
+    print_header("Installing Optional: OpenAI Whisper")
+    install_package("openai-whisper>=20230314", "Alternative transcription engine")
+    
+    print_header("Installing Optional: Transformers")
+    install_package("transformers>=4.30.0", "Alternative AI summarization")
+    install_package("torch>=2.0.0", "PyTorch for Transformers")
     
     print_success("Full installation complete!")
     print("\n" + "="*70)
     print(f"{Colors.BOLD}Next steps:{Colors.END}")
-    print("  1. Run the app: python run_gui_flet.py")
-    print("  2. Transcription will use faster-whisper (recommended)")
-    print("  3. For Polish AI: Install Ollama from ollama.com/download")
+    print("  1. Download GGUF model (see README.md)")
+    print("  2. Run the app: python run_gui_flet.py")
+    print("  3. Optional: Install Ollama from ollama.com/download")
     print("  4. Edit .config/config.py to customize")
     print("="*70 + "\n")
-    
-    print_success("Full installation complete!")
-    print("\n" + "="*70)
-    print(f"{Colors.BOLD}Next steps:{Colors.END}")
-    print("  1. Run the app: python run_gui_flet.py")
-    print("  2. Edit .config/config.py to configure paths")
-    if not IS_WINDOWS:
-        print("  3. Install Faster-Whisper and Ollama manually (see above)")
-    print("="*70 + "\n")
-
-
-def install_transcription_engines():
-    """Install transcription engines (faster-whisper or openai-whisper)."""
-    print_header("Installing Transcription Engines")
-    
-    print_info("Choose transcription engine:")
-    print("  1. faster-whisper (RECOMMENDED - 4x faster, GPU support)")
-    print("  2. openai-whisper (original, works everywhere)")
-    print("  3. Both (recommended for maximum compatibility)")
-    
-    choice = input("\nEnter choice [1-3] (default: 1): ").strip() or "1"
-    
-    if choice in ["1", "3"]:
-        install_package("faster-whisper>=1.0.0", "Faster-Whisper transcription (RECOMMENDED)")
-    
-    if choice in ["2", "3"]:
-        install_package("openai-whisper>=20230314", "Original Whisper transcription")
-    
-    if choice == "1":
-        print_success("faster-whisper installed - set TRANSCRIPTION_PROVIDER='faster-whisper' in config")
-    elif choice == "2":
-        print_success("openai-whisper installed - set TRANSCRIPTION_PROVIDER='whisper' in config")
-    else:
-        print_success("Both engines installed - configure your preferred one in config")
-
-
-def update_config_for_lightweight():
-    """Update config file for lightweight installation."""
-    config_file = CONFIG_DIR / "config.py"
-    
-    if not config_file.exists():
-        # Create default config
-        config_content = """# Pogadane Configuration (Lightweight Mode)
-
-# Transcription Provider (pip-based)
-TRANSCRIPTION_PROVIDER = "whisper"  # Using Python Whisper (lightweight)
-WHISPER_MODEL = "base"  # Options: tiny, base, small, medium, large, turbo
-WHISPER_LANGUAGE = "Polish"
-WHISPER_DEVICE = "auto"  # auto, cpu, or cuda
-
-# Alternative: faster-whisper (4x faster, GPU support)
-# TRANSCRIPTION_PROVIDER = "faster-whisper"
-# FASTER_WHISPER_DEVICE = "auto"  # cuda, cpu, or auto
-# FASTER_WHISPER_COMPUTE_TYPE = "auto"  # float16, int8, int8_float16, or auto
-
-# YouTube Downloads (pip-based)
-YT_DLP_PATH = "yt-dlp"  # Command or path
-
-# AI Summarization Provider
-SUMMARY_PROVIDER = "transformers"  # Using Transformers (lightweight)
-TRANSFORMERS_MODEL = "facebook/bart-large-cnn"  # Good quality, ~1.6GB
-# Alternatives:
-#   "sshleifer/distilbart-cnn-12-6"  # Faster, ~500MB
-#   "google/flan-t5-small"           # Smallest, ~300MB
-TRANSFORMERS_DEVICE = "auto"
-SUMMARY_LANGUAGE = "English"  # Note: Most Transformers models only support English
-
-# Google Gemini (Alternative cloud AI)
-# SUMMARY_PROVIDER = "google"
-# GOOGLE_API_KEY = ""  # Add your API key here
-
-# Ollama (Local AI - requires separate installation from ollama.com)
-# SUMMARY_PROVIDER = "ollama"
-# OLLAMA_MODEL = "gemma2:2b"  # or llama3.2:1b for Polish support
-
-# General Settings
-DEBUG_MODE = False
-TRANSCRIPTION_FORMAT = "txt"
-DOWNLOADED_AUDIO_FILENAME = "downloaded_audio.mp3"
-"""
-        config_file.write_text(config_content, encoding='utf-8')
-        print_success(f"Created config: {config_file}")
-    else:
-        print_info(f"Config already exists: {config_file}")
 
 
 def install_dev_packages():
@@ -399,10 +317,20 @@ def show_welcome():
     print("   • Python Whisper for transcription")
     print("   • Transformers for AI")
     print("   • Download: ~500MB - 2GB")
-    if IS_WINDOWS:
-        print("   • Optional: Faster-Whisper, Ollama (manual)")
-    else:
-        print(f"   • Ollama: install via package manager (see docs)")
+    print("\n" + "="*70)
+    print(f"\n{Colors.BOLD}Choose installation type:{Colors.END}\n")
+    print(f"{Colors.GREEN}1. RECOMMENDED{Colors.END} (Default Stack)")
+    print("   • faster-whisper for transcription")
+    print("   • llama-cpp-python for GGUF models")
+    print("   • yt-dlp for YouTube support")
+    print("   • Download: ~500MB")
+    print("   • Requires: GGUF model file (see README)")
+    print()
+    print(f"{Colors.CYAN}2. FULL{Colors.END} (All Options)")
+    print("   • Recommended stack +")
+    print("   • openai-whisper (alternative transcription)")
+    print("   • transformers + torch (alternative AI)")
+    print("   • Download: ~1GB - 3GB")
     print()
     print(f"{Colors.YELLOW}3. DEV{Colors.END} (Development environment)")
     print("   • Full installation + dev tools")

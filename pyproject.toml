@@ -40,12 +40,13 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
 ]
 
-# Core dependencies
+# Core dependencies (GUI, Google Gemini API, yt-dlp)
 dependencies = [
     "flet>=0.24.0",
     "google-generativeai>=0.3.0",
     "py7zr>=0.20.0",
     "yt-dlp>=2023.0.0",
+    "llama-cpp-python>=0.2.0",  # For GGUF model support (recommended)
 ]
 
 # Optional dependencies for different use cases
@@ -65,7 +66,6 @@ dev = [
     "twine>=4.0.0",
     "wheel>=0.40.0",
     "bump2version>=1.0.1",
-    "pyinstaller>=6.0.0",
 ]
 
 test = [
@@ -78,18 +78,21 @@ test = [
     "pytest-parameterized>=0.1.0",
 ]
 
-# Optional AI backends
+# Faster-Whisper Python library (RECOMMENDED for transcription)
+# 4x faster than openai-whisper, supports GPU and speaker diarization
+faster-whisper = [
+    "faster-whisper>=1.0.0",
+]
+
+# OPTIONAL: Alternative AI backends (not recommended by default)
+# Transformers requires large PyTorch download and is English-only
 transformers = [
     "transformers>=4.30.0",
     "torch>=2.0.0",
 ]
 
-# Faster-Whisper Python library (recommended for transcription)
-faster-whisper = [
-    "faster-whisper>=1.0.0",
-]
-
-# OpenAI Whisper transcription support
+# OPTIONAL: OpenAI Whisper transcription (alternative to faster-whisper)
+# Slower and no speaker diarization support
 whisper = [
     "openai-whisper>=20231117",
 ]

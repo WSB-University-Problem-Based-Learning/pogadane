@@ -57,7 +57,7 @@ OLLAMA_MODEL = "gemma3:4b" # Model językowy Ollama do podsumowań
 
 # Ustawienia Google Gemini API (jeśli SUMMARY_PROVIDER="google")
 GOOGLE_API_KEY = "" # Wymagany, jeśli SUMMARY_PROVIDER="google". Wklej tutaj swój klucz API.
-GOOGLE_GEMINI_MODEL = "gemini-1.5-flash-latest" # Model Google Gemini do podsumowań
+GOOGLE_GEMINI_MODEL = "gemini-1.5-pro" # Model Google Gemini do podsumowań
 
 # Ustawienia Transformers (jeśli SUMMARY_PROVIDER="transformers")
 # Transformers to lekkie modele AI, które działają lokalnie bez Ollama

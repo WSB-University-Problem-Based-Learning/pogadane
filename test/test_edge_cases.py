@@ -4,13 +4,8 @@ Tests for more obscure scenarios and potential bugs
 """
 
 import sys
-import os
-from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from test_comprehensive_bugs import BugChecker
+from .test_comprehensive_bugs import BugChecker
 
 
 def test_unicode_handling():

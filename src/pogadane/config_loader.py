@@ -92,6 +92,9 @@ class ConfigLoader:
             Configuration value or default
         """
         return getattr(config, key, default if default is not None else DEFAULT_CONFIG.get(key))
+    
+    # Alias for backward compatibility
+    load_from_file = load_config
 
 
 class ConfigManager:
@@ -119,6 +122,8 @@ class ConfigManager:
         """
         if config_path is None:
             config_path = ConfigLoader.resolve_project_root() / ".config" / "config.py"
+        elif isinstance(config_path, str):
+            config_path = Path(config_path)
         
         self._config_path = config_path
         self._config = ConfigLoader.load_config(config_path)

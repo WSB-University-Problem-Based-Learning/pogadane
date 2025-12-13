@@ -81,18 +81,11 @@ Three ways to use transcription:
 #### 1. Auto (Recommended)
 ```python
 TRANSCRIPTION_PROVIDER = "faster-whisper"
-FASTER_WHISPER_USE_LIBRARY = True  # Try library, fall back to exe
 ```
 
 #### 2. Library Only
 ```python
 TRANSCRIPTION_PROVIDER = "faster-whisper-library"
-```
-
-#### 3. Executable Only (Legacy)
-```python
-TRANSCRIPTION_PROVIDER = "faster-whisper-exe"
-FASTER_WHISPER_EXE = "dep/faster-whisper/faster-whisper-xxl.exe"
 ```
 
 ## Performance Comparison
@@ -172,23 +165,6 @@ FASTER_WHISPER_BATCH_SIZE = 8  # Moderate batching
 ```
 
 ## Migration Guide
-
-### From faster-whisper-xxl.exe
-
-**Before:**
-```python
-TRANSCRIPTION_PROVIDER = "faster-whisper"
-FASTER_WHISPER_EXE = "dep/faster-whisper/faster-whisper-xxl.exe"
-```
-
-**After:**
-```python
-# Just install the library!
-# pip install faster-whisper
-
-# No config changes needed - library is auto-detected
-TRANSCRIPTION_PROVIDER = "faster-whisper"
-```
 
 ### From openai-whisper
 

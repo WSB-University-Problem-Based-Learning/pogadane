@@ -20,7 +20,7 @@ test/
 ### 1. Install Test Dependencies
 
 ```powershell
-pip install -r requirements-test.txt
+pip install -e .[test]
 ```
 
 Or install individually:
@@ -250,7 +250,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - run: pip install -r requirements-test.txt
+      - run: pip install -e .[test]
       - run: pytest --cov=src/pogadane --cov-report=xml
       - uses: codecov/codecov-action@v3
 ```

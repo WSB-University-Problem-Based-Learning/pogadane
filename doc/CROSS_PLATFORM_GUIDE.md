@@ -27,13 +27,10 @@ cd pogadane
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# 3. Run installer (installs all dependencies)
+python install.py
 
-# 4. Run installer
-python install.py --lightweight
-
-# 5. Launch GUI
+# 4. Launch GUI
 python run_gui_flet.py
 ```
 
@@ -48,13 +45,10 @@ cd pogadane
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install dependencies
-pip install -r requirements.txt
+# 3. Run installer (installs all dependencies)
+python install.py
 
-# 4. Run installer
-python install.py --lightweight
-
-# 5. Launch GUI
+# 4. Launch GUI
 python run_gui_flet.py
 ```
 
@@ -78,13 +72,10 @@ cd pogadane
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 4. Install dependencies
-pip install -r requirements.txt
+# 4. Run installer (installs all dependencies)
+python install.py
 
-# 5. Run installer
-python install.py --lightweight
-
-# 6. Launch GUI
+# 5. Launch GUI
 python run_gui_flet.py
 ```
 

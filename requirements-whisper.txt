@@ -1,35 +1,7 @@
-# ============================================================================
-# Pogadane - OpenAI Whisper Dependencies (OPTIONAL ALTERNATIVE)
-# ============================================================================
-# Install with: pip install -r requirements-whisper.txt
-# 
-# ⚠️ OPTIONAL: This is an alternative to faster-whisper (NOT RECOMMENDED)
+# Pogadane - OpenAI Whisper (Alternative transcription)
+# Install: pip install -r requirements-whisper.txt
 #
-# This provides a pure Python transcription solution without needing
-# the external faster-whisper library. However, it is 4x slower and
-# does not support speaker diarization.
-#
-# ✅ RECOMMENDED: Use requirements-faster-whisper.txt instead
-#
-# When to use this:
-# - You cannot install faster-whisper due to platform limitations
-# - You need the original Whisper implementation for compatibility
-#
-# Configuration:
-#   Set TRANSCRIPTION_PROVIDER="whisper" in .config/config.py
-#
-# Models available:
-#   - tiny (~75MB) - Very fast, basic quality
-#   - base (~150MB) - Fast, good for simple audio  
-#   - small (~500MB) - Balanced speed/quality (recommended)
-#   - medium (~1.5GB) - High quality, slower
-#   - large (~3GB) - Best quality, slowest
-#
-# GPU Acceleration (optional):
-#   For NVIDIA GPUs with CUDA support, install torch with CUDA:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu118
-# ============================================================================
+# Use this if you cannot install faster-whisper
+# Set TRANSCRIPTION_PROVIDER="whisper" in .config/config.py
 
 openai-whisper>=20230314
-# torch is installed automatically with openai-whisper
-# If you need CPU-only version or specific CUDA version, install torch separately first

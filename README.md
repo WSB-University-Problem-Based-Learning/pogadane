@@ -58,13 +58,12 @@ The installer automatically sets up:
 ### Option 2: Manual Installation
 
 ```bash
-# Install core + recommended transcription
 pip install -e .
-pip install faster-whisper
+pip install faster-whisper  # Recommended transcription
 
-# Optional: Alternative backends
-pip install -r requirements-whisper.txt         # OpenAI Whisper
-pip install -r requirements-transformers.txt    # HuggingFace models
+# Optional backends:
+pip install openai-whisper                      # Alternative transcription
+pip install transformers torch accelerate       # HuggingFace summarization
 ```
 
 ---

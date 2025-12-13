@@ -272,7 +272,7 @@ def install_pogadane_package():
     """Install Pogadane package in editable mode."""
     print_header("Installing Pogadane Package")
     
-    if (PROJECT_ROOT / "setup.py").exists():
+    if (PROJECT_ROOT / "pyproject.toml").exists():
         success = run_command(
             [sys.executable, "-m", "pip", "install", "-e", str(PROJECT_ROOT)],
             "Installing in editable mode...",
@@ -288,7 +288,7 @@ def install_pogadane_package():
             print_info("Use: python run_gui_flet.py")
             return True
     else:
-        print_info("No setup.py found, skipping package installation")
+        print_info("pyproject.toml not found, skipping package installation")
         print_info("You can run from source: python run_gui_flet.py")
         return True
 

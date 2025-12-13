@@ -12,7 +12,7 @@ Modern installation:
     pip install -e .[all]               # With all optional dependencies
     
 External binaries installation:
-    python tools/install.py             # Install faster-whisper, ollama, etc.
+    python install.py                   # Install faster-whisper, ollama, etc.
 
 For more information, see pyproject.toml and README.md.
 """

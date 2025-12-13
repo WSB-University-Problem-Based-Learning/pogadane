@@ -12,10 +12,7 @@ import sys
 import os
 import subprocess
 import platform
-import json
 from pathlib import Path
-import urllib.request
-import shutil
 
 # Detect platform
 IS_WINDOWS = platform.system() == "Windows"
@@ -304,19 +301,6 @@ def show_welcome():
     print(f"\n{Colors.BOLD}Audio transcription and AI-powered summaries{Colors.END}")
     print(f"\nPlatform: {Colors.GREEN}{platform.system()} {platform.release()}{Colors.END}")
     print(f"Python: {Colors.GREEN}{sys.version.split()[0]}{Colors.END}")
-    print("\n" + "="*70)
-    print(f"\n{Colors.BOLD}Choose installation type:{Colors.END}\n")
-    print(f"{Colors.GREEN}1. LIGHTWEIGHT{Colors.END} (Recommended for beginners)")
-    print("   • Pure Python, no external binaries")
-    print("   • Whisper (Python) for transcription")
-    print("   • Transformers for AI (English only)")
-    print("   • Download: ~500MB - 2GB")
-    print()
-    print(f"{Colors.CYAN}2. FULL{Colors.END} (All features)")
-    print("   • yt-dlp for YouTube support")
-    print("   • Python Whisper for transcription")
-    print("   • Transformers for AI")
-    print("   • Download: ~500MB - 2GB")
     print("\n" + "="*70)
     print(f"\n{Colors.BOLD}Choose installation type:{Colors.END}\n")
     print(f"{Colors.GREEN}1. RECOMMENDED{Colors.END} (Default Stack)")

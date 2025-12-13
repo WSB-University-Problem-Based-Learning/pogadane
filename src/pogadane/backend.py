@@ -5,8 +5,6 @@ This module provides library functions for transcription and summarization
 with proper logging and progress callbacks - no console parsing.
 """
 
-import sys
-import os
 import logging
 from pathlib import Path
 from typing import Optional, Tuple, Callable, Dict, Any
@@ -18,7 +16,7 @@ import uuid
 # Import utility modules
 from .config_loader import ConfigManager
 from .text_utils import is_valid_url
-from .file_utils import get_unique_filename, get_input_name_stem, safe_delete_file
+from .file_utils import get_unique_filename, get_input_name_stem
 from .constants import (
     DEFAULT_CONFIG,
     TEMP_AUDIO_FOLDER_NAME,
@@ -497,57 +495,3 @@ class PogadaneBackend:
                 progress.log(f"Cleaned empty temp dir: {self.temp_audio_dir}")
         except:
             pass
-
-
-# Compatibility wrapper for subprocess-based calls
-def main():
-    """
-    Legacy CLI entry point for backwards compatibility.
-    New code should use PogadaneBackend class directly with progress callbacks.
-    """
-    import argparse
-    
-    # Configure basic logging for CLI
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s'
-    )
-    
-    parser = argparse.ArgumentParser(description="Pogadane Audio Processing")
-    parser.add_argument("input", help="Audio file or YouTube URL")
-    parser.add_argument("--config", help="Path to config file")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
-    
-    args = parser.parse_args()
-    
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    
-    # Initialize backend
-    backend = PogadaneBackend(Path(args.config) if args.config else None)
-    
-    # Define simple progress callback that prints to console
-    def progress_callback(update: ProgressUpdate):
-        """Print progress updates to console"""
-        icon_map = {
-            ProcessingStage.INITIALIZING: "🔧",
-            ProcessingStage.DOWNLOADING: "📥",
-            ProcessingStage.COPYING: "📄",
-            ProcessingStage.TRANSCRIBING: "🎤",
-            ProcessingStage.SUMMARIZING: "🤖",
-            ProcessingStage.CLEANING: "🧹",
-            ProcessingStage.COMPLETED: "✅",
-            ProcessingStage.ERROR: "❌"
-        }
-        icon = icon_map.get(update.stage, "ℹ️")
-        print(f"{icon} [{update.progress:.0%}] {update.message}")
-    
-    # Process
-    transcription, summary = backend.process_file(args.input, progress_callback)
-    
-    # Exit with appropriate code
-    sys.exit(0 if (transcription or summary) else 1)
-
-
-if __name__ == "__main__":
-    main()

@@ -23,62 +23,60 @@
 ## 🚀 Quick Start
 
 ```bash
-# 1. Clone and enter the project
+# 1. Clone the project
 git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 cd pogadane
 
-# 2. Create a virtual environment (recommended)
+# 2. Create virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1  # Windows PowerShell
+.\.venv\Scripts\Activate.ps1  # Windows
 # source .venv/bin/activate    # macOS/Linux
 
-# 3. Run the guided installer (RECOMMENDED stack: ~500MB)
+# 3. Run the installer
 python install.py
 
-# 4. Launch the GUI
+# 4. Launch the app
 python run_gui_flet.py
+# or: python -m pogadane
 ```
 
 ---
 
 ## 📦 Installation
 
-### Recommended: Guided Installer
-
-The installer sets up the optimal stack for Pogadane with **faster-whisper** (4x faster transcription) + **GGUF models** (efficient AI) + **yt-dlp** (YouTube support).
+### Option 1: Guided Installer (Recommended)
 
 ```bash
 python install.py
 ```
 
-The installer will:
-1. Install core dependencies (Flet GUI, yt-dlp)
-2. Set up faster-whisper for transcription
-3. Download a GGUF model for summarization (Gemma 3 4B)
-4. Create default configuration
+The installer automatically sets up:
+- **faster-whisper** - 4x faster transcription with GPU support
+- **llama-cpp-python** - Efficient GGUF model support
+- **yt-dlp** - YouTube video/audio download
 
-### Manual Installation
+### Option 2: Manual Installation
 
 ```bash
-# Core only (GUI + YouTube download)
-pip install -r requirements.txt
+# Install core + recommended transcription
+pip install -e .
+pip install faster-whisper
 
-# Add transcription engine (choose one)
-pip install -r requirements-faster-whisper.txt  # Recommended: 4x faster
-pip install -r requirements-whisper.txt         # Alternative: OpenAI Whisper
-
-# Add AI summarization backend (optional)
-pip install -r requirements-transformers.txt    # Offline HuggingFace models
+# Optional: Alternative backends
+pip install -r requirements-whisper.txt         # OpenAI Whisper
+pip install -r requirements-transformers.txt    # HuggingFace models
 ```
 
 ---
 
 ## 🎯 Usage
 
-### Launch GUI
+### Launch the App
 
 ```bash
 python run_gui_flet.py
+# or
+python -m pogadane
 ```
 
 ### Features
@@ -139,7 +137,7 @@ pogadane/
 
 ```bash
 # Install dev dependencies
-pip install -r requirements-dev.txt
+pip install -e .[dev]
 
 # Run tests
 pytest

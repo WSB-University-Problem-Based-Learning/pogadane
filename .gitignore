@@ -198,4 +198,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-dep/models/gemma-3-4b-it-Q4_K_M.gguf
+
+# Large model files
+dep/models/*.gguf
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace

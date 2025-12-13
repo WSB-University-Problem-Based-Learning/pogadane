@@ -1,170 +1,81 @@
 # Pogadane
 
 <p align="center">
-  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Logo Pogadane" width="600"/>
+  <img src="https://repository-images.githubusercontent.com/966910196/a983cd9b-5685-4635-a5b4-7ebeaef27d50" alt="Pogadane" width="600"/>
   <br/>
-  <strong>Transform audio recordings and YouTube videos into transcripts and AI-powered summaries</strong>
+  <strong>Audio transcription and AI-powered summaries</strong>
 </p>
 
----
+## Features
 
-## ✨ Highlights
+- 🎙️ Transcribe audio/video files and YouTube URLs
+- 🤖 Generate AI summaries using local GGUF models
+- ⚡ 4x faster transcription with Faster-Whisper
+- 🖥️ Modern Material 3 GUI
 
-- 🎙️ **Batch transcription** for local audio files and YouTube URLs
-- 🤖 **AI-powered summaries** using local GGUF models, Ollama, Transformers, or Google Gemini
-- 🖥️ **Material 3 Expressive GUI** with waveform visualization and results viewer
-- ⚡ **4x faster transcription** with faster-whisper (GPU/CPU optimized)
-- 🧠 **Efficient AI models** using GGUF quantization (e.g., Gemma 3 4B runs on 4GB RAM)
-- ⚙️ **Easy configuration** stored in `.config/config.py` with in-app overrides
-- 🧰 **Cross-platform** installer that prepares dependencies in one pass
-
----
-
-## 🚀 Quick Start
+## Installation
 
 ```bash
-# 1. Clone the project
+# Clone
 git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 cd pogadane
 
-# 2. Create virtual environment
+# Create virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1  # Windows
-# source .venv/bin/activate    # macOS/Linux
+.\.venv\Scripts\Activate.ps1   # Windows
+# source .venv/bin/activate    # Linux/macOS
 
-# 3. Run the installer
-python install.py
-
-# 4. Launch the app
-python run_gui_flet.py
-# or: python -m pogadane
-```
-
----
-
-## 📦 Installation
-
-### Option 1: Guided Installer (Recommended)
-
-```bash
+# Install
 python install.py
 ```
 
-The installer automatically sets up:
-- **faster-whisper** - 4x faster transcription with GPU support
-- **llama-cpp-python** - Efficient GGUF model support
-- **yt-dlp** - YouTube video/audio download
+### GGUF Model Setup
 
-### Option 2: Manual Installation
+Download a GGUF model for AI summarization:
 
-```bash
-pip install -e .
-pip install faster-whisper  # Recommended transcription
+1. Go to [HuggingFace - Gemma 3 4B GGUF](https://huggingface.co/google/gemma-3-4b-it-GGUF)
+2. Download `gemma-3-4b-it-Q4_K_M.gguf` (~2.5GB)
+3. Place in `dep/models/`
 
-# Optional backends:
-pip install openai-whisper                      # Alternative transcription
-pip install transformers torch accelerate       # HuggingFace summarization
-```
-
----
-
-## 🎯 Usage
-
-### Launch the App
+## Usage
 
 ```bash
-python run_gui_flet.py
-# or
 python -m pogadane
 ```
 
-### Features
-
-1. **Add Files** - Drag & drop audio/video files or paste YouTube URLs
-2. **Configure** - Choose transcription engine and AI provider in Settings
-3. **Process** - Click "Start Processing" to transcribe and summarize
-4. **Review** - View results with speaker diarization and AI summaries
+1. **Add files** - Drag & drop audio/video or paste YouTube URLs
+2. **Process** - Click "Start Processing"
+3. **Review** - View transcription and AI summary
 
 ### Supported Formats
 
-- **Audio**: MP3, WAV, M4A, OGG, FLAC, AAC
+- **Audio**: MP3, WAV, M4A, OGG, FLAC
 - **Video**: MP4, MKV, AVI, MOV, WebM
-- **Online**: YouTube URLs (automatic download)
+- **Online**: YouTube URLs
 
----
+## Configuration
 
-## ⚙️ Configuration
+Settings are in `.config/config.py` or use the GUI Settings panel.
 
-Settings are stored in `.config/config.py` and can be modified via the GUI Settings panel.
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `WHISPER_MODEL` | `turbo` | Whisper model size |
+| `WHISPER_LANGUAGE` | `Polish` | Transcription language |
+| `GGUF_MODEL_PATH` | `dep/models/gemma-3-4b-it-Q4_K_M.gguf` | GGUF model file |
 
-### Transcription Providers
-
-| Provider | Speed | Quality | GPU Support |
-|----------|-------|---------|-------------|
-| **faster-whisper** | ⚡⚡⚡⚡ | ⭐⭐⭐⭐ | ✅ CUDA |
-| **whisper** | ⚡⚡ | ⭐⭐⭐⭐ | ✅ CUDA |
-
-### Summarization Providers
-
-| Provider | Offline | Quality | Requirements |
-|----------|---------|---------|--------------|
-| **GGUF** | ✅ | ⭐⭐⭐⭐ | 4GB+ RAM |
-| **Transformers** | ✅ | ⭐⭐⭐ | 8GB+ RAM |
-| **Ollama** | ✅ | ⭐⭐⭐⭐ | Ollama server |
-| **Google Gemini** | ❌ | ⭐⭐⭐⭐⭐ | API key |
-
----
-
-## 📁 Project Structure
-
-```
-pogadane/
-├── src/pogadane/         # Main application source
-│   ├── gui_flet.py       # Material 3 GUI
-│   ├── backend.py        # Processing backend
-│   ├── transcription_providers.py
-│   └── llm_providers.py
-├── test/                 # Test suite
-├── doc/                  # Documentation
-├── install.py            # Guided installer
-└── run_gui_flet.py       # GUI launcher
-```
-
----
-
-## 🧪 Development
+## Development
 
 ```bash
-# Install dev dependencies
-pip install -e .[dev]
+# Install with dev tools
+python install.py --dev
 
 # Run tests
 pytest
-
-# Run tests with coverage
-pytest --cov=src/pogadane
 ```
 
----
+## License
 
-## 📄 License
+MIT License - see [LICENSE](LICENSE)
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
-### Third-Party Licenses
-
-- **Gemma models**: Subject to [Google Gemma Terms of Use](doc/gemma_terms.md)
-- See [NOTICES.md](NOTICES.md) for all third-party attributions
-
----
-
-## 🤝 Contributing
-
-This project was developed as part of the Problem-Based Learning program at WSB University.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Third-party: [NOTICES.md](NOTICES.md)
 

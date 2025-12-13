@@ -1,7 +1,0 @@
-# Pogadane - Faster-Whisper (Recommended transcription engine)
-# Install: pip install -r requirements-faster-whisper.txt
-#
-# 4x faster than OpenAI Whisper with GPU support
-# For CUDA support, see: https://github.com/SYSTRAN/faster-whisper#gpu
-
-faster-whisper>=1.0.0

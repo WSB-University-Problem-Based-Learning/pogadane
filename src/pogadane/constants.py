@@ -30,22 +30,26 @@ CUSTOM_PROMPT_OPTION_TEXT = "(Własny prompt poniżej)"
 
 # Default configuration values
 DEFAULT_CONFIG = {
-    # Transcription settings - pip-based providers
-    "TRANSCRIPTION_PROVIDER": "faster-whisper",  # "faster-whisper" or "whisper"
+    # Transcription (Faster-Whisper)
+    "TRANSCRIPTION_PROVIDER": "faster-whisper",
     "FASTER_WHISPER_DEVICE": "auto",  # "cuda", "cpu", or "auto"
-    "FASTER_WHISPER_COMPUTE_TYPE": "auto",  # "float16", "int8", "int8_float16", or "auto"
-    "FASTER_WHISPER_BATCH_SIZE": 0,  # 0=no batching, >0 uses batched transcription
-    "FASTER_WHISPER_VAD_FILTER": False,  # Enable Voice Activity Detection
+    "FASTER_WHISPER_COMPUTE_TYPE": "auto",  # "float16", "int8", or "auto"
+    "FASTER_WHISPER_BATCH_SIZE": 0,  # 0=no batching
+    "FASTER_WHISPER_VAD_FILTER": False,
     "WHISPER_LANGUAGE": "Polish",
     "WHISPER_MODEL": "turbo",
-    "WHISPER_DEVICE": "auto",  # For openai-whisper library
     
-    # YouTube download (pip: yt-dlp)
-    "YT_DLP_PATH": "yt-dlp",  # Command name or full path
+    # YouTube download
+    "YT_DLP_PATH": "yt-dlp",
     
-    # Summary settings
-    "SUMMARY_PROVIDER": "transformers",
-    "SUMMARY_LANGUAGE": "English",
+    # Summarization (GGUF)
+    "SUMMARY_PROVIDER": "gguf",
+    "SUMMARY_LANGUAGE": "Polish",
+    "GGUF_MODEL_PATH": str(MODELS_DIR / "gemma-3-4b-it-Q4_K_M.gguf"),
+    "GGUF_CONTEXT_SIZE": 4096,
+    "GGUF_GPU_LAYERS": 0,  # 0=CPU only
+    
+    # Prompt templates
     "LLM_PROMPT_TEMPLATES": {
         "Standardowy": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
         "Elementy Akcji": "Przeanalizuj poniższy tekst i wypisz wyłącznie listę zadań do wykonania (action items), przypisanych osób (jeśli wspomniano) i terminów (jeśli wspomniano) w formie punktów.",
@@ -55,16 +59,16 @@ DEFAULT_CONFIG = {
     },
     "LLM_PROMPT_TEMPLATE_NAME": "Standardowy",
     "LLM_PROMPT": "Streść poniższy tekst, skupiając się na kluczowych wnioskach i decyzjach:",
+    
+    # Optional: Ollama
     "OLLAMA_MODEL": "gemma3:4b",
+    
+    # Optional: Google Gemini
     "GOOGLE_API_KEY": "",
     "GOOGLE_GEMINI_MODEL": "gemini-1.5-flash-latest",
-    "TRANSFORMERS_MODEL": "facebook/bart-large-cnn",
-    "TRANSFORMERS_DEVICE": "auto",
-    "TRANSFORMERS_CACHE_DIR": str(MODELS_DIR),  # Local model cache
-    "TRANSCRIPTION_PROVIDER": "faster-whisper",
-    "WHISPER_DEVICE": "auto",
+    
+    # Other
     "TRANSCRIPTION_FORMAT": "txt",
-    "DOWNLOADED_AUDIO_FILENAME": "downloaded_audio.mp3",
     "DEBUG_MODE": False,
 }
 

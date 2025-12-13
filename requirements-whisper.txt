@@ -1,7 +1,0 @@
-# Pogadane - OpenAI Whisper (Alternative transcription)
-# Install: pip install -r requirements-whisper.txt
-#
-# Use this if you cannot install faster-whisper
-# Set TRANSCRIPTION_PROVIDER="whisper" in .config/config.py
-
-openai-whisper>=20230314

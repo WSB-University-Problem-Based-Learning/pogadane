@@ -289,6 +289,7 @@ class PogadaneBackend:
         """Download YouTube audio to temp directory using native logging"""
         try:
             import subprocess
+            import sys
             
             yt_dlp_path = getattr(
                 self.config,
@@ -296,8 +297,13 @@ class PogadaneBackend:
                 DEFAULT_CONFIG.get('YT_DLP_PATH', 'yt-dlp')
             )
             
-            # Check if yt-dlp is available
-            if not shutil.which(yt_dlp_path):
+            # Try to find yt-dlp in the same directory as Python interpreter (venv)
+            python_dir = Path(sys.executable).parent
+            yt_dlp_in_venv = python_dir / ("yt-dlp.exe" if sys.platform == "win32" else "yt-dlp")
+            
+            if yt_dlp_in_venv.exists():
+                yt_dlp_path = str(yt_dlp_in_venv)
+            elif not shutil.which(yt_dlp_path):
                 progress.log(
                     f"yt-dlp not found. Please install it: pip install yt-dlp",
                     "error"

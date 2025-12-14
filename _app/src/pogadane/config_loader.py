@@ -47,6 +47,10 @@ class ConfigLoader:
             if not config_path.exists():
                 raise FileNotFoundError(f"Config file not found: {config_path}")
             
+            # Remove cached module to force reload
+            if 'config' in sys.modules:
+                del sys.modules['config']
+            
             spec = importlib.util.spec_from_file_location("config", config_path)
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
@@ -93,8 +97,20 @@ class ConfigLoader:
         """
         return getattr(config, key, default if default is not None else DEFAULT_CONFIG.get(key))
     
-    # Alias for backward compatibility
-    load_from_file = load_config
+    @staticmethod
+    def load_from_file(config_path) -> Any:
+        """
+        Load configuration from file path (string or Path).
+        
+        Args:
+            config_path: Path to the configuration file (str or Path)
+            
+        Returns:
+            Configuration module or fallback object with default values
+        """
+        if isinstance(config_path, str):
+            config_path = Path(config_path)
+        return ConfigLoader.load_config(config_path)
 
 
 class ConfigManager:

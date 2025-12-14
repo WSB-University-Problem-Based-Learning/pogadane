@@ -72,7 +72,7 @@ TRANSFORMERS_DEVICE = "auto" # Urządzenie: "auto" (automatyczny wybór GPU/CPU)
 # Ustawienia GGUF / Llama.cpp (jeśli SUMMARY_PROVIDER="gguf")
 # GGUF to format skwantyzowanych modeli - mniejsze, szybsze, działają na CPU
 # Wymagają instalacji: pip install llama-cpp-python
-GGUF_MODEL_PATH = "dep/models/gemma-3-4b-it-Q4_K_M.gguf" # Ścieżka do pliku GGUF
+GGUF_MODEL_PATH = "_app/dep/models/gemma-3-4b-it-Q4_K_M.gguf" # Ścieżka do pliku GGUF
 GGUF_N_GPU_LAYERS = 0 # Liczba warstw na GPU (0 = tylko CPU, >0 = użyj GPU dla przyspieszenia)
 
 # Ustawienia Ogólne Skryptu

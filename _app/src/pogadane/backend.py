@@ -296,6 +296,14 @@ class PogadaneBackend:
                 DEFAULT_CONFIG.get('YT_DLP_PATH', 'yt-dlp')
             )
             
+            # Check if yt-dlp is available
+            if not shutil.which(yt_dlp_path):
+                progress.log(
+                    f"yt-dlp not found. Please install it: pip install yt-dlp",
+                    "error"
+                )
+                return None
+            
             # Generate unique filename
             temp_filename = f"youtube_{uuid.uuid4().hex[:8]}.mp3"
             output_path = self.temp_audio_dir / temp_filename
@@ -326,6 +334,12 @@ class PogadaneBackend:
                 progress.log(f"Download failed: {result.stderr}", "error")
                 return None
                 
+        except FileNotFoundError:
+            progress.log(
+                f"yt-dlp not found. Please install it: pip install yt-dlp",
+                "error"
+            )
+            return None
         except Exception as e:
             progress.log(f"Download error: {e}", "error")
             return None

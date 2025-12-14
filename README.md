@@ -20,13 +20,15 @@
 git clone https://github.com/WSB-University-Problem-Based-Learning/pogadane.git
 cd pogadane
 
-# Create virtual environment
+# Create virtual environment (in _app folder)
+cd _app
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1   # Windows
 # source .venv/bin/activate    # Linux/macOS
 
 # Install
 python install.py
+cd ..
 ```
 
 ### GGUF Model Setup
@@ -35,11 +37,15 @@ Download a GGUF model for AI summarization:
 
 1. Go to [HuggingFace - Gemma 3 4B GGUF](https://huggingface.co/google/gemma-3-4b-it-GGUF)
 2. Download `gemma-3-4b-it-Q4_K_M.gguf` (~2.5GB)
-3. Place in `dep/models/`
+3. Place in `_app/dep/models/`
 
 ## Usage
 
+**Windows**: Double-click `Pogadane.exe` or `Pogadane.bat`
+
+**Command line**:
 ```bash
+cd _app
 python -m pogadane
 ```
 
@@ -55,22 +61,46 @@ python -m pogadane
 
 ## Configuration
 
-Settings are in `.config/config.py` or use the GUI Settings panel.
+Settings are in `_app/.config/config.py` or use the GUI Settings panel.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `WHISPER_MODEL` | `turbo` | Whisper model size |
 | `WHISPER_LANGUAGE` | `Polish` | Transcription language |
-| `GGUF_MODEL_PATH` | `dep/models/gemma-3-4b-it-Q4_K_M.gguf` | GGUF model file |
+| `GGUF_MODEL_PATH` | `_app/dep/models/gemma-3-4b-it-Q4_K_M.gguf` | GGUF model file |
+
+## Project Structure
+
+```
+pogadane/
+├── Pogadane.bat        # Windows launcher
+├── Pogadane.exe        # Windows launcher (exe)
+├── README.md
+├── LICENSE
+├── _app/               # Application source
+│   ├── src/pogadane/   # Python package
+│   ├── res/            # Assets & resources
+│   ├── dep/models/     # GGUF models (not in git)
+│   ├── .venv/          # Virtual environment (not in git)
+│   ├── install.py
+│   └── pyproject.toml
+└── _dev/               # Development
+    ├── test/           # Unit tests
+    ├── doc/            # Documentation
+    ├── samples/        # Test samples
+    └── build/          # PyInstaller output (not in git)
+```
 
 ## Development
 
 ```bash
 # Install with dev tools
+cd _app
 python install.py --dev
 
 # Run tests
-pytest
+cd ..
+pytest _dev/test/
 ```
 
 ## License

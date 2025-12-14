@@ -77,7 +77,7 @@ target-version = ['py39', 'py310', 'py311', 'py312', 'py313']
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q"
-testpaths = ["test"]
+testpaths = ["../_dev/test"]
 
 # Coverage
 [tool.coverage.run]

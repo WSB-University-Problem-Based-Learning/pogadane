@@ -5,9 +5,15 @@ This module provides common test fixtures and configuration for all test modules
 Fixtures defined here are automatically available to all test files.
 """
 
+import sys
 import pytest
 import tempfile
 from pathlib import Path
+
+# Add _app/src to Python path so tests can import pogadane
+_app_src = Path(__file__).parent.parent.parent / "_app" / "src"
+if str(_app_src) not in sys.path:
+    sys.path.insert(0, str(_app_src))
 
 
 @pytest.fixture

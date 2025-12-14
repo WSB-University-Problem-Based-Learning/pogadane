@@ -4,7 +4,7 @@ Creates a simple EXE launcher for Pogadane.
 This script creates a minimal .exe file that launches 'python -m pogadane'.
 No PyInstaller needed - uses built-in Windows tools.
 
-Run: python create_launcher.py
+Run from project root: python _dev/create_launcher.py
 """
 
 import subprocess
@@ -16,10 +16,12 @@ from pathlib import Path
 def create_exe_launcher():
     """Create EXE launcher using PowerShell and .NET."""
     
-    exe_path = Path("Pogadane.exe")
+    # Output to project root (parent of _dev)
+    project_root = Path(__file__).parent.parent
+    exe_path = project_root / "Pogadane.exe"
     
     # C# code for minimal launcher (compatible with older .NET)
-    # Uses .venv Python if available, falls back to system Python
+    # Uses _app/.venv Python if available, falls back to system Python
     cs_code = r'''
 using System;
 using System.Diagnostics;
@@ -30,8 +32,8 @@ class Program {
     static void Main() {
         string dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         
-        // Try .venv Python first, then system Python
-        string venvPython = Path.Combine(dir, ".venv", "Scripts", "python.exe");
+        // Try _app/.venv Python first, then system Python
+        string venvPython = Path.Combine(dir, "_app", ".venv", "Scripts", "python.exe");
         string pythonExe = File.Exists(venvPython) ? venvPython : "python";
         
         ProcessStartInfo psi = new ProcessStartInfo();

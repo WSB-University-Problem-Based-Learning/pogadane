@@ -339,6 +339,6 @@ Informacje o licencjach bibliotek zewnętrznych: [NOTICES.md](NOTICES.md)
 ---
 
 <p align="center">
-  <strong>Pogadane</strong> © 2024 WSB University - Problem Based Learning
+  <strong>Pogadane</strong> © 2025 WSB University - Problem Based Learning
 </p>
 

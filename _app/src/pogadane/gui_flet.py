@@ -619,6 +619,36 @@ class PogadaneApp:
             autofocus=True,
             border_radius=12,
             filled=True,
+            width=500,
+        )
+        
+        # Time range fields
+        start_time_field = ft.TextField(
+            label="Od (mm:ss)",
+            hint_text="np. 01:30",
+            border_radius=12,
+            filled=True,
+            width=120,
+        )
+        
+        end_time_field = ft.TextField(
+            label="Do (mm:ss)",
+            hint_text="np. 05:00",
+            border_radius=12,
+            filled=True,
+            width=120,
+        )
+        
+        time_range_row = ft.Row(
+            controls=[
+                start_time_field,
+                ft.Text("—", size=16),
+                end_time_field,
+                ft.Text("(opcjonalne)", 
+                       size=12, color=ft.Colors.GREY_500, italic=True),
+            ],
+            spacing=10,
+            alignment=ft.MainAxisAlignment.START,
         )
 
         def close_dialog(_=None):
@@ -629,8 +659,17 @@ class PogadaneApp:
 
         def confirm_add(_=None):
             url_value = (url_field.value or "").strip()
+            start_time = (start_time_field.value or "").strip()
+            end_time = (end_time_field.value or "").strip()
+            
             if url_value:
-                added = self.add_queue_entries([url_value])
+                # Create entry with time range metadata
+                entry_data = {
+                    "url": url_value,
+                    "start_time": start_time if start_time else None,
+                    "end_time": end_time if end_time else None,
+                }
+                added = self.add_queue_entries_with_metadata([entry_data])
                 if added:
                     self.update_status("Dodano URL do kolejki")
                     self.show_snackbar("🔗 Dodano URL do kolejki", success=True)
@@ -641,7 +680,19 @@ class PogadaneApp:
         dialog = ft.AlertDialog(
             modal=True,
             title=ft.Text("Dodaj URL", size=20, weight=ft.FontWeight.BOLD),
-            content=url_field,
+            content=ft.Container(
+                content=ft.Column(
+                    controls=[
+                        url_field,
+                        ft.Container(height=10),
+                        ft.Text("Zakres czasowy:", size=14, weight=ft.FontWeight.W_500),
+                        time_range_row,
+                    ],
+                    spacing=5,
+                    tight=True,
+                ),
+                width=500,
+            ),
             actions=[
                 ft.TextButton("Anuluj", on_click=close_dialog),
                 ft.FilledButton(
@@ -693,6 +744,53 @@ class PogadaneApp:
 
         return added
 
+    def add_queue_entries_with_metadata(self, entries: List[dict]) -> int:
+        """Add new items to the processing queue with metadata (time ranges)
+        
+        Args:
+            entries: List of dicts with keys: url, start_time, end_time
+        """
+        if not entries or not self.queue_list:
+            return 0
+
+        added = 0
+        existing_values = {item["value"] for item in self.queue_items}
+
+        for entry_data in entries:
+            url = entry_data.get("url", "").strip()
+            if not url or url in existing_values:
+                continue
+
+            start_time = entry_data.get("start_time")
+            end_time = entry_data.get("end_time")
+            
+            # Create display text with time range info
+            display_text = url
+            if start_time or end_time:
+                time_info = f" [{start_time or '0:00'} - {end_time or 'koniec'}]"
+                display_text = url + time_info
+
+            queue_item = self._create_queue_item(url, display_text=display_text)
+            # Store time range metadata
+            queue_item["start_time"] = start_time
+            queue_item["end_time"] = end_time
+            
+            self.queue_items.append(queue_item)
+            self.queue_list.controls.append(queue_item["container"])
+            existing_values.add(url)
+            added += 1
+
+        if added == 0:
+            return 0
+
+        if self.queue_placeholder and self.queue_placeholder in self.queue_list.controls:
+            self.queue_list.controls.remove(self.queue_placeholder)
+
+        self.queue_list.update()
+        self.update_queue_count()
+
+        return added
+
     def remove_queue_item(self, entry_value: str):
         """Remove a queue entry by its value"""
 
@@ -723,12 +821,17 @@ class PogadaneApp:
             self.file_count_text.value = f"Kolejka: {len(self.queue_items)}"
             self.file_count_text.update()
 
-    def _create_queue_item(self, entry: str) -> Dict[str, object]:
-        """Create UI representation for a queue entry"""
+    def _create_queue_item(self, entry: str, display_text: str = None) -> Dict[str, object]:
+        """Create UI representation for a queue entry
+        
+        Args:
+            entry: The actual value (URL or file path)
+            display_text: Optional display text (e.g., with time range info)
+        """
 
         is_url = entry.lower().startswith("http")
         icon_name = ft.Icons.LINK_ROUNDED if is_url else ft.Icons.AUDIO_FILE_ROUNDED
-        display_name = entry if is_url else os.path.basename(entry) or entry
+        display_name = (display_text or entry) if is_url else os.path.basename(entry) or entry
 
         status_text = ft.Text("Oczekuje", size=12, weight=ft.FontWeight.W_600, color="#6B7280")
         
@@ -2752,7 +2855,16 @@ class PogadaneApp:
             self.show_snackbar("⚠️ Kolejka jest pusta", error=True)
             return
         
-        input_sources = [item["value"] for item in self.queue_items]
+        # Build input sources with metadata (time ranges)
+        input_sources = []
+        for item in self.queue_items:
+            source_data = {
+                "value": item["value"],
+                "start_time": item.get("start_time"),
+                "end_time": item.get("end_time"),
+            }
+            input_sources.append(source_data)
+        
         self.total_items = len(input_sources)
         self.completed_items = 0
         self.error_items = 0
@@ -2791,7 +2903,17 @@ class PogadaneApp:
         os.environ['TQDM_DISABLE'] = '1'  # Disable tqdm progress bars
         os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'  # Disable HuggingFace progress bars
         
-        for i, input_src in enumerate(input_sources):
+        for i, source_data in enumerate(input_sources):
+            # Extract source info (can be dict with metadata or just string for backward compat)
+            if isinstance(source_data, dict):
+                input_src = source_data["value"]
+                start_time = source_data.get("start_time")
+                end_time = source_data.get("end_time")
+            else:
+                input_src = source_data
+                start_time = None
+                end_time = None
+            
             # Update queue status to PROCESSING
             self.output_queue.put(("update_status", str(i), FILE_STATUS_PROCESSING))
             
@@ -2821,7 +2943,9 @@ class PogadaneApp:
                 # Process file using backend with native callbacks
                 transcription, summary = backend.process_file(
                     input_src,
-                    progress_callback=progress_callback
+                    progress_callback=progress_callback,
+                    start_time=start_time,
+                    end_time=end_time
                 )
                 
                 # Check results

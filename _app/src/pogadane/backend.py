@@ -169,7 +169,9 @@ class PogadaneBackend:
     def process_file(
         self, 
         input_source: str,
-        progress_callback: Optional[Callable[[ProgressUpdate], None]] = None
+        progress_callback: Optional[Callable[[ProgressUpdate], None]] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         Process a single file or URL with native progress tracking.
@@ -177,6 +179,8 @@ class PogadaneBackend:
         Args:
             input_source: File path or YouTube URL
             progress_callback: Optional callback that receives ProgressUpdate objects
+            start_time: Optional start time for YouTube download (format: mm:ss or hh:mm:ss)
+            end_time: Optional end time for YouTube download (format: mm:ss or hh:mm:ss)
             
         Returns:
             Tuple of (transcription, summary) or (None, None) on error
@@ -197,13 +201,16 @@ class PogadaneBackend:
             
             # Handle YouTube URLs
             if is_valid_url(input_source):
+                time_range_msg = ""
+                if start_time or end_time:
+                    time_range_msg = f" [{start_time or '0:00'} - {end_time or 'koniec'}]"
                 progress.update(
                     ProcessingStage.DOWNLOADING,
-                    "Downloading from YouTube...",
+                    f"Downloading from YouTube...{time_range_msg}",
                     0.1,
                     {"url": input_source}
                 )
-                audio_file = self._download_youtube_audio(input_source, progress)
+                audio_file = self._download_youtube_audio(input_source, progress, start_time, end_time)
                 if not audio_file:
                     progress.update(
                         ProcessingStage.ERROR,
@@ -285,8 +292,21 @@ class PogadaneBackend:
             )
             return None, None
     
-    def _download_youtube_audio(self, url: str, progress: ProgressCallback) -> Optional[Path]:
-        """Download YouTube audio to temp directory using native logging"""
+    def _download_youtube_audio(
+        self, 
+        url: str, 
+        progress: ProgressCallback,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None
+    ) -> Optional[Path]:
+        """Download YouTube audio to temp directory using native logging
+        
+        Args:
+            url: YouTube URL
+            progress: Progress callback
+            start_time: Optional start time (format: mm:ss or hh:mm:ss)
+            end_time: Optional end time (format: mm:ss or hh:mm:ss)
+        """
         try:
             import subprocess
             import sys
@@ -315,6 +335,8 @@ class PogadaneBackend:
             output_path = self.temp_audio_dir / temp_filename
             
             progress.log(f"Downloading: {url}")
+            if start_time or end_time:
+                progress.log(f"Time range: {start_time or '0:00'} - {end_time or 'end'}")
             progress.log(f"Output: {output_path}")
             
             cmd = [
@@ -323,8 +345,37 @@ class PogadaneBackend:
                 "--audio-format", "mp3",
                 "--force-overwrite",
                 "-o", str(output_path),
-                url
             ]
+            
+            # Add time range if specified
+            if start_time or end_time:
+                # Format: "*START-END" where START/END are timestamps
+                # yt-dlp uses format like "*00:01:30-00:05:00"
+                start = start_time or "0:00"
+                end = end_time or "inf"  # "inf" means until the end
+                
+                # Normalize time format (ensure it has proper format for yt-dlp)
+                def normalize_time(t):
+                    if t == "inf":
+                        return t
+                    # Add leading zero if needed (1:30 -> 01:30)
+                    parts = t.split(":")
+                    if len(parts) == 2:
+                        # mm:ss format
+                        return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+                    elif len(parts) == 3:
+                        # hh:mm:ss format
+                        return f"{int(parts[0]):02d}:{int(parts[1]):02d}:{int(parts[2]):02d}"
+                    return t
+                
+                start_normalized = normalize_time(start)
+                end_normalized = normalize_time(end)
+                
+                download_section = f"*{start_normalized}-{end_normalized}"
+                cmd.extend(["--download-sections", download_section])
+                progress.log(f"Download section: {download_section}")
+            
+            cmd.append(url)
             
             result = subprocess.run(
                 cmd,

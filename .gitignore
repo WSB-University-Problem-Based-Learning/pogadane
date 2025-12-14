@@ -1,4 +1,19 @@
+# ===========================================
+# LARGE FILES - CRITICAL FOR GITHUB PUSH SIZE
+# ===========================================
+
+# _app folder: Virtual environment and downloaded models (multi-GB)
+_app/.venv/
+_app/dep/models/*.gguf
+_app/dep/models/*.bin
+_app/dep/models/*.safetensors
+
+# _dev folder: PyInstaller build output (400MB+)
+_dev/build/
+
+# ===========================================
 # Byte-compiled / optimized / DLL files
+# ===========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,7 +21,9 @@ __pycache__/
 # C extensions
 *.so
 
+# ===========================================
 # Distribution / packaging
+# ===========================================
 .Python
 build/
 develop-eggs/
@@ -27,42 +44,49 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
-# Pogadane temp artifacts
+# ===========================================
+# Pogadane Project Specific
+# ===========================================
+
+# Temp artifacts
 src/pogadane/pogadane_temp_audio/
 
-# Pogadane sample audio files (not distributed - copyright holders' permission required)
+# Sample audio files (copyright - not distributed)
 samples/*.mp3
 samples/*.wav
 samples/*.m4a
 samples/*.ogg
 samples/*.flac
-# Keep samples directory structure but ignore audio files
 !samples/.gitkeep
 !samples/README.md
 
-# Pogadane external dependencies (downloaded by tools/install.py)
-# These are NOT stored in Git to keep repository clean
+# External dependencies (downloaded by install.py)
 dep/yt-dlp/
 dep/faster-whisper/
 dep/ollama/
-dep/models/  # Transformers model cache
-# Keep the dep/ folder structure but ignore downloaded binaries
+dep/models/*.gguf
+dep/models/*.bin
 !dep/.gitkeep
 !dep/*/.gitkeep
 
-# Pogadane configuration backups
+# ===========================================
+# Configuration & Logs
+# ===========================================
+
+# Configuration backups
 .config/config.backup_*.py
 
-# Installer logs
+# Log files
+*.log
 pip-log.txt
 pip-delete-this-directory.txt
 
+# ===========================================
 # Unit test / coverage reports
+# ===========================================
 htmlcov/
 .tox/
 .nox/
